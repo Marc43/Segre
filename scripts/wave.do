@@ -50,20 +50,20 @@ add wave -noupdate -group CORE -divider WB
 add wave -noupdate -group CORE /top_tb/dut/wb_res
 add wave -noupdate -group CORE /top_tb/dut/wb_rf_waddr
 add wave -noupdate -group CORE /top_tb/dut/wb_rf_we
-add wave -noupdate -group {IF Stage} -divider {CLK & RSN}
-add wave -noupdate -group {IF Stage} /top_tb/dut/if_stage/clk_i
-add wave -noupdate -group {IF Stage} /top_tb/dut/if_stage/rsn_i
-add wave -noupdate -group {IF Stage} -divider {FSM STATE}
-add wave -noupdate -group {IF Stage} /top_tb/dut/if_stage/fsm_state_i
-add wave -noupdate -group {IF Stage} -divider PC
-add wave -noupdate -group {IF Stage} /top_tb/dut/if_stage/tkbr_i
-add wave -noupdate -group {IF Stage} /top_tb/dut/if_stage/new_pc_i
-add wave -noupdate -group {IF Stage} /top_tb/dut/if_stage/nxt_pc
-add wave -noupdate -group {IF Stage} /top_tb/dut/if_stage/pc_o
-add wave -noupdate -group {IF Stage} /top_tb/dut/if_stage/mem_rd_o
-add wave -noupdate -group {IF Stage} -divider INSTRUCTION
-add wave -noupdate -group {IF Stage} /top_tb/dut/if_stage/instr_i
-add wave -noupdate -group {IF Stage} /top_tb/dut/if_stage/instr_o
+add wave -noupdate -expand -group {IF Stage} -divider {CLK & RSN}
+add wave -noupdate -expand -group {IF Stage} /top_tb/dut/if_stage/clk_i
+add wave -noupdate -expand -group {IF Stage} /top_tb/dut/if_stage/rsn_i
+add wave -noupdate -expand -group {IF Stage} -divider {FSM STATE}
+add wave -noupdate -expand -group {IF Stage} /top_tb/dut/if_stage/fsm_state_i
+add wave -noupdate -expand -group {IF Stage} -divider PC
+add wave -noupdate -expand -group {IF Stage} /top_tb/dut/if_stage/tkbr_i
+add wave -noupdate -expand -group {IF Stage} /top_tb/dut/if_stage/new_pc_i
+add wave -noupdate -expand -group {IF Stage} /top_tb/dut/if_stage/nxt_pc
+add wave -noupdate -expand -group {IF Stage} /top_tb/dut/if_stage/pc_o
+add wave -noupdate -expand -group {IF Stage} /top_tb/dut/if_stage/mem_rd_o
+add wave -noupdate -expand -group {IF Stage} -divider INSTRUCTION
+add wave -noupdate -expand -group {IF Stage} /top_tb/dut/if_stage/instr_i
+add wave -noupdate -expand -group {IF Stage} /top_tb/dut/if_stage/instr_o
 add wave -noupdate -group {ID Stage} -group Decode -divider {CLK & RSN}
 add wave -noupdate -group {ID Stage} -group Decode /top_tb/dut/id_stage/decode/clk_i
 add wave -noupdate -group {ID Stage} -group Decode /top_tb/dut/id_stage/decode/rsn_i
@@ -225,15 +225,33 @@ add wave -noupdate -group {Register File} -divider REGISTERS
 add wave -noupdate -group {Register File} -expand /top_tb/dut/segre_rf/rf_reg
 add wave -noupdate -group {Register File} /top_tb/dut/segre_rf/rf_reg_aux
 add wave -noupdate -group {Register File} /top_tb/dut/segre_rf/write_enable
-add wave -noupdate -group Controller -divider {CLK & RSN}
-add wave -noupdate -group Controller /top_tb/dut/controller/clk_i
-add wave -noupdate -group Controller /top_tb/dut/controller/rsn_i
-add wave -noupdate -group Controller -divider STATE
-add wave -noupdate -group Controller /top_tb/dut/controller/next_state
-add wave -noupdate -group Controller /top_tb/dut/controller/state
-add wave -noupdate -group Controller /top_tb/dut/controller/state_o
+add wave -noupdate -expand -group Controller -divider {CLK & RSN}
+add wave -noupdate -expand -group Controller /top_tb/dut/controller/clk_i
+add wave -noupdate -expand -group Controller /top_tb/dut/controller/rsn_i
+add wave -noupdate -expand -group Controller -divider STATE
+add wave -noupdate -expand -group Controller /top_tb/dut/controller/is_mem_instr_i
+add wave -noupdate -expand -group Controller /top_tb/dut/controller/mem_ready_i
+add wave -noupdate -expand -group Controller /top_tb/dut/controller/next_state
+add wave -noupdate -expand -group Controller /top_tb/dut/controller/state
+add wave -noupdate -expand -group Controller /top_tb/dut/controller/state_o
+add wave -noupdate -group TB_MEMORY_UNIT /top_tb/tb_mem/clk_i
+add wave -noupdate -group TB_MEMORY_UNIT /top_tb/tb_mem/rsn_i
+add wave -noupdate -group TB_MEMORY_UNIT /top_tb/tb_mem/rd_i
+add wave -noupdate -group TB_MEMORY_UNIT /top_tb/tb_mem/wr_i
+add wave -noupdate -group TB_MEMORY_UNIT /top_tb/tb_mem/mem_ready_o
+add wave -noupdate -group TB_MEMORY_UNIT /top_tb/tb_mem/data_type_i
+add wave -noupdate -group TB_MEMORY_UNIT /top_tb/tb_mem/addr_i
+add wave -noupdate -group TB_MEMORY_UNIT /top_tb/tb_mem/data_i
+add wave -noupdate -group TB_MEMORY_UNIT /top_tb/tb_mem/data_o
+add wave -noupdate -group TB_MEMORY_UNIT /top_tb/tb_mem/rd_data
+add wave -noupdate -group TB_MEMORY_UNIT /top_tb/tb_mem/mem_request
+add wave -noupdate -group TB_MEMORY_UNIT /top_tb/tb_mem/cyc_counter
+add wave -noupdate -group TB_MEMORY_UNIT /top_tb/tb_mem/aux_rd
+add wave -noupdate -group TB_MEMORY_UNIT /top_tb/tb_mem/aux_wr
+add wave -noupdate -group TB_MEMORY_UNIT /top_tb/tb_mem/num_of_instructions
+add wave -noupdate -group TB_MEMORY_UNIT /top_tb/tb_mem/hex_file_fd
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {446650 ps} 0}
+WaveRestoreCursors {{Cursor 1} {250000 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 348
 configure wave -valuecolwidth 100
@@ -249,4 +267,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {105636 ps} {552335 ps}
+WaveRestoreZoom {36547 ps} {483247 ps}

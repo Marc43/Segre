@@ -9,6 +9,7 @@ module segre_core (
     input  logic [WORD_SIZE-1:0] mem_rd_data_i,
     output logic [WORD_SIZE-1:0] mem_wr_data_o,
     output logic [ADDR_SIZE-1:0] addr_o,
+    input  logic mem_ready_i,
     output logic mem_rd_o,
     output logic mem_wr_o,
     output memop_data_type_e mem_data_type_o
@@ -60,6 +61,9 @@ logic [REG_SIZE-1:0] wb_rf_waddr;
 logic wb_rf_we;
 logic [WORD_SIZE-1:0] wb_new_pc;
 logic wb_tkbr;
+
+logic mem_stage_rdwr;
+assign mem_stage_rdwr = fsm_state == MEM_STATE && (mem_rd || mem_wr);
 
 assign addr_o          = fsm_state == MEM_STATE ? mem_addr       : if_addr;
 assign mem_rd_o        = fsm_state == MEM_STATE ? mem_rd         : if_mem_rd;
@@ -220,6 +224,9 @@ segre_controller controller (
     // Clock and Reset
     .clk_i (clk_i),
     .rsn_i (rsn_i),
+
+    .is_mem_instr_i (mem_stage_rdwr),
+    .mem_ready_i (mem_ready_i),
 
     // State
     .state_o (fsm_state)

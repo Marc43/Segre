@@ -11,8 +11,14 @@ import segre_pkg::*;
 module memory (
     input logic clk_i,
     input logic rsn_i,
+
+    // RD || WR request
     input logic rd_i,
     input logic wr_i,
+
+    // RD WR request ready
+    output logic mem_ready_o,
+
     input memop_data_type_e data_type_i,
     input logic [WORD_SIZE-1:0] addr_i,
     input logic [WORD_SIZE-1:0] data_i,
@@ -24,9 +30,21 @@ parameter TEXT_REGION = 0;
 //parameter DATA_REGION = 1024*32;
 parameter DATA_REGION = 32'hA000;
 
+// Duration of requests in cycles
+parameter REQUEST_DURATION = 10;
+
 logic [7:0] mem [NUM_WORDS-1:0];
 
 logic [WORD_SIZE-1:0] rd_data;
+
+// If read or write, there's a request to mem
+logic mem_request;
+assign mem_request = rd_i | wr_i;
+
+logic [$clog2(REQUEST_DURATION)-1:0] cyc_counter;
+
+logic aux_rd;
+logic aux_wr;
 
 int num_of_instructions = 0;
 
@@ -103,29 +121,60 @@ initial begin
 end
 
 always @(posedge clk_i) begin
-    if (rd_i) begin
-        rd_data = {mem[addr_i+3], mem[addr_i+2], mem[addr_i+1], mem[addr_i]};
-    end
-    if (wr_i) begin
-        case(data_type_i)
-            BYTE: begin
-                mem[addr_i] = data_i[7:0];
-            end
 
-            HALF: begin
-                mem[addr_i] = data_i[7:0];
-                mem[addr_i+1] = data_i[15:8];
-            end
-
-            WORD: begin
-                mem[addr_i] = data_i[7:0];
-                mem[addr_i+1] = data_i[15:8];
-                mem[addr_i+2] = data_i[23:16];
-                mem[addr_i+3] = data_i[31:24];
-            end
-            default: ;
-        endcase
+    if (!rsn_i) begin
+        cyc_counter = 'b0;
+        aux_rd = 1'b0;
+        aux_wr = 1'b0;
     end
+    else begin
+
+        // Start the count of REQUEST_DURATION cycles
+        if (mem_request || cyc_counter != 1) begin
+            cyc_counter = cyc_counter + 1;
+        end
+        else if (mem_request) begin
+            aux_rd = rd_i;
+            aux_wr = wr_i;
+        end
+
+        if (cyc_counter == REQUEST_DURATION) begin
+            mem_ready_o = 1'b1;
+            cyc_counter = 'b1;
+        end
+        else begin
+            mem_ready_o = 1'b0;
+        end
+
+        // Read
+        if (mem_ready_o && rd_i) begin
+            rd_data = {mem[addr_i+3], mem[addr_i+2], mem[addr_i+1], mem[addr_i]};
+        end
+
+        // Write
+        if (mem_ready_o && wr_i) begin
+            case(data_type_i)
+                BYTE: begin
+                    mem[addr_i] = data_i[7:0];
+                end
+
+                HALF: begin
+                    mem[addr_i] = data_i[7:0];
+                    mem[addr_i+1] = data_i[15:8];
+                end
+
+                WORD: begin
+                    mem[addr_i] = data_i[7:0];
+                    mem[addr_i+1] = data_i[15:8];
+                    mem[addr_i+2] = data_i[23:16];
+                    mem[addr_i+3] = data_i[31:24];
+                end
+                default: ;
+            endcase
+        end
+
+    end
+
     memory_verbose();
 end
 
