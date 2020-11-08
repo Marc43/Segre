@@ -62,6 +62,7 @@ memop_data_type_e memop_type;
 logic memop_rd;
 logic memop_wr;
 logic memop_sign_ext;
+alu_opcode_e alu_opcode;
 
 assign rf_raddr_a_o = rf_raddr_a;
 assign rf_raddr_b_o = rf_raddr_b;
@@ -82,7 +83,7 @@ segre_decode decode (
     .imm_b_type_o     (imm_b_type),
 
     // ALU
-    .alu_opcode_o     (alu_opcode_o),
+    .alu_opcode_o     (alu_opcode),
     .src_a_mux_sel_o  (src_a_mux_sel),
     .src_b_mux_sel_o  (src_b_mux_sel),
     .a_imm_mux_sel_o  (a_imm_mux_sel),
@@ -112,7 +113,7 @@ always_comb begin : alu_imm_b_mux
         IMM_B_I: imm_b = imm_i_type;
         IMM_B_S: imm_b = imm_s_type;
         IMM_B_J: imm_b = imm_j_type;
-        IMM_B_B: imm_b = imm_b_type; 
+        IMM_B_B: imm_b = imm_b_type;
         default: ;
     endcase
 end
@@ -160,6 +161,7 @@ always_ff @(posedge clk_i) begin
     memop_wr_o       = (fsm_state_i == ID_STATE) ? memop_wr : 1'b0;
     br_src_a_o       = br_src_a;
     br_src_b_o       = br_src_b;
+    alu_opcode_o     = alu_opcode;
 end
 
 endmodule

@@ -75,4 +75,5 @@ always_ff @(posedge clk_i) begin
     tkbr_o     = tkbr_i;
     new_pc_o   = new_pc_i;
 end
+
 endmodule
