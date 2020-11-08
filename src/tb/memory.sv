@@ -31,7 +31,7 @@ parameter TEXT_REGION = 0;
 parameter DATA_REGION = 32'hA000;
 
 // Duration of requests in cycles
-parameter REQUEST_DURATION = 10;
+parameter REQUEST_DURATION = 9;
 
 logic [7:0] mem [NUM_WORDS-1:0];
 
@@ -45,6 +45,9 @@ logic [$clog2(REQUEST_DURATION)-1:0] cyc_counter;
 
 logic aux_rd;
 logic aux_wr;
+
+// Internal signal to start the reading of the memory
+logic read_data;
 
 int num_of_instructions = 0;
 
@@ -133,26 +136,40 @@ always @(posedge clk_i) begin
         if (mem_request || cyc_counter != 1) begin
             cyc_counter = cyc_counter + 1;
         end
-        else if (mem_request) begin
+
+        if (mem_request) begin
             aux_rd = rd_i;
             aux_wr = wr_i;
         end
+        else begin
+            aux_rd = aux_rd;
+            aux_wr = aux_wr;
+        end
 
-        if (cyc_counter == REQUEST_DURATION) begin
+        /*
+         * - When REQUEST_DURATION-1 we start reading memory to have it at cycle REQUEST_DURATION (1 cycle after)
+         * - When REQUEST_DURATION, we set mem_ready_o to 1 and we stop reading.
+         * - When different from above, not ready and not reading.
+         */
+        if (cyc_counter == REQUEST_DURATION-1) begin
+            read_data = aux_rd;
+        end
+        else if (cyc_counter == REQUEST_DURATION) begin
+            read_data = 1'b0;
             mem_ready_o = 1'b1;
-            cyc_counter = 'b1;
         end
         else begin
+            read_data = 1'b0;
             mem_ready_o = 1'b0;
         end
 
         // Read
-        if (mem_ready_o && rd_i) begin
+        if (read_data && aux_rd) begin
             rd_data = {mem[addr_i+3], mem[addr_i+2], mem[addr_i+1], mem[addr_i]};
         end
 
         // Write
-        if (mem_ready_o && wr_i) begin
+        if (mem_ready_o && aux_wr) begin
             case(data_type_i)
                 BYTE: begin
                     mem[addr_i] = data_i[7:0];
@@ -178,14 +195,16 @@ always @(posedge clk_i) begin
     memory_verbose();
 end
 
-always @(posedge clk_i) data_o <= rd_data;
+always @(posedge clk_i) begin
+    data_o <= rd_data;
+end
 
 task memory_verbose;
-    if (rd_i) begin
+    if (mem_ready_o && rd_i) begin
         `uvm_info("memory", $sformatf("Reading data: %h from %h", rd_data, addr_i), UVM_MEDIUM)
     end
 
-    if (wr_i) begin
+    if (mem_ready_o && wr_i) begin
         `uvm_info("memory", $sformatf("Writing %s: %h at %h", data_type_i.name(), data_i, addr_i), UVM_MEDIUM)
     end
 endtask

@@ -78,6 +78,7 @@ segre_if_stage if_stage (
 
     // Memory
     .instr_i     (mem_rd_data_i),
+    .mem_ready_i (mem_ready_i),
     .pc_o        (if_addr),
     .mem_rd_o    (if_mem_rd),
 

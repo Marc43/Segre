@@ -17,6 +17,8 @@ typedef enum logic [6:0] {
   OPCODE_SYSTEM   = 7'h73
 } opcode_e;
 
+localparam NOP_INSTR = {{25{0}}, OPCODE_OP_IMM};
+
 typedef enum logic [5:0] {
     // Arithmetic
     ALU_ADD,
