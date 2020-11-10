@@ -1,0 +1,111 @@
+import segre_pkg::*;
+
+module segre_cache (
+
+    input logic clk_i,
+    input logic rsn_i,
+
+    input logic rd_i,
+    input logic wr_i,
+    input logic rcvd_mem_request_i,
+    input memop_data_type_e data_type_i,
+    input logic [WORD_SIZE-1:0] addr_i,
+    input logic [CACHE_LINE_SIZE-1:0] from_mem_cache_line_i,
+
+    output logic is_hit_o, // If 1 hit, 0 miss (es un temazo!) (fer servir com rd de memoria ~is_hit)
+    output logic writeback_mem_o
+    output logic [WORD_SIZE-1:0] data_o,
+    output logic [CACHE_LINE_SIZE-1:0] to_mem_cache_line_o,
+
+);
+
+parameter NUMBER_OF_LINES = 4;
+parameter M = $clog2(CACHE_LINE_SIZE);
+parameter N = $clog2(CACHE_LINE_SIZE*NUMBER_OF_LINES/8);
+parameter TAG_SIZE = WORD_SIZE - N + 1;
+
+logic [WORD_SIZE-1:N] addr_tag;
+logic [N-1:M] addr_index;
+logic [M-1:0] addr_byte;
+
+assign addr_tag   = addr_i[WORD_SIZE-1:N];
+assign addr_index = addr_i[N-1:M];
+assign addr_byte  = addr_i[M-1:0];
+
+logic [NUMBER_OF_LINES-1:0] valid_bits;
+logic [NUMBER_OF_LINES-1:0] dirty_bits;
+logic [NUMBER_OF_LINES-1:0][TAG_SIZE-1:0] cache_tags;
+logic [NUMBER_OF_LINES-1:0][CACHE_LINE_SIZE-1:0] cache_data;
+
+// TODO States for storing (reading tags, then writing data if possible)
+typedef enum logic [1:0] {
+    READING_TAGS,
+    WRITING_DATA
+} cache_wr_states_t;
+
+cache_wr_states_t cache_wr_state;
+
+logic waiting_mem;
+
+// TODO Divide read and write, always_comb and always respectively
+
+/*
+ *  How will petitions to main memory be?
+ *
+ *      - Do petition once and hope that memory will get back to you
+ *
+ *      - Issue the petition each cycle until memory answers
+ *
+ *      - What will do the ARB???? Find out what characteristics should have
+ *
+ */
+
+always @(posedge clk_i) begin
+    if (!rsn_i) begin
+        waiting_mem <= 0;
+        valid_bits <= 'b0;
+        dirty_bits <= 'b0;
+        cache_wr_state <= READING_TAGS;
+    end
+    else begin
+
+        if (waiting_mem && rcvd_mem_request_i) begin
+            // Write the read data from memory
+            cache_tags[addr_index] <= addr_tag;
+            cache_data[addr_index] <= from_mem_cache_line_i;
+            valid_bits[addr_index] <= 1;
+            dirty_bits[addr_index] <= 0;
+            waiting_mem <= 0;
+        end
+
+        if (rd_i && !waiting_mem) begin
+            is_hit_o <= valid_bits[addr_index] && (cache_tags[addr_index] == addr_tag);
+            data_o <= cache_data[addr_index];
+            writeback_mem_o <= 0;
+
+            if (!is_hit_o) begin
+                waiting_mem <= 1;
+            end
+        end
+        else if (wr_i && !waiting_mem) begin
+
+            if (cache_wr_state == READING_TAGS) begin
+                is_hit_o <= valid_bits[addr_index] && (cache_tags[addr_index] == addr_tag);
+                if (is_hit_o) begin
+                    cache_wr_state <= WRITING_DATA;
+                end
+                else begin
+                    waiting_mem <= 1;
+                end
+            end
+            else if (cache_wr_state == WRITING_DATA) begin
+                cache_tags[addr_index] <= addr_tag;
+                cache_data[addr_index] <= ; // FIXME Please write into the corresponding value of the line :(
+                dirty_bits[addr_index] <= 1;
+            end
+
+        end
+    end
+end
+
+endmodule : segre_cache

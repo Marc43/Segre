@@ -98,5 +98,6 @@ typedef enum logic [1:0] {
 parameter WORD_SIZE = 32;
 parameter ADDR_SIZE = 32;
 parameter REG_SIZE  = 5;
+parameter CACHE_LINE_SIZE = 128;
 
 endpackage : segre_pkg

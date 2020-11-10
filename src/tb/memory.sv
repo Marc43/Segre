@@ -156,6 +156,8 @@ always @(posedge clk_i) begin
         end
         else if (cyc_counter == REQUEST_DURATION) begin
             read_data = 1'b0;
+            aux_rd = 1'b0;
+            aux_wr = 1'b0;
             mem_ready_o = 1'b1;
         end
         else begin
