@@ -10,6 +10,7 @@ module segre_cache (
     input logic rcvd_mem_request_i,
     input memop_data_type_e data_type_i,
     input logic [WORD_SIZE-1:0] addr_i,
+    input logic [WORD_SIZE-1:0] data_i,
     input logic [CACHE_LINE_SIZE-1:0] from_mem_cache_line_i,
 
     output logic is_hit_o, // If 1 hit, 0 miss (es un temazo!) (fer servir com rd de memoria ~is_hit)
@@ -60,6 +61,21 @@ logic waiting_mem;
  *
  */
 
+task write_value_into_line(input logic [WORD_SIZE-1:0] data,
+                           input memop_data_type_e data_type,
+                           input logic [M-1:0] elem_byte,
+                           input logic [N-1:M] elem_index
+                           input logic [CACHE_LINE_SIZE-1:0] cache_line_in,
+                           output logic [CACHE_LINE_SIZE-1:0] cache_line_out) begin
+
+    int upper_index = elem_byte*elem_index + data_type*8 - 1;
+    int lower_index = elem_byte*elem_index;
+
+    cache_line_out <= cache_line_in;
+    cache_line_out[upper_index:lower_index] <= data;
+
+end : write_value_into_line
+
 always @(posedge clk_i) begin
     if (!rsn_i) begin
         waiting_mem <= 0;
@@ -84,24 +100,41 @@ always @(posedge clk_i) begin
             writeback_mem_o <= 0;
 
             if (!is_hit_o) begin
+
+                if (dirty_bits[addr_index]) begin
+                    writeback_mem_o <= 1;
+                    to_mem_cache_line_o <= cache_data[addr_index];
+                end
+
                 waiting_mem <= 1;
             end
+
         end
         else if (wr_i && !waiting_mem) begin
 
             if (cache_wr_state == READING_TAGS) begin
                 is_hit_o <= valid_bits[addr_index] && (cache_tags[addr_index] == addr_tag);
+
                 if (is_hit_o) begin
                     cache_wr_state <= WRITING_DATA;
                 end
                 else begin
+
+                    if (dirty_bits[addr_index]) begin
+                        writeback_mem_o <= 1;
+                        to_mem_cache_line_o <= cache_data[addr_index];
+                    end
+
                     waiting_mem <= 1;
                 end
+
             end
             else if (cache_wr_state == WRITING_DATA) begin
                 cache_tags[addr_index] <= addr_tag;
-                cache_data[addr_index] <= ; // FIXME Please write into the corresponding value of the line :(
                 dirty_bits[addr_index] <= 1;
+                write_value_into_line(data_i, data_type_i, addr_byte, addr_index,
+                                      cache_data[addr_index], cache_data[addr_index]);
+                waiting_mem <= 0;
             end
 
         end
