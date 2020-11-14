@@ -38,7 +38,6 @@ logic [NUMBER_OF_LINES-1:0][TAG_SIZE-1:0] cache_tags;
 logic [NUMBER_OF_LINES-1:0][CACHE_LINE_SIZE_BYTES-1:0][7:0] cache_data;
 
 typedef enum logic [2:0] {
-    IDLE_WR,
     READING_TAGS,
     WRITING_DATA,
     WRITEBACK_WR,
@@ -46,7 +45,6 @@ typedef enum logic [2:0] {
 } cache_wr_states_t;
 
 typedef enum logic [1:0] {
-    IDLE_RD,
     READING_DATA,
     WRITEBACK_RD,
     REQ_MEM_DATA_RD
@@ -79,23 +77,28 @@ task write_value_into_line(input logic [WORD_SIZE-1:0] data, input memop_data_ty
 
     case (data_type)
         BYTE: begin
-            cache_line[elem_byte] <= data[7:0];
+            cache_line[elem_byte] = data[7:0];
+            $display($sformatf("mi linea de cashe: %h", cache_line));
         end
 
         HALF: begin
-            cache_line[elem_byte] <= data[7:0];
-            cache_line[elem_byte+1] <= data[15:8];
+            cache_line[elem_byte] = data[7:0];
+            cache_line[elem_byte+1] = data[15:8];
         end
 
         WORD: begin
-            cache_line[elem_byte] <= data[7:0];
-            cache_line[elem_byte+1] <= data[15:8];
-            cache_line[elem_byte+2] <= data[23:16];
-            cache_line[elem_byte+3] <= data[31:24];
+            cache_line[elem_byte] = data[7:0];
+            cache_line[elem_byte+1] = data[15:8];
+            cache_line[elem_byte+2] = data[23:16];
+            cache_line[elem_byte+3] = data[31:24];
         end
 
         default: $display("What the fuck, which memop_data_type_e then?!");
     endcase
+
+    $display($sformatf("dtype name %s value %h", data_type.name(), data_type));
+    $display($sformatf("data: %h", data));
+    $display($sformatf("mi linea de cashe: %h", cache_line));
 
 endtask : write_value_into_line
 
@@ -124,16 +127,15 @@ endtask : read_from_cache
 always_ff @(posedge clk_i) begin
 
     if (!rsn_i) begin
-        cache_wr_state <= IDLE_WR;
-        cache_rd_state <= IDLE_RD;
+        cache_wr_state <= READING_TAGS;
+        cache_rd_state <= READING_DATA;
     end
     else begin
 
         /*
          * Read next state
          */
-        if (rd_i && cache_rd_state == IDLE_RD
-                 && cache_wr_state == IDLE_WR) begin
+        if (rd_i && cache_rd_state == READING_DATA) begin
             if (!is_hit) begin
                 if (dirty_bits[addr_index]) begin
                     cache_rd_state <= WRITEBACK_RD;
@@ -156,19 +158,10 @@ always_ff @(posedge clk_i) begin
             cache_rd_state <= REQ_MEM_DATA_RD;
         end
 
-        if (cache_rd_state == READING_DATA) begin
-            cache_rd_state <= IDLE_RD;
-        end
-
         /*
          * Write next state
          */
-        if (wr_i && cache_wr_state == IDLE_WR
-                 && cache_rd_state == IDLE_RD) begin
-            cache_wr_state <= READING_TAGS;
-        end
-
-        if (cache_wr_state == READING_TAGS) begin
+        if (wr_i && cache_wr_state == READING_TAGS) begin
             if (is_hit) begin
                 cache_wr_state <= WRITING_DATA;
             end
@@ -182,7 +175,11 @@ always_ff @(posedge clk_i) begin
         end
 
         if (cache_wr_state == WRITING_DATA) begin
-            cache_wr_state <= IDLE_WR;
+            cache_wr_state <= READING_TAGS;
+        end
+
+        if (cache_wr_state == WRITEBACK_WR) begin
+            cache_wr_state <= WRITING_DATA;
         end
 
         if (cache_wr_state == REQ_MEM_DATA_WR && rcvd_mem_request_i) begin
@@ -193,67 +190,51 @@ end
 
 always_comb begin
     if (!rsn_i) begin
-        valid_bits <= 'b0;
-        dirty_bits <= 'b0;
-        writeback_mem_o <= 0;
-        to_mem_cache_line_o <= 0;
+        valid_bits = 'b0;
+        dirty_bits = 'b0;
+        writeback_mem_o = 0;
+        to_mem_cache_line_o = 0;
     end
     else begin
 
         /*
          * Read states
          */
-        if (cache_rd_state == IDLE_RD) begin
-            writeback_mem_o <= 0;
-        end
-
         if (cache_rd_state == READING_DATA) begin
             read_from_cache(addr_index, addr_byte, data_type_i, data_o);
         end
-
         // It is a miss and there's a collision, writeback to memory
-        if (cache_rd_state == WRITEBACK_RD) begin
-            writeback_mem_o <= 1;
-            to_mem_cache_line_o <= cache_data[addr_index];
+        else if (cache_rd_state == WRITEBACK_RD) begin
+            writeback_mem_o = 1;
+            to_mem_cache_line_o = cache_data[addr_index];
         end
-
         // Memory request has been received
-        if (cache_rd_state == REQ_MEM_DATA_RD
-            && rcvd_mem_request_i) begin
-            cache_tags[addr_index] <= addr_tag;
-            cache_data[addr_index] <= from_mem_cache_line_i;
-            valid_bits[addr_index] <= 1;
-            dirty_bits[addr_index] <= 0;
+        else if (cache_rd_state == REQ_MEM_DATA_RD && rcvd_mem_request_i) begin
+            cache_tags[addr_index] = addr_tag;
+            cache_data[addr_index] = from_mem_cache_line_i;
+            valid_bits[addr_index] = 1;
+            dirty_bits[addr_index] = 0;
         end
 
         /*
          * Write states
          */
-        if (cache_wr_state == IDLE_WR) begin
-            writeback_mem_o <= 0;
-        end
-
         if (cache_wr_state == READING_TAGS) begin
-            if (is_hit) begin
-                dirty_bits[addr_index] <= 1;
-            end
+            writeback_mem_o = 0;
         end
-
-        if (cache_wr_state == WRITING_DATA) begin
-            cache_tags[addr_index] <= addr_tag;
+        else if (cache_wr_state == WRITING_DATA) begin
+            dirty_bits[addr_index] = 1;
             write_value_into_line(data_i, data_type_i, addr_byte, cache_data[addr_index]);
         end
-
-        if (cache_wr_state == WRITEBACK_WR) begin
-            writeback_mem_o <= 1;
-            to_mem_cache_line_o <= cache_data[addr_index];
+        else if (cache_wr_state == WRITEBACK_WR) begin
+            writeback_mem_o = 1;
+            to_mem_cache_line_o = cache_data[addr_index];
         end
-
-        if (cache_wr_state == REQ_MEM_DATA_WR && rcvd_mem_request_i) begin
-            cache_tags[addr_index] <= addr_tag;
-            cache_data[addr_index] <= from_mem_cache_line_i;
-            valid_bits[addr_index] <= 1;
-            dirty_bits[addr_index] <= 0;
+        else if (cache_wr_state == REQ_MEM_DATA_WR && rcvd_mem_request_i) begin
+            cache_tags[addr_index] = addr_tag;
+            cache_data[addr_index] = from_mem_cache_line_i;
+            valid_bits[addr_index] = 1;
+            dirty_bits[addr_index] = 0;
         end
 
     end
