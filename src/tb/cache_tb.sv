@@ -31,15 +31,15 @@ module cache_tb;
     memop_data_type_e data_type;
     logic [WORD_SIZE-1:0] addr;
     logic [WORD_SIZE-1:0] data_in;
-    logic [CACHE_LINE_SIZE-1:0] from_mem_cache_in;
+    logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] from_mem_cache_in;
     logic is_hit;
     logic writeback_mem;
     logic [WORD_SIZE-1:0] data_out;
-    logic [CACHE_LINE_SIZE-1:0] to_mem_cache_out;
+    logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] to_mem_cache_out;
 
     parameter NUMBER_OF_LINES = 4;
-    parameter M = $clog2(CACHE_LINE_SIZE);
-    parameter N = $clog2(CACHE_LINE_SIZE*NUMBER_OF_LINES/8);
+    parameter M = $clog2(CACHE_LINE_SIZE_BITS);
+    parameter N = $clog2(CACHE_LINE_SIZE_BITS*NUMBER_OF_LINES/8);
     parameter TAG_SIZE = WORD_SIZE - N + 1;
 
     logic [WORD_SIZE-1:N] addr_tag;
@@ -48,7 +48,7 @@ module cache_tb;
 
     assign addr = {addr_tag, addr_index, addr_byte};
 
-    segre_cache
+    segre_cache cache
     (
         .clk_i (clk),
         .rsn_i (rsn),
@@ -64,8 +64,13 @@ module cache_tb;
         .writeback_mem_o (writeback_mem),
         .data_o (data_out),
         .to_mem_cache_line_o (to_mem_cache_out)
+    );
 
-    )
+    `define display_outputs \
+        $display($sformatf("is_hit_o: %h", is_hit)); \
+        $display($sformatf("writeback_mem_o: %h", writeback_mem)); \
+        $display($sformatf("data_o: %h", data_out)); \
+        $display($sformatf("to_mem_cache_line_o: %h", to_mem_cache_out));
 
     initial begin
         clk <= 0;
@@ -99,14 +104,40 @@ module cache_tb;
         rd = 1;
         wr = 0;
 
+        rcvd_mem_req = 0;
+        from_mem_cache_in = 0;
 
+        @(posedge clk); // Acknowledge the read
+
+        repeat (10) @(posedge clk); // It's a miss, memory spends 10 cycles to read the line
+
+        addr_tag = 0;
+        addr_index = 0;
+        addr_byte = 0;
+
+        rd = 1;
+        wr = 0;
+
+        rcvd_mem_req = 1; // Line sent from memory
+        from_mem_cache_in = -1;
+
+        @(posedge clk); // Cache stores the line in the next cycle
+
+        rcvd_mem_req = 0;
+
+        @(posedge clk); // Ready petition again
+
+        rd = 0;
+        rcvd_mem_req = 0;
 
         @(posedge clk);
 
+        rd = 1;
 
+        @(posedge clk);
 
-
-
+        rd = 0;
 
     end
+
 endmodule : cache_tb
