@@ -37,11 +37,6 @@ module cache_tb;
     logic [WORD_SIZE-1:0] data_out;
     logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] to_mem_cache_out;
 
-    parameter NUMBER_OF_LINES = 4;
-    parameter M = $clog2(CACHE_LINE_SIZE_BITS);
-    parameter N = $clog2(CACHE_LINE_SIZE_BITS*NUMBER_OF_LINES/8);
-    parameter TAG_SIZE = WORD_SIZE - N + 1;
-
     logic [WORD_SIZE-1:N] addr_tag;
     logic [N-1:M] addr_index;
     logic [M-1:0] addr_byte;
@@ -92,7 +87,7 @@ module cache_tb;
 
         @(posedge clk); // Wait for hit/miss
 
-        if (!is_hit) begin
+        if (!is_hit || writeback_mem) begin
             repeat (10) @(posedge clk); // It's a miss, memory spends 10 cycles to read the line
 
             // FIXME remove rd and wr from here m8
@@ -138,25 +133,25 @@ module cache_tb;
          *
          */
 
-//        for (int i = 0; i < NUMBER_OF_LINES; i++) begin
-//            for (int j = 0; j < CACHE_LINE_SIZE_BYTES; j++) begin
-//                petition(0, i, j, BYTE, 1);
-//            end
-//        end
-//
-//        for (int i = 0; i < NUMBER_OF_LINES; i++) begin
-//            for (int j = 0; j <= CACHE_LINE_SIZE_BYTES-2; j = j + 2) begin
-//                petition(0, i, j, HALF, 1);
-//            end
-//        end
-//
-//        for (int i = 0; i < NUMBER_OF_LINES; i++) begin
-//            for (int j = 0; j <= CACHE_LINE_SIZE_BYTES-4; j = j + 4) begin
-//                petition(0, i, j, WORD, 1);
-//            end
-//        end
-//
-//
+        for (int i = 0; i < NUMBER_OF_LINES; i++) begin
+            for (int j = 0; j < CACHE_LINE_SIZE_BYTES; j++) begin
+                petition(0, i, j, BYTE, 1, 0);
+            end
+        end
+
+        for (int i = 0; i < NUMBER_OF_LINES; i++) begin
+            for (int j = 0; j <= CACHE_LINE_SIZE_BYTES-2; j = j + 2) begin
+                petition(0, i, j, HALF, 1, 0);
+            end
+        end
+
+        for (int i = 0; i < NUMBER_OF_LINES; i++) begin
+            for (int j = 0; j <= CACHE_LINE_SIZE_BYTES-4; j = j + 4) begin
+                petition(0, i, j, WORD, 1, 0);
+            end
+        end
+
+
 //        for (int i = 0; i < NUMBER_OF_LINES; i++) begin
 //            for (int j = 0; j < CACHE_LINE_SIZE_BYTES; j++) begin
 //                petition(0, i, j, BYTE, 0, ((32'hdead_beef) >> j));
@@ -182,13 +177,17 @@ module cache_tb;
 //                petition(0, i, j, WORD, 0, ((32'hdead_beef) >> j));
 //            end
 //        end
+
+
+//        for (int i = 0; i < NUMBER_OF_LINES; i++) begin
+//            petition(0, i, 0, WORD, 0, 32'hdead_beef);
+//            petition(1, i, 0, WORD, 0, 32'hcaca_beef);
+//        end
 //
 
-
-        for (int i = 0; i < NUMBER_OF_LINES; i++) begin
-            petition(0, i, 0, WORD, 0, 32'hdead_beef);
-            petition(1, i, 0, WORD, 0, 32'hcaca_beef);
-        end
+//        petition(0, 0, 0, WORD, 1, 'h0);
+//        petition(1, 0, 0, WORD, 0, 32'hcaca_beef);
+//        petition(2, 0, 0, WORD, 1, 32'hcaca_beef);
 
         repeat(50) @(posedge clk);
         $finish;
