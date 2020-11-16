@@ -91,10 +91,6 @@ typedef enum logic [1:0] {
     WORD
 } memop_data_type_e;
 
-/********************
-* RISC-V PARAMETERS *
-********************/
-
 parameter WORD_SIZE = 32;
 parameter ADDR_SIZE = 32;
 parameter REG_SIZE  = 5;
@@ -104,5 +100,15 @@ parameter NUMBER_OF_LINES = 4;
 parameter M = $clog2(CACHE_LINE_SIZE_BITS);
 parameter N = $clog2(NUMBER_OF_LINES) + M;
 parameter TAG_SIZE = WORD_SIZE - N + 1;
+
+typedef struct packed {
+    logic rd;
+    logic wr;
+    logic [WORD_SIZE-1:0] addr;
+    logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] cache_line;
+} cache_mem_req_t;
+
+parameter ARB_BUF_SIZE = 16;
+parameter ARB_PTR_SIZE = $clog2(ARB_BUF_SIZE);
 
 endpackage : segre_pkg
