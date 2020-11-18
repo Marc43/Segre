@@ -91,15 +91,22 @@ typedef enum logic [1:0] {
     WORD
 } memop_data_type_e;
 
+//GENERAL SIZES
 parameter WORD_SIZE = 32;
 parameter ADDR_SIZE = 32;
 parameter REG_SIZE  = 5;
+
+//CACHE PARAMETERS
 parameter CACHE_LINE_SIZE_BITS = 128;
 parameter CACHE_LINE_SIZE_BYTES = CACHE_LINE_SIZE_BITS/8;
 parameter NUMBER_OF_LINES = 4;
 parameter M = $clog2(CACHE_LINE_SIZE_BITS);
 parameter N = $clog2(NUMBER_OF_LINES) + M;
 parameter TAG_SIZE = WORD_SIZE - N + 1;
+
+//STORE BUFFER
+parameter NUM_SB_ENTRIES = 4;
+parameter SB_ENTRY_BITS = $clog2(NUM_SB_ENTRIES);//Number of bits needed to represent NUM_SB_ENTRIES
 
 typedef struct packed {
     logic rd;
