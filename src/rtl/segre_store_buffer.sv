@@ -26,6 +26,14 @@ module segre_store_buffer(
 
 //---------------------------INTERNAL STRUCTURES------------------------------------//
 //Entries of the SB
+// TODO
+// good idea to collapse into one structure
+// struct_t data_entries, addr_entires
+//
+//typedef struct packed {
+//    logic [WORD_SIZE-1:0] data;
+//    logic [WORD_SIZE-1:0] addr;
+//} cache_mem_req_t;
 logic [SB_ENTRY_BITS-1:0][WORD_SIZE-1:0] data_entries;
 logic [SB_ENTRY_BITS-1:0][WORD_SIZE-1:0] addr_entries;
 
@@ -34,13 +42,28 @@ logic [SB_ENTRY_BITS-1:0] head;
 logic [SB_ENTRY_BITS-1:0] tail;
 logic is_full;
 
+/*
+ * Filthy definition of states:
+ *  - EMPTY (if empty and cache not busy do nothing)
+ *
+ *  - NOT_EMPTY (hi ha alguna peticio adins, si estem en aquest estat
+ *      i la cache no esta busy escrivim la peticio mes vella a la cache,
+ *      si la cache esta busy i es un load, comprovem si es hit si es hit fem
+ *      servir la dada del SB, si miss al SB i hit a cache (sudote), si hi ha dos misses,
+ *      anem a memoria a demanarli al papa. Si es un store el fotem, comprovem si estem full,
+ *      en aquest cas anem a estat full del estambul)
+ *  - FULL  (if full and store, stall pipeline and jump to FLUSHING :3 )
+ *
+ *  - FLUSHING :3 (disable writes, when finished, jump to EMPTY (writes allowed))
+ */
+
 //--------------------SEQUENTIAL LOGIC AND STATE MANAGEMENT--------------------------//
 always_ff @ (posedge clk_i, negedge rsn_i) begin
     //Ara mateix ni zorra de que posar aquí, només l'estat inicial
     if(!rsn_i) begin
-       head <= 'b0; 
+       head <= 'b0;
        tail <= 'b0;
-       is_full <= 0; 
+       is_full <= 0;
     end
 end
 
@@ -51,7 +74,7 @@ always_comb begin
         //TODO
     end
 
-    //Behavior when dealing with a LOAD    
+    //Behavior when dealing with a LOAD
     if (is_load_i) begin
         //TODO
     end
