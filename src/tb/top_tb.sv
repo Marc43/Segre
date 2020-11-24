@@ -30,34 +30,10 @@ module top_tb;
     string test_name;
     int result_file_fd;
 
-    segre_core_if_t segre_core_if();
+    segre_soc soc ();
 
-    assign segre_core_if.clk = clk;
-    assign segre_core_if.rsn = rsn;
-
-    segre_core dut(
-        .clk_i           (segre_core_if.clk),
-        .rsn_i           (segre_core_if.rsn),
-        .mem_rd_data_i   (segre_core_if.mem_rd_data),
-        .mem_wr_data_o   (segre_core_if.mem_wr_data),
-        .addr_o          (segre_core_if.addr),
-        .mem_ready_i     (segre_core_if.mem_ready),
-        .mem_rd_o        (segre_core_if.mem_rd),
-        .mem_wr_o        (segre_core_if.mem_wr),
-        .mem_data_type_o (segre_core_if.mem_data_type)
-    );
-
-    memory tb_mem (
-        .clk_i       (segre_core_if.clk),
-        .rsn_i       (rsn),
-        .data_i      (segre_core_if.mem_wr_data),
-        .data_o      (segre_core_if.mem_rd_data),
-        .addr_i      (segre_core_if.addr),
-        .mem_ready_o (segre_core_if.mem_ready),
-        .rd_i        (segre_core_if.mem_rd),
-        .wr_i        (segre_core_if.mem_wr),
-        .data_type_i (segre_core_if.mem_data_type)
-    );
+    assign soc.segre_core_if.clk = clk;
+    assign soc.segre_core_if.rsn = rsn;
 
     initial begin
         // Check for test files and setup fds for the test bench and memory
@@ -100,7 +76,7 @@ module top_tb;
     endtask
 
     function bit keep_running_tb();
-        if (segre_core_if.addr < tb_mem.DATA_REGION && segre_core_if.mem_rd_data == 32'hfff01073) begin
+        if (soc.segre_core_if.addr < soc.tb_mem.DATA_REGION && soc.segre_core_if.mem_rd_data == 32'hfff01073) begin
             return 0;
         end
 
@@ -114,7 +90,7 @@ module top_tb;
         string line;
         static bit error = 0;
 
-        assign segre_rf = dut.segre_rf.rf_reg;
+        assign segre_rf = soc.dut.segre_rf.rf_reg;
 
         if (result_file_fd) begin
             // Read results from file
@@ -155,13 +131,13 @@ module top_tb;
         forever begin
             static string instr_decoded;
             @(posedge clk);
-            if (segre_core_if.mem_rd) begin
-                if (segre_core_if.addr < tb_mem.DATA_REGION) begin
-                    $display("DATA TO SEND LIBDECODER: %0d", segre_core_if.mem_rd_data);
+            if (soc.segre_core_if.mem_rd) begin
+                if (soc.segre_core_if.addr < soc.tb_mem.DATA_REGION) begin
+                    $display("DATA TO SEND LIBDECODER: %0d", soc.segre_core_if.mem_rd_data);
 `ifndef USE_MODELSIM
-                    instr_decoded = decode_instruction(int'(segre_core_if.mem_rd_data));
+                    instr_decoded = decode_instruction(int'(soc.segre_core_if.mem_rd_data));
 `endif
-                    `uvm_info("top_tb", $sformatf("PC: 0x%0h: %s (0x%0h) ", segre_core_if.addr, instr_decoded, segre_core_if.mem_rd_data), UVM_LOW)
+                    `uvm_info("top_tb", $sformatf("PC: 0x%0h: %s (0x%0h) ", soc.segre_core_if.addr, instr_decoded, soc.segre_core_if.mem_rd_data), UVM_LOW)
                 end
             end
         end

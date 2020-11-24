@@ -31,6 +31,7 @@ vlog -sv -work $work_dir $rtl_dir/segre_ex_stage.sv
 vlog -sv -work $work_dir $rtl_dir/segre_mem_stage.sv
 vlog -sv -work $work_dir $rtl_dir/segre_register_file.sv
 vlog -sv -work $work_dir $rtl_dir/segre_core.sv
+vlog -sv -work $work_dir $rtl_dir/segre_soc.sv
 
 # Compile tb
 vlog -sv -work $work_dir $tb_dir/interface.sv
