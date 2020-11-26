@@ -24,23 +24,18 @@ module segre_store_buffer(
     output logic is_hit_o;
 );
 
-//---------------------------INTERNAL STRUCTURES------------------------------------//
-//Entries of the SB
-// TODO
-// good idea to collapse into one structure
-// struct_t data_entries, addr_entires
-//
-//typedef struct packed {
-//    logic [WORD_SIZE-1:0] data;
-//    logic [WORD_SIZE-1:0] addr;
-//} cache_mem_req_t;
-logic [SB_ENTRY_BITS-1:0][WORD_SIZE-1:0] data_entries;
-logic [SB_ENTRY_BITS-1:0][WORD_SIZE-1:0] addr_entries;
+//---------------------------INTERNAL STRUCTURES/DEFINITIONS------------------------//
+//Definition and declaration of entries of the SB
+typedef struct packed {
+    logic [WORD_SIZE-1:0] data;
+    logic [WORD_SIZE-1:0] addr;
+} sb_entry_t;
+//I hope this garbage is right because it is not highlighting it...
+sb_entry_t [SB_ENTRY_BITS-1:0] sb_entries;
 
 //Pointers and indicators
 logic [SB_ENTRY_BITS-1:0] head;
 logic [SB_ENTRY_BITS-1:0] tail;
-logic is_full;
 
 /*
  * Filthy definition of states:
@@ -56,32 +51,63 @@ logic is_full;
  *
  *  - FLUSHING :3 (disable writes, when finished, jump to EMPTY (writes allowed))
  */
+ typedef enum logic [1:0] {
+    EMPTY,
+    NOT_EMPTY,
+    FULL,
+    FLUSHING
+ } sb_states_t;
 
-//--------------------SEQUENTIAL LOGIC AND STATE MANAGEMENT--------------------------//
+sb_states_t sb_state;
+sb_states_t sb_next_state;
+
+//--------------------SEQUENTIAL LOGIC MANAGEMENT----------------------------------//
+//State switching
 always_ff @ (posedge clk_i, negedge rsn_i) begin
-    //Ara mateix ni zorra de que posar aquí, només l'estat inicial
-    if(!rsn_i) begin
+    //Initial state
+    if (!rsn_i) begin
        head <= 'b0;
        tail <= 'b0;
-       is_full <= 0;
+       sb_state <= EMPTY;
     end
+    //Next states
+    else begin
+        sb_state <= sb_next_state;
+    end
+end
+
+//Pointer udpates (no se si ho estic fent bé Marc, m'estic inspirant una mica
+//entre la separació de lògica i estats que veig al arbiter)
+always @(posedge clk_i, negedge rsn_i) begin
+    if (is_store_i && (sb_state == EMPTY || sb_state == NOT_EMPTY))
+        //Add new entry
+        sb_entries[tail].data <= data_i;
+        sb_entries[tail].address <= address_i;
+        tail <= tail+1;
 end
 
 //-----------------------COMBINATORIAL LOGIC MANAGEMENT------------------------------//
 always_comb begin
-    //Behavior when dealing with a STORE
-    else if (is_store_i) begin
-        //TODO
+    //Initial behavior coming from a reset
+    if (!rsn_i) begin
+        sb_next_state = EMPTY;
     end
+    else begin
+        //Behavior when dealing with a STORE
+        if (is_store_i) begin
+            if (sb_state == EMPTY) begin
+                sb_next_state = NOT_EMPTY;
+            end
+        end
 
-    //Behavior when dealing with a LOAD
-    if (is_load_i) begin
-        //TODO
+        //Behavior when dealing with a LOAD
+        else if (is_load_i) begin
+            //TODO
+        end
+
+        //Behavior when dealing with an ALU op
+        else if (is_alu_i) begin
+            //TODO
+        end
     end
-
-    //Behavior when dealing with an ALU op
-    else if (is_alu_i) begin
-        //TODO
-    end
-
 end
