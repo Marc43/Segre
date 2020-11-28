@@ -4,40 +4,54 @@ import segre_pkg::*;
 //Ara mateix és una mica l'esquelet incomplet, molt probablement li falten estats o està mal plantejat :(
 
 //Port definition
-module segre_store_buffer(
+module segre_store_buffer (
+
     //Standard signals
-    input logic clk_i;
-    input logic rsn_i;
+    input logic clk_i,
+    input logic rsn_i,
 
     //Input ports
-    input logic[WORD_SIZE-1:0] data_i;
-    input logic[WORD_SIZE-1:0] addr_i;
+    input logic[WORD_SIZE-1:0] data_i,
+    input logic[WORD_SIZE-1:0] addr_i,
     //Input signals to determine behavior. Only one can be active at a time.
-    input logic is_load_i;
-    input logic is_store_i;
-    input logic is_alu_i;
+    input logic is_load_i,
+    input logic is_store_i,
+    input logic is_alu_i,
 
     //Output ports
-    output logic[WORD_SIZE-1:0] data_o;
-    output logic[WORD_SIZE-1:0] addr_o;
+    output logic[WORD_SIZE-1:0] data_o,
+    output logic[WORD_SIZE-1:0] addr_o,
     //Output signals depending on behavior
-    output logic is_hit_o;
+    output logic is_hit_o
+
 );
 
 //---------------------------INTERNAL STRUCTURES/DEFINITIONS------------------------//
 //Definition and declaration of entries of the SB
 typedef struct packed {
     logic [WORD_SIZE-1:0] data;
-    logic [WORD_SIZE-1:0] addr;
+    logic [WORD_SIZE-1:0] address;
 } sb_entry_t;
 //I hope this garbage is right because it is not highlighting it...
-sb_entry_t [SB_ENTRY_BITS-1:0] sb_entries;
+sb_entry_t [(2**SB_ENTRY_BITS)-1:0] sb_entries;
 
 //Pointers and indicators
 logic [SB_ENTRY_BITS-1:0] head;
 logic [SB_ENTRY_BITS-1:0] tail;
 
+logic [WORD_SIZE-1:0] data_from_pos;
+logic [WORD_SIZE-1:0] addr_from_pos;
+logic [WORD_SIZE-1:0] data_from_head;
+logic [WORD_SIZE-1:0] addr_from_head;
+
+logic [(2**SB_ENTRY_BITS)-1:0] is_hit_bits;
+logic is_hit;
+logic [(2**SB_ENTRY_BITS)-1:0] hit_position;
+
+logic [(2**SB_ENTRY_BITS)-1:0] sb_valid_entry;
+
 /*
+ * FIXME NOT VALID ANYMOREEEEEEE
  * Filthy definition of states:
  *  - EMPTY (if empty and cache not busy do nothing)
  *
@@ -46,29 +60,31 @@ logic [SB_ENTRY_BITS-1:0] tail;
  *      si la cache esta busy i es un load, comprovem si es hit si es hit fem
  *      servir la dada del SB, si miss al SB i hit a cache (sudote), si hi ha dos misses,
  *      anem a memoria a demanarli al papa. Si es un store el fotem, comprovem si estem full,
- *      en aquest cas anem a estat full del estambul)
+ *      en aquest cas anem a estat full de
  *  - FULL  (if full and store, stall pipeline and jump to FLUSHING :3 )
  *
  *  - FLUSHING :3 (disable writes, when finished, jump to EMPTY (writes allowed))
  */
  typedef enum logic [1:0] {
-    EMPTY,
-    NOT_EMPTY,
-    FULL,
+    NOT_FLUSHING,
     FLUSHING
  } sb_states_t;
 
 sb_states_t sb_state;
 sb_states_t sb_next_state;
 
+logic full, empty;
+
+assign full = (head - 1) == tail;
+assign empty = head == tail;
+
 //--------------------SEQUENTIAL LOGIC MANAGEMENT----------------------------------//
 //State switching
-always_ff @ (posedge clk_i, negedge rsn_i) begin
+always_ff @ (posedge clk_i, negedge rsn_i) begin : update_state
     //Initial state
     if (!rsn_i) begin
-       head <= 'b0;
        tail <= 'b0;
-       sb_state <= EMPTY;
+       sb_state <= NOT_FLUSHING;
     end
     //Next states
     else begin
@@ -76,38 +92,120 @@ always_ff @ (posedge clk_i, negedge rsn_i) begin
     end
 end
 
-//Pointer udpates (no se si ho estic fent bé Marc, m'estic inspirant una mica
-//entre la separació de lògica i estats que veig al arbiter)
-always @(posedge clk_i, negedge rsn_i) begin
-    if (is_store_i && (sb_state == EMPTY || sb_state == NOT_EMPTY))
-        //Add new entry
-        sb_entries[tail].data <= data_i;
-        sb_entries[tail].address <= address_i;
-        tail <= tail+1;
-end
-
-//-----------------------COMBINATORIAL LOGIC MANAGEMENT------------------------------//
-always_comb begin
-    //Initial behavior coming from a reset
+always_comb begin : next_state
     if (!rsn_i) begin
-        sb_next_state = EMPTY;
+        sb_next_state = NOT_FLUSHING;
     end
     else begin
-        //Behavior when dealing with a STORE
-        if (is_store_i) begin
-            if (sb_state == EMPTY) begin
-                sb_next_state = NOT_EMPTY;
+        case (sb_state)
+            NOT_FLUSHING: begin
+               if (is_store_i && full || is_load_i && !is_hit) begin
+                sb_next_state = FLUSHING;
+               end
             end
-        end
 
-        //Behavior when dealing with a LOAD
-        else if (is_load_i) begin
-            //TODO
-        end
-
-        //Behavior when dealing with an ALU op
-        else if (is_alu_i) begin
-            //TODO
-        end
+            FLUSHING: begin
+                if (empty) begin
+                    sb_next_state = NOT_FLUSHING;
+                end
+            end
+        endcase
     end
 end
+
+//Pointer udpates (no se si ho estic fent bé Marc, m'estic inspirant una mica
+//entre la separació de lògica i estats que veig al arbiter) (ho fas genial, pero mhe petat uns estats)
+always_ff @(posedge clk_i, negedge rsn_i) begin : writing_to_sb
+    //Initial behavior coming from a reset
+    if (!rsn_i) begin
+        sb_entries <= 0;
+        head = 0;
+    end
+    else begin
+        case (sb_state)
+            NOT_FLUSHING: begin
+                if (is_store_i && !full) begin
+                    //Add new entry
+                    sb_entries[tail].data <= data_i;
+                    sb_entries[tail].address <= addr_i;
+                    tail <= tail+1;
+                end
+
+                if (is_alu_i) head = head + 1;
+            end
+
+            FLUSHING: begin
+                if (!empty) head = head + 1;
+            end
+        endcase
+    end
+end
+
+always_comb begin : reading_from_sb
+    if (!rsn_i) begin
+        data_from_pos = 0;
+        addr_from_pos = 0;
+        data_from_head = 0;
+        addr_from_head = 0;
+        sb_valid_entry = 'b0;
+    end
+    else begin
+
+        case (sb_state)
+
+            NOT_FLUSHING: begin
+                if (is_store_i && !full) sb_valid_entry[tail] = 1;
+
+                if (is_load_i) begin
+                // Iterate over the structure to see whether there is
+                // a matching address (hit), or not (miss)
+                    if (is_hit) begin
+                        // I have to serve the data through the hit buffer, not to the cache
+                        // but to the end of the stage. There will be a mux in the end of the stage
+                        // and the controll will be with is_hit_o
+                        //
+                        // 0: data from cache
+                        // 1: data from store buffer
+                        data_from_pos = sb_entries[hit_position].data;
+                        addr_from_pos = sb_entries[hit_position].address;
+                    end
+                end
+                else if (is_alu_i) begin
+                    data_from_head = sb_entries[head].data;
+                    addr_from_head = sb_entries[head].address;
+                    sb_valid_entry[head] = 0;
+                end
+            end
+
+            FLUSHING: begin
+                if (!empty) begin
+                    data_from_head = sb_entries[head].data;
+                    addr_from_head = sb_entries[head].address;
+                    sb_valid_entry[head] = 0;
+                end
+            end
+        endcase
+    end
+
+end
+
+assign is_hit_o = is_hit;
+
+always_comb begin
+    if (!rsn_i) begin
+        is_hit_bits = 'b0;
+        hit_position = 0;
+    end
+    else begin
+        for (int i = 0; i < (2**SB_ENTRY_BITS)-1; i++) begin
+            is_hit_bits[i] = (addr_i == (sb_entries[i].address)) && sb_valid_entry[i];
+            hit_position = is_hit_bits ? i : hit_position;
+        end
+        is_hit = |is_hit_bits;
+    end
+end
+
+assign data_o = (is_hit && sb_state == NOT_FLUSHING && is_load_i) ? data_from_pos : data_from_head;
+assign addr_o = (is_hit && sb_state == NOT_FLUSHING && is_load_i) ? addr_from_pos : addr_from_head;
+
+endmodule : segre_store_buffer
