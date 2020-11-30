@@ -32,14 +32,14 @@ arb_states_t act_state, nxt_state;
 
 cache_mem_req_t [ARB_BUF_SIZE-1:0] requests;
 
-logic [ARB_PTR_SIZE-1:0] wr_ptr;
-logic [ARB_PTR_SIZE-1:0] rd_ptr;
+bit signed [ARB_PTR_SIZE-1:0] wr_ptr;
+bit signed [ARB_PTR_SIZE-1:0] rd_ptr;
 
 logic valid_req_icache, valid_req_dcache, valid_req_sel;
 
 logic full, empty;
 
-assign full = rd_ptr - 1 == wr_ptr;
+assign full = (rd_ptr - 1) == wr_ptr;
 assign empty = rd_ptr == wr_ptr;
 
 assign valid_req_icache = (icache_request_i.rd || icache_request_i.wr) && icache_valid_req_i;

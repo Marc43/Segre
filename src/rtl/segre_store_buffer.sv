@@ -33,22 +33,22 @@ typedef struct packed {
     logic [WORD_SIZE-1:0] address;
 } sb_entry_t;
 //I hope this garbage is right because it is not highlighting it...
-sb_entry_t [(2**SB_ENTRY_BITS)-1:0] sb_entries;
+sb_entry_t [NUM_SB_ENTRIES-1:0] sb_entries;
 
 //Pointers and indicators
-logic [SB_ENTRY_BITS-1:0] head;
-logic [SB_ENTRY_BITS-1:0] tail;
+bit signed [SB_ENTRY_BITS-1:0] head;
+bit signed [SB_ENTRY_BITS-1:0] tail;
 
 logic [WORD_SIZE-1:0] data_from_pos;
 logic [WORD_SIZE-1:0] addr_from_pos;
 logic [WORD_SIZE-1:0] data_from_head;
 logic [WORD_SIZE-1:0] addr_from_head;
 
-logic [(2**SB_ENTRY_BITS)-1:0] is_hit_bits;
+logic [NUM_SB_ENTRIES-1:0] is_hit_bits;
 logic is_hit;
-logic [(2**SB_ENTRY_BITS)-1:0] hit_position;
+logic [NUM_SB_ENTRIES-1:0] hit_position;
 
-logic [(2**SB_ENTRY_BITS)-1:0] sb_valid_entry;
+logic [NUM_SB_ENTRIES-1:0] sb_valid_entry;
 
 /*
  * FIXME NOT VALID ANYMOREEEEEEE
@@ -75,15 +75,16 @@ sb_states_t sb_next_state;
 
 logic full, empty;
 
-assign full = (head - 1) == tail;
-assign empty = head == tail;
+//assign full = (head - 1) == tail;
+//assign empty = head == tail;
+assign full = &sb_valid_entry;
+assign empty = !(|sb_valid_entry);
 
 //--------------------SEQUENTIAL LOGIC MANAGEMENT----------------------------------//
 //State switching
 always_ff @ (posedge clk_i, negedge rsn_i) begin : update_state
     //Initial state
     if (!rsn_i) begin
-       tail <= 'b0;
        sb_state <= NOT_FLUSHING;
     end
     //Next states
@@ -118,24 +119,34 @@ end
 always_ff @(posedge clk_i, negedge rsn_i) begin : writing_to_sb
     //Initial behavior coming from a reset
     if (!rsn_i) begin
+        tail <= 0;
         sb_entries <= 0;
-        head = 0;
+        head <= 0;
+        sb_valid_entry <= 'b0;
     end
     else begin
         case (sb_state)
             NOT_FLUSHING: begin
                 if (is_store_i && !full) begin
                     //Add new entry
+                    $display($sformatf("la cola %h", tail));
                     sb_entries[tail].data <= data_i;
                     sb_entries[tail].address <= addr_i;
-                    tail <= tail+1;
+                    sb_valid_entry[tail] <= 1;
+                    tail <= tail + 1;
                 end
 
-                if (is_alu_i) head = head + 1;
+                if (is_alu_i) begin
+                    sb_valid_entry[head] <= 0;
+                    head <= head + 1;
+                end
             end
 
             FLUSHING: begin
-                if (!empty) head = head + 1;
+                if (!empty) begin
+                    sb_valid_entry[head] <= 0;
+                    head <= head + 1;
+                end
             end
         endcase
     end
@@ -147,14 +158,12 @@ always_comb begin : reading_from_sb
         addr_from_pos = 0;
         data_from_head = 0;
         addr_from_head = 0;
-        sb_valid_entry = 'b0;
     end
     else begin
 
         case (sb_state)
 
             NOT_FLUSHING: begin
-                if (is_store_i && !full) sb_valid_entry[tail] = 1;
 
                 if (is_load_i) begin
                 // Iterate over the structure to see whether there is
@@ -173,7 +182,6 @@ always_comb begin : reading_from_sb
                 else if (is_alu_i) begin
                     data_from_head = sb_entries[head].data;
                     addr_from_head = sb_entries[head].address;
-                    sb_valid_entry[head] = 0;
                 end
             end
 
@@ -181,7 +189,6 @@ always_comb begin : reading_from_sb
                 if (!empty) begin
                     data_from_head = sb_entries[head].data;
                     addr_from_head = sb_entries[head].address;
-                    sb_valid_entry[head] = 0;
                 end
             end
         endcase
@@ -189,7 +196,7 @@ always_comb begin : reading_from_sb
 
 end
 
-assign is_hit_o = is_hit;
+assign is_hit_o = is_hit && is_load_i;
 
 always_comb begin
     if (!rsn_i) begin
@@ -197,7 +204,7 @@ always_comb begin
         hit_position = 0;
     end
     else begin
-        for (int i = 0; i < (2**SB_ENTRY_BITS)-1; i++) begin
+        for (int i = 0; i < NUM_SB_ENTRIES; i++) begin
             is_hit_bits[i] = (addr_i == (sb_entries[i].address)) && sb_valid_entry[i];
             hit_position = is_hit_bits ? i : hit_position;
         end
