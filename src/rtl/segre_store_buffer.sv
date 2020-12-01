@@ -18,11 +18,15 @@ module segre_store_buffer (
     input logic is_store_i,
     input logic is_alu_i,
 
+    // Indicates if the cache found the position to write or not, if miss, do nothing!
+    input logic is_hit_i,
+
     //Output ports
     output logic[WORD_SIZE-1:0] data_o,
     output logic[WORD_SIZE-1:0] addr_o,
     //Output signals depending on behavior
-    output logic is_hit_o
+    output logic is_hit_o,
+    output logic reading_valid_entry_o
 
 );
 
@@ -36,13 +40,13 @@ typedef struct packed {
 sb_entry_t [NUM_SB_ENTRIES-1:0] sb_entries;
 
 //Pointers and indicators
-bit signed [SB_ENTRY_BITS-1:0] head;
-bit signed [SB_ENTRY_BITS-1:0] tail;
+logic [SB_ENTRY_BITS-1:0] rd_ptr;
+logic [SB_ENTRY_BITS-1:0] wr_ptr;
 
 logic [WORD_SIZE-1:0] data_from_pos;
 logic [WORD_SIZE-1:0] addr_from_pos;
-logic [WORD_SIZE-1:0] data_from_head;
-logic [WORD_SIZE-1:0] addr_from_head;
+logic [WORD_SIZE-1:0] data_from_rd_ptr;
+logic [WORD_SIZE-1:0] addr_from_rd_ptr;
 
 logic [NUM_SB_ENTRIES-1:0] is_hit_bits;
 logic is_hit;
@@ -75,8 +79,8 @@ sb_states_t sb_next_state;
 
 logic full, empty;
 
-//assign full = (head - 1) == tail;
-//assign empty = head == tail;
+//assign full = (rd_ptr - 1) == wr_ptr;
+//assign empty = rd_ptr == wr_ptr;
 assign full = &sb_valid_entry;
 assign empty = !(|sb_valid_entry);
 
@@ -100,7 +104,7 @@ always_comb begin : next_state
     else begin
         case (sb_state)
             NOT_FLUSHING: begin
-               if (is_store_i && full || is_load_i && !is_hit) begin
+               if ((is_store_i && full) || (is_load_i && !is_hit)) begin
                 sb_next_state = FLUSHING;
                end
             end
@@ -116,36 +120,35 @@ end
 
 //Pointer udpates (no se si ho estic fent bé Marc, m'estic inspirant una mica
 //entre la separació de lògica i estats que veig al arbiter) (ho fas genial, pero mhe petat uns estats)
-always_ff @(posedge clk_i, negedge rsn_i) begin : writing_to_sb
+always @(posedge clk_i, negedge rsn_i) begin : writing_to_sb
     //Initial behavior coming from a reset
     if (!rsn_i) begin
-        tail <= 0;
+        wr_ptr <= 0;
         sb_entries <= 0;
-        head <= 0;
+        rd_ptr <= 0;
         sb_valid_entry <= 'b0;
     end
     else begin
         case (sb_state)
             NOT_FLUSHING: begin
-                if (is_store_i && !full) begin
+                if (is_store_i && is_hit_i && !full) begin
                     //Add new entry
-                    $display($sformatf("la cola %h", tail));
-                    sb_entries[tail].data <= data_i;
-                    sb_entries[tail].address <= addr_i;
-                    sb_valid_entry[tail] <= 1;
-                    tail <= tail + 1;
+                    sb_entries[wr_ptr].data <= data_i;
+                    sb_entries[wr_ptr].address <= addr_i;
+                    sb_valid_entry[wr_ptr] <= 1;
+                    wr_ptr <= wr_ptr + 1;
                 end
 
-                if (is_alu_i) begin
-                    sb_valid_entry[head] <= 0;
-                    head <= head + 1;
+                if (is_alu_i && !empty) begin
+                    sb_valid_entry[rd_ptr] <= 0;
+                    rd_ptr <= rd_ptr + 1;
                 end
             end
 
             FLUSHING: begin
                 if (!empty) begin
-                    sb_valid_entry[head] <= 0;
-                    head <= head + 1;
+                    sb_valid_entry[rd_ptr] <= 0;
+                    rd_ptr <= rd_ptr + 1;
                 end
             end
         endcase
@@ -156,8 +159,8 @@ always_comb begin : reading_from_sb
     if (!rsn_i) begin
         data_from_pos = 0;
         addr_from_pos = 0;
-        data_from_head = 0;
-        addr_from_head = 0;
+        data_from_rd_ptr = 0;
+        addr_from_rd_ptr = 0;
     end
     else begin
 
@@ -180,15 +183,15 @@ always_comb begin : reading_from_sb
                     end
                 end
                 else if (is_alu_i) begin
-                    data_from_head = sb_entries[head].data;
-                    addr_from_head = sb_entries[head].address;
+                    data_from_rd_ptr = sb_entries[rd_ptr].data;
+                    addr_from_rd_ptr = sb_entries[rd_ptr].address;
                 end
             end
 
             FLUSHING: begin
                 if (!empty) begin
-                    data_from_head = sb_entries[head].data;
-                    addr_from_head = sb_entries[head].address;
+                    data_from_rd_ptr = sb_entries[rd_ptr].data;
+                    addr_from_rd_ptr = sb_entries[rd_ptr].address;
                 end
             end
         endcase
@@ -212,7 +215,8 @@ always_comb begin
     end
 end
 
-assign data_o = (is_hit && sb_state == NOT_FLUSHING && is_load_i) ? data_from_pos : data_from_head;
-assign addr_o = (is_hit && sb_state == NOT_FLUSHING && is_load_i) ? addr_from_pos : addr_from_head;
+assign data_o = (is_hit && sb_state == NOT_FLUSHING && is_load_i) ? data_from_pos : data_from_rd_ptr;
+assign addr_o = (is_hit && sb_state == NOT_FLUSHING && is_load_i) ? addr_from_pos : addr_from_rd_ptr;
+assign reading_valid_entry_o = (is_alu_i || sb_state == FLUSHING) && !empty;
 
 endmodule : segre_store_buffer

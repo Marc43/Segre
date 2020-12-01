@@ -35,6 +35,7 @@ module sb_cache_tb;
     logic [WORD_SIZE-1:0] data_o_sb;
     logic [WORD_SIZE-1:0] addr_o_sb;
     logic is_hit_o_sb;
+    logic reading_valid_entry;
 
     segre_store_buffer ssb(
 
@@ -51,10 +52,13 @@ module sb_cache_tb;
         .is_store_i(is_store),
         .is_alu_i(is_alu),
 
+        .is_hit_i(is_hit),
+
         //Output ports
         .data_o(data_o_sb),
         .addr_o(addr_o_sb),
-        .is_hit_o(is_hit_o_sb)
+        .is_hit_o(is_hit_o_sb),
+        .reading_valid_entry_o(reading_valid_entry)
 
     );
 
@@ -63,7 +67,6 @@ module sb_cache_tb;
     logic rcvd_mem_req;
     memop_data_type_e data_type;
     logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] from_mem_cache_in;
-    logic is_hit;
     logic writeback_mem;
     logic [WORD_SIZE-1:0] data_out;
     logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] to_mem_cache_out;
@@ -96,7 +99,7 @@ module sb_cache_tb;
     );
 
   logic muxes_signal;
-  assign muxes_signal = is_hit_o_sb & is_store;
+  assign muxes_signal = reading_valid_entry;
 
   always @*
   case (muxes_signal)
@@ -117,14 +120,16 @@ module sb_cache_tb;
       rsn <= 0;
   end
 
-  assign wr = is_alu || (is_load && is_hit_o_sb);
+  assign wr = reading_valid_entry || (!is_hit && is_store);
 
   always #10 clk = ~clk;
 
   initial begin
-    int addr_var = 0;
+    static int addr_var = 0;
     repeat(2) @(posedge clk);
     rsn <= 1;
+
+    data_type = WORD;
 
     is_load = 0;
     is_store = 0;
@@ -137,9 +142,28 @@ module sb_cache_tb;
         is_store = 1;
         data_tb = $random();
         addr_tb = addr_var;
-        addr_var = addr_var + 1;
+        addr_var = addr_var + 4;
         @(posedge clk);
         is_store = 0;
+
+        if (!is_hit || writeback_mem) begin
+            repeat (10) @(posedge clk); // It's a miss, memory spends 10 cycles to read the line
+
+            // FIXME remove rd and wr from here m8
+            rd = 0;
+
+            rcvd_mem_req = 1; // Line sent from memory
+            from_mem_cache_in = 128'hff_ee_dd_cc_bb_aa_99_88_77_66_55_44_33_22_11_00;
+
+            @(posedge clk); // Cache stores the line in the next cycle
+
+            rcvd_mem_req = 0;
+
+        end
+
+        rd = 0;
+
+        @(posedge clk); // Ready petition again
     end
 
     repeat(4) begin
@@ -155,5 +179,5 @@ module sb_cache_tb;
     $finish;
 
   end
-endmodule : sb_cache_tb
 
+endmodule : sb_cache_tb
