@@ -25,8 +25,9 @@ module cache_tb;
     logic clk;
     logic rsn;
 
-    logic rd;
-    logic wr;
+    logic rd; // is load
+    logic wr; // is store
+    logic is_alu;
     logic rcvd_mem_req;
     memop_data_type_e data_type;
     logic [WORD_SIZE-1:0] addr;
@@ -50,6 +51,7 @@ module cache_tb;
 
         .rd_i (rd),
         .wr_i (wr),
+        .is_alu_i(is_alu),
         .rcvd_mem_request_i (rcvd_mem_req),
         .data_type_i (data_type),
         .addr_i (addr),
@@ -90,10 +92,6 @@ module cache_tb;
         if (!is_hit || writeback_mem) begin
             repeat (10) @(posedge clk); // It's a miss, memory spends 10 cycles to read the line
 
-            // FIXME remove rd and wr from here m8
-            rd = rdwr;
-            wr = !rdwr;
-
             rcvd_mem_req = 1; // Line sent from memory
             from_mem_cache_in = 128'hff_ee_dd_cc_bb_aa_99_88_77_66_55_44_33_22_11_00;
 
@@ -105,6 +103,7 @@ module cache_tb;
 
         rd = 0;
         wr = 0;
+        is_alu = 0;
 
         @(posedge clk); // Ready petition again
 
@@ -151,16 +150,17 @@ module cache_tb;
             end
         end
 
+          rsn <= 0;
+          repeat(2) @(posedge clk);
+          rsn <= 1;
 
-//        for (int i = 0; i < NUMBER_OF_LINES; i++) begin
-//            for (int j = 0; j < CACHE_LINE_SIZE_BYTES; j++) begin
-//                petition(0, i, j, BYTE, 0, ((32'hdead_beef) >> j));
-//            end
-//        end
-//
-//        rsn <= 0;
-//        repeat(2) @(posedge clk);
-//        rsn <= 1;
+
+        for (int i = 0; i < NUMBER_OF_LINES; i++) begin
+            for (int j = 0; j < CACHE_LINE_SIZE_BYTES; j++) begin
+                petition(0, i, j, BYTE, 0, ((32'hdead_beef) >> j));
+            end
+        end
+
 //
 //        for (int i = 0; i < NUMBER_OF_LINES; i++) begin
 //            for (int j = 0; j <= CACHE_LINE_SIZE_BYTES-2; j = j + 2) begin

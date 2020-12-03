@@ -12,7 +12,11 @@ vlib $work_dir
 # Compile packages
 vlog -sv -work $work_dir $pkg_dir/segre_pkg.sv
 
-vlog -sv -work $work_dir $rtl_dir/segre_cache.sv
+vlog -sv -work $work_dir $rtl_dir/cache_modules/segre_cache_data.sv
+vlog -sv -work $work_dir $rtl_dir/cache_modules/segre_cache_tags.sv
+vlog -sv -work $work_dir $rtl_dir/cache_modules/segre_cache.sv
+
+vlog -sv -work $work_dir $rtl_dir/cache_modules/segre_store_buffer.sv
 
 vlog -sv -work $work_dir $tb_dir/cache_tb.sv
 

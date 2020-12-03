@@ -5,8 +5,10 @@ module segre_cache (
     input logic clk_i,
     input logic rsn_i,
 
-    input logic rd_i,
-    input logic wr_i,
+    input logic rd_i, // is_load
+    input logic wr_i, // is_store
+    input logic is_alu_i, // is_alu
+
     input logic rcvd_mem_request_i,
     input memop_data_type_e data_type_i,
     input logic [WORD_SIZE-1:0] addr_i,
@@ -29,8 +31,6 @@ assign addr_byte  = addr_i[M-1:0];
 
 logic [NUMBER_OF_LINES-1:0] valid_bits;
 logic [NUMBER_OF_LINES-1:0] dirty_bits;
-logic [NUMBER_OF_LINES-1:0][TAG_SIZE-1:0] cache_tags;
-logic [NUMBER_OF_LINES-1:0][CACHE_LINE_SIZE_BYTES-1:0][7:0] cache_data;
 
 typedef enum logic [1:0] {
     READING_TAGS,
@@ -52,85 +52,22 @@ cache_rd_states_t cache_rd_next_state;
 
 logic is_writeback;
 logic write_line_from_mem;
-logic write_into_line;
+logic write_into_word;
+logic is_hit_from_tags;
 logic is_hit;
+logic [WORD_SIZE-1:0] data_from_cache_data;
+logic reading_valid_entry_sb_o;
 
 assign write_line_from_mem = ((cache_rd_act_state == REQ_MEM_DATA_RD || cache_wr_act_state == REQ_MEM_DATA_WR) && rcvd_mem_request_i);
-assign write_into_line = cache_wr_act_state == WRITING_DATA;
+assign write_into_word = (cache_wr_act_state == WRITING_DATA) || reading_valid_entry_sb_o;
 assign is_writeback = cache_rd_act_state == WRITEBACK_RD || cache_wr_act_state == WRITEBACK_WR;
-assign is_hit = valid_bits[addr_index] && (cache_tags[addr_index] == addr_tag);
+assign is_hit = valid_bits[addr_index] && is_hit_from_tags;
 
 assign writeback_mem_o = is_writeback ? 1'b1 : 1'b0;
-assign to_mem_cache_line_o = cache_data[addr_index];
 
-assign data_o = (cache_rd_act_state == READING_DATA) ? read_from_cache(addr_index, addr_byte, data_type_i) : 'b0;
-
+assign data_o = (cache_rd_act_state == READING_DATA) ? data_from_cache_data : 'b0;
 
 assign is_hit_o = is_hit && (cache_rd_act_state == REQ_MEM_DATA_RD || cache_rd_act_state == READING_DATA || cache_wr_act_state == READING_TAGS);
-
-// TODO Divide read and write, always_comb and always respectively
-
-/*
- *  How will petitions to main memory be?
- *
- *      - Do petition once and hope that memory will get back to you
- *
- *      - Issue the petition each cycle until memory answers
- *
- *      - What will do the ARB???? Find out what characteristics should have
- *
- */
-
-function logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] write_value_into_line(input logic [WORD_SIZE-1:0] data, input memop_data_type_e data_type, input logic [M-1:0] elem_byte, input logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] cacheline);
-    logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] ret_cacheline;
-
-    ret_cacheline = cacheline;
-
-    case (data_type)
-        BYTE: begin
-            ret_cacheline[elem_byte] = data[7:0];
-        end
-
-        HALF: begin
-            ret_cacheline[elem_byte] = data[7:0];
-            ret_cacheline[elem_byte+1] = data[15:8];
-        end
-
-        WORD: begin
-            ret_cacheline[elem_byte] = data[7:0];
-            ret_cacheline[elem_byte+1] = data[15:8];
-            ret_cacheline[elem_byte+2] = data[23:16];
-            ret_cacheline[elem_byte+3] = data[31:24];
-        end
-
-        default: $display("What the fuck, which memop_data_type_e then?!");
-    endcase
-
-    return ret_cacheline;
-
-endfunction : write_value_into_line
-
-function logic [WORD_SIZE-1:0] read_from_cache(input logic [N-1:M] addr_index, input logic [M-1:0] addr_byte, input memop_data_type_e data_type);
-    case (data_type)
-        BYTE: begin
-            return cache_data[addr_index][addr_byte];
-        end
-
-        HALF: begin
-            return {cache_data[addr_index][addr_byte+1], cache_data[addr_index][addr_byte]};
-        end
-
-        WORD: begin
-            return {cache_data[addr_index][addr_byte+3],
-                    cache_data[addr_index][addr_byte+2],
-                    cache_data[addr_index][addr_byte+1],
-                    cache_data[addr_index][addr_byte]};
-        end
-
-        default: $display("What the fuck, which memop_data_type_e then?!");
-
-    endcase
-endfunction : read_from_cache
 
 always_ff @(posedge clk_i, negedge rsn_i) begin
     if(!rsn_i) begin
@@ -157,6 +94,9 @@ always_comb begin
         if (rd_i && cache_rd_act_state == READING_DATA) begin
             if (!is_hit) begin
                 if (dirty_bits[addr_index]) begin
+                    // TODO FIXME PLEASE TODO HELP TODO FIXME
+                    // WE NEED TO FLUSH THE STOREBUFFER SO PLEASE DON'T DO THIS
+                    // TODO FIXME PLEASE TODO HELP TODO FIXME
                     cache_rd_next_state = WRITEBACK_RD;
                 end
                 else begin
@@ -179,15 +119,13 @@ always_comb begin
          * Write next state
          */
         if (wr_i && cache_wr_act_state == READING_TAGS) begin
-            if (is_hit) begin
-                cache_wr_next_state = WRITING_DATA;
-            end
-            else begin
+            if (!is_hit) begin
                 if (dirty_bits[addr_index]) begin
                     cache_wr_next_state = WRITEBACK_WR;
                 end
                 else begin
-                    cache_wr_next_state = REQ_MEM_DATA_WR; end
+                    cache_wr_next_state = REQ_MEM_DATA_WR;
+                end
             end
         end
         else if (cache_wr_act_state == WRITING_DATA) begin
@@ -208,17 +146,97 @@ always_ff @(posedge clk_i, negedge rsn_i) begin
         dirty_bits <= 'b0;
     end
     else begin
-        if (write_into_line) begin
-            cache_data[addr_index] <= write_value_into_line(data_i, data_type_i, addr_byte, cache_data[addr_index]);
+        if (write_into_word) begin
             dirty_bits[addr_index] <= 1'b1;
         end
         else if (write_line_from_mem) begin
-            cache_data[addr_index] <= from_mem_cache_line_i;
-            cache_tags[addr_index] <= addr_tag;
             valid_bits[addr_index] <= 1'b1;
             dirty_bits[addr_index] <= 1'b0;
         end
     end
 end
+
+/*
+ * When the Store Buffer has a valid position signal
+ * reading_valid_entry_sb_o will become 1 and that means
+ * that cache data will write the store buffer entry.
+ * Otherwise, when it's 0, it will write whatever is feeded
+ * from the stage.
+ */
+
+logic [WORD_SIZE-1:0] cache_sb_mux_data;
+logic [WORD_SIZE-1:0] cache_sb_mux_addr;
+logic [WORD_SIZE-1:0] data_sb_o;
+logic [WORD_SIZE-1:0] addr_sb_o;
+
+always @* begin
+    case (reading_valid_entry_sb_o)
+       0 : cache_sb_mux_data <= data_i;
+       1 : cache_sb_mux_data <= data_sb_o;
+       default : cache_sb_mux_data <= data_i;
+    endcase
+end
+
+always @* begin
+    case (reading_valid_entry_sb_o)
+       0 : cache_sb_mux_addr <= addr_i;
+       1 : cache_sb_mux_addr <= addr_sb_o;
+       default : cache_sb_mux_data <= addr_i;
+    endcase
+end
+
+/////////////////////////////
+//// MODULE INSTANTATION ////
+/////////////////////////////
+
+segre_cache_data data (
+    .clk_i(clk_i),
+    .rsn_i(rsn_i),
+
+    .wr_into_word_i(write_into_word),
+    .data_type_i(data_type_i),
+    .wr_line_i(write_line_from_mem),
+    .addr_i(addr_i),
+    .data_i(data_i),
+    .from_mem_cache_line_i(from_mem_cache_line_i),
+
+    .to_mem_cache_line_o(to_mem_cache_line_o),
+    .data_o(data_from_cache_data)
+);
+
+segre_cache_tags tags (
+    .clk_i(clk_i),
+    .rsn_i(rsn_i),
+
+    .addr_i(addr_i),
+    .wr_en_i(write_line_from_mem),
+
+    .is_hit_o(is_hit_from_tags)
+);
+
+segre_store_buffer ssb (
+    .clk_i(clk_i),
+    .rsn_i(rsn_i),
+
+    .data_i(data_i),
+    .addr_i(addr_i),
+
+    .is_load_i(rd_i),
+    .is_store_i(wr_i),
+    .is_alu_i(is_alu_i),
+
+    .is_hit_i(is_hit_o),
+
+    .data_o(data_sb_o),
+    .addr_o(addr_sb_o),
+
+    // TODO This signal must be used to
+    // select which data is feed to the WB stage
+    // whether it is from cache, from sb or from ALU
+    .is_hit_o(is_hit_sb_o),
+
+    .reading_valid_entry_o(reading_valid_entry_sb_o)
+
+);
 
 endmodule : segre_cache

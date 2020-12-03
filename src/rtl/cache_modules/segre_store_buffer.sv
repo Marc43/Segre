@@ -104,7 +104,11 @@ always_comb begin : next_state
     else begin
         case (sb_state)
             NOT_FLUSHING: begin
-               if ((is_store_i && full) || (is_load_i && !is_hit)) begin
+                /* When there is a load miss (miss in the cache tags) where the index (cache line)
+                 * collides with one that has valid data, and we have a hit in the store buffer meaning that
+                 * there is pending request for that line, we have to block the pipeline and flush the store buffer completely.
+                 */
+               if ((is_store_i && full) /* TODO PENDING CASE EXPLAINED ABOVE */ ) begin
                 sb_next_state = FLUSHING;
                end
             end
@@ -220,3 +224,6 @@ assign addr_o = (is_hit && sb_state == NOT_FLUSHING && is_load_i) ? addr_from_po
 assign reading_valid_entry_o = (is_alu_i || sb_state == FLUSHING) && !empty;
 
 endmodule : segre_store_buffer
+
+// TODO PLEASE HELP
+// STORE HOW THE ACCESS IS (MEMOP DATA TYPE AAAAAAAAAAAA)
