@@ -108,6 +108,8 @@ module cache_tb;
 
             rcvd_mem_req = 0;
 
+            @(posedge clk);
+
         end
 
         if (is_draining) begin
@@ -170,11 +172,20 @@ module cache_tb;
 
           @(posedge rsn);
 
-        for (int i = 0; i < NUMBER_OF_LINES; i++) begin
-            for (int j = 0; j < CACHE_LINE_SIZE_BYTES; j++) begin
-                petition(0, i, j, BYTE, 0, ((32'hdead_beef) >> j));
-            end
-        end
+//        for (int i = 0; i < NUMBER_OF_LINES; i++) begin
+//            for (int j = 0; j < CACHE_LINE_SIZE_BYTES; j++) begin
+//                petition(0, i, j, BYTE, 0, ((32'hdead_beef) >> j));
+//            end
+//        end
+//
+
+          // 1 writes
+          petition(0, 0, 0, WORD, 0, 32'hdead_beef);
+//          petition(0, 0, 0, WORD, 0, 32'hdead_beef);
+//          petition(0, 0, 0, WORD, 0, 32'hdead_beef);
+//          petition(0, 0, 0, WORD, 0, 32'hdead_beef);
+          // 1 load
+          petition(1, 0, 0, WORD, 1, 32'h1234_5678);
 
 //
 //        for (int i = 0; i < NUMBER_OF_LINES; i++) begin

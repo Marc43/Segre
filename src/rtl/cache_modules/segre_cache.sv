@@ -21,6 +21,13 @@ module segre_cache #(parameter ICACHE_DCACHE = ICACHE)
     output logic store_buffer_draining_o
 );
 
+/*
+ * TODO FIXME TODO FIXME *
+ * Do not update states if SB has activated signal: store_buffer_draining_o
+ * By the moment the maximum cycles it takes to drain the SB is ~5, so we are
+ * kind of hiding the latency. But if we decide to increase the number of entries
+ * we will have problems.
+ */
 
 logic [WORD_SIZE-1:N] addr_tag;
 logic [N-1:M] addr_index;
@@ -58,6 +65,7 @@ logic is_hit_from_tags;
 logic is_hit;
 logic [WORD_SIZE-1:0] data_from_cache_data;
 logic reading_valid_entry_sb_o;
+logic is_hit_sb_o;
 
 assign write_line_from_mem = ((cache_rd_act_state == REQ_MEM_DATA_RD || cache_wr_act_state == REQ_MEM_DATA_WR) && rcvd_mem_request_i);
 
@@ -90,8 +98,14 @@ always_comb begin
         cache_wr_next_state = READING_TAGS;
         cache_rd_next_state = READING_DATA;
     end
-    else begin
-
+    /* Another confusing case, do not update state if:
+     *  - sb is draining
+     *  - there is a miss in the cache and there is a hit in the sb, we need to drain first.
+     */
+    // FIXME is_hit_sb_o is not sampled as it should. It's getting 0 instead of 1 at time 3530 ns
+    else if (!store_buffer_draining_o && (is_hit || !is_hit_sb_o)) begin
+        $display($sformatf("%d jaja resulta que: sb_draining: %h, is_hit: %h, is_hit_sb_o: %h .", $time, store_buffer_draining_o, is_hit, is_hit_sb_o));
+    // ! (!is_hit && is_hit_sb_o) -> is_hit || !is_hit_sb_o
         /*
          * Read next state
          */

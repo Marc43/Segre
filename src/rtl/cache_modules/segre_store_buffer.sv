@@ -74,6 +74,14 @@ logic full, empty;
 assign full = &sb_valid_entry;
 assign empty = !(|sb_valid_entry);
 
+logic [WORD_SIZE-1:N] addr_tag;
+logic [N-1:M] addr_index;
+logic [M-1:0] addr_byte;
+
+assign addr_tag   = addr_i[WORD_SIZE-1:N];
+assign addr_index = addr_i[N-1:M];
+assign addr_byte  = addr_i[M-1:0];
+
 //--------------------SEQUENTIAL LOGIC MANAGEMENT----------------------------------//
 //State switching
 always_ff @ (posedge clk_i, negedge rsn_i) begin : update_state
@@ -94,11 +102,18 @@ always_comb begin : next_state
     else begin
         case (sb_state)
             NOT_DRAINING: begin
-                /* When there is a load miss (miss in the cache tags) where the index (cache line)
-                 * collides with one that has valid data, and we have a hit in the store buffer meaning that
-                 * there is pending request for that line, we have to block the pipeline and flush the store buffer completely.
-                 */
-               if ((is_store_i && full) /* TODO PENDING CASE EXPLAINED ABOVE */ ) begin
+               /* When there is a load miss (miss in the cache tags) where the index (cache line)
+                * collides with one that has valid data, and we have a hit in the store buffer meaning that
+                * there is pending request for that line, we have to block the pipeline and flush the store buffer completely.
+                */
+
+               /* The second case of the or is really confusing, let us explain it here:
+                * We are issuing a read operation (load), where:
+                * is_hit_i is the cache hit, in this case it is a miss.
+                * is_hit   is the store buffer hit, if is 1 means that the line that is being read in
+                * cache it is also pending to be written by an entry of the store buffer.
+                */
+               if ((is_store_i && full) || is_load_i && !is_hit_i && is_hit) begin
                 sb_next_state = DRAINING;
                end
             end
@@ -207,7 +222,7 @@ always_comb begin
     end
     else begin
         for (int i = 0; i < NUM_SB_ENTRIES; i++) begin
-            is_hit_bits[i] = (addr_i == (sb_entries[i].address)) && sb_valid_entry[i];
+            is_hit_bits[i] = (addr_index == (sb_entries[i].address[N-1:M])) && sb_valid_entry[i];
             hit_position = is_hit_bits ? i : hit_position;
         end
         is_hit = |is_hit_bits;
