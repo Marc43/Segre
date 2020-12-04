@@ -1,7 +1,7 @@
 import segre_pkg::*;
 
-module segre_cache (
-
+module segre_cache #(parameter ICACHE_DCACHE = ICACHE)
+(
     input logic clk_i,
     input logic rsn_i,
 
@@ -17,9 +17,10 @@ module segre_cache (
     output logic is_hit_o, // If 1 hit, 0 miss (es un temazo!) (fer servir com rd de memoria ~is_hit)
     output logic writeback_mem_o,
     output logic [WORD_SIZE-1:0] data_o,
-    output logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] to_mem_cache_line_o
-
+    output logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] to_mem_cache_line_o,
+    output logic store_buffer_draining_o
 );
+
 
 logic [WORD_SIZE-1:N] addr_tag;
 logic [N-1:M] addr_index;
@@ -59,7 +60,10 @@ logic [WORD_SIZE-1:0] data_from_cache_data;
 logic reading_valid_entry_sb_o;
 
 assign write_line_from_mem = ((cache_rd_act_state == REQ_MEM_DATA_RD || cache_wr_act_state == REQ_MEM_DATA_WR) && rcvd_mem_request_i);
-assign write_into_word = (cache_wr_act_state == WRITING_DATA) || reading_valid_entry_sb_o;
+
+// If is ICACHE, value is 0, then we must use only the state, if it's 1 is DCACHE, we must take into account SB writes.
+assign write_into_word = ICACHE_DCACHE ? (cache_wr_act_state == WRITING_DATA) || reading_valid_entry_sb_o
+                                       : (cache_wr_act_state == WRITING_DATA);
 assign is_writeback = cache_rd_act_state == WRITEBACK_RD || cache_wr_act_state == WRITEBACK_WR;
 assign is_hit = valid_bits[addr_index] && is_hit_from_tags;
 
@@ -164,13 +168,21 @@ end
  * from the stage.
  */
 
+/////////////////// 2-1 MUX Outputs
 logic [WORD_SIZE-1:0] cache_sb_mux_data;
 logic [WORD_SIZE-1:0] cache_sb_mux_addr;
+memop_data_type_e cache_sb_mux_dtype;
+//////////////////
+
 logic [WORD_SIZE-1:0] data_sb_o;
 logic [WORD_SIZE-1:0] addr_sb_o;
+memop_data_type_e data_type_sb_o;
+
+logic sb_muxes_select;
+assign sb_muxes_select = (ICACHE_DCACHE == DCACHE) ? reading_valid_entry_sb_o : 0;
 
 always @* begin
-    case (reading_valid_entry_sb_o)
+    case (sb_muxes_select)
        0 : cache_sb_mux_data <= data_i;
        1 : cache_sb_mux_data <= data_sb_o;
        default : cache_sb_mux_data <= data_i;
@@ -178,10 +190,18 @@ always @* begin
 end
 
 always @* begin
-    case (reading_valid_entry_sb_o)
+    case (sb_muxes_select)
        0 : cache_sb_mux_addr <= addr_i;
        1 : cache_sb_mux_addr <= addr_sb_o;
        default : cache_sb_mux_data <= addr_i;
+    endcase
+end
+
+always @* begin
+    case (sb_muxes_select)
+        0 : cache_sb_mux_dtype <= data_type_i;
+        1 : cache_sb_mux_dtype <= data_type_sb_o;
+        default : cache_sb_mux_dtype <= data_type_i;
     endcase
 end
 
@@ -194,10 +214,10 @@ segre_cache_data data (
     .rsn_i(rsn_i),
 
     .wr_into_word_i(write_into_word),
-    .data_type_i(data_type_i),
     .wr_line_i(write_line_from_mem),
-    .addr_i(addr_i),
-    .data_i(data_i),
+    .addr_i(cache_sb_mux_addr),
+    .data_i(cache_sb_mux_data),
+    .data_type_i(cache_sb_mux_dtype),
     .from_mem_cache_line_i(from_mem_cache_line_i),
 
     .to_mem_cache_line_o(to_mem_cache_line_o),
@@ -214,29 +234,36 @@ segre_cache_tags tags (
     .is_hit_o(is_hit_from_tags)
 );
 
-segre_store_buffer ssb (
-    .clk_i(clk_i),
-    .rsn_i(rsn_i),
+generate
+    if (ICACHE_DCACHE == DCACHE)
+        segre_store_buffer ssb (
+            .clk_i(clk_i),
+            .rsn_i(rsn_i),
 
-    .data_i(data_i),
-    .addr_i(addr_i),
+            .data_i(data_i),
+            .addr_i(addr_i),
+            .data_type_i(data_type_i),
 
-    .is_load_i(rd_i),
-    .is_store_i(wr_i),
-    .is_alu_i(is_alu_i),
+            .is_load_i(rd_i),
+            .is_store_i(wr_i),
+            .is_alu_i(is_alu_i),
 
-    .is_hit_i(is_hit_o),
+            .is_hit_i(is_hit_o),
 
-    .data_o(data_sb_o),
-    .addr_o(addr_sb_o),
+            .data_o(data_sb_o),
+            .addr_o(addr_sb_o),
+            .data_type_o(data_type_sb_o),
 
-    // TODO This signal must be used to
-    // select which data is feed to the WB stage
-    // whether it is from cache, from sb or from ALU
-    .is_hit_o(is_hit_sb_o),
+            // TODO This signal must be used to
+            // select which data is feed to the WB stage
+            // whether it is from cache, from sb or from ALU
+            .is_hit_o(is_hit_sb_o),
 
-    .reading_valid_entry_o(reading_valid_entry_sb_o)
+            .reading_valid_entry_o(reading_valid_entry_sb_o),
 
-);
+            .is_draining_o(store_buffer_draining_o)
+
+        );
+endgenerate
 
 endmodule : segre_cache

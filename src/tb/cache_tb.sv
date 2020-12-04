@@ -42,9 +42,15 @@ module cache_tb;
     logic [N-1:M] addr_index;
     logic [M-1:0] addr_byte;
 
+    logic is_draining;
+
     assign addr = {addr_tag, addr_index, addr_byte};
 
-    segre_cache cache
+    segre_cache
+    #(
+        .ICACHE_DCACHE(DCACHE)
+    )
+    cache
     (
         .clk_i (clk),
         .rsn_i (rsn),
@@ -60,8 +66,11 @@ module cache_tb;
         .is_hit_o (is_hit),
         .writeback_mem_o (writeback_mem),
         .data_o (data_out),
-        .to_mem_cache_line_o (to_mem_cache_out)
+        .to_mem_cache_line_o (to_mem_cache_out),
+        .store_buffer_draining_o (is_draining)
     );
+
+    assign is_alu = !(rd || wr);
 
     `define display_outputs \
         $display($sformatf("is_hit_o: %h", is_hit)); \
@@ -72,6 +81,11 @@ module cache_tb;
     task petition(input logic [WORD_SIZE-1:N] tag_, input logic [N-1:M] index_, input logic [M-1:0] byte_,
                   input memop_data_type_e data_type_, input logic rdwr, input logic [WORD_SIZE-1:0] data);
 
+        if (is_draining) begin
+            @(negedge is_draining);
+            @(posedge clk);
+        end
+
         addr_tag = tag_;
         addr_index = index_;
         addr_byte = byte_;
@@ -81,11 +95,6 @@ module cache_tb;
         rcvd_mem_req = 0;
         from_mem_cache_in = 0;
         data_in = data;
-
-        @(posedge clk); // Acknowledge the petition
-
-        rd = 0;
-        wr = 0;
 
         @(posedge clk); // Wait for hit/miss
 
@@ -101,11 +110,13 @@ module cache_tb;
 
         end
 
+        if (is_draining) begin
+            @(negedge is_draining);
+            @(posedge clk);
+        end
+
         rd = 0;
         wr = 0;
-        is_alu = 0;
-
-        @(posedge clk); // Ready petition again
 
     endtask : petition
 
@@ -117,6 +128,7 @@ module cache_tb;
     always #10 clk = ~clk;
 
     initial begin
+        int cnt = 1;
         repeat(2) @(posedge clk);
         rsn <= 1;
 
@@ -131,6 +143,8 @@ module cache_tb;
          * |      TAG          |    INDEX   |  BYTE |
          *
          */
+
+        @(posedge rsn);
 
         for (int i = 0; i < NUMBER_OF_LINES; i++) begin
             for (int j = 0; j < CACHE_LINE_SIZE_BYTES; j++) begin
@@ -154,6 +168,7 @@ module cache_tb;
           repeat(2) @(posedge clk);
           rsn <= 1;
 
+          @(posedge rsn);
 
         for (int i = 0; i < NUMBER_OF_LINES; i++) begin
             for (int j = 0; j < CACHE_LINE_SIZE_BYTES; j++) begin

@@ -60,33 +60,33 @@ add wave -noupdate -group {Tag Signals} /cache_tb/cache/tags/addr_tag
 add wave -noupdate -group {Tag Signals} /cache_tb/cache/tags/addr_index
 add wave -noupdate -group {Tag Signals} /cache_tb/cache/tags/addr_byte
 add wave -noupdate -group {Tag Signals} /cache_tb/cache/tags/cache_tags
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/clk_i
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/rsn_i
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/data_i
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/addr_i
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/is_load_i
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/is_store_i
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/is_alu_i
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/is_hit_i
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/data_o
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/addr_o
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/is_hit_o
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/reading_valid_entry_o
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/sb_entries
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/rd_ptr
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/wr_ptr
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/data_from_pos
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/addr_from_pos
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/data_from_rd_ptr
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/addr_from_rd_ptr
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/is_hit_bits
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/is_hit
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/hit_position
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/sb_valid_entry
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/sb_state
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/sb_next_state
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/full
-add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/ssb/empty
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/clk_i
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/rsn_i
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/data_i
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/addr_i
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/is_load_i
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/is_store_i
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/is_alu_i
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/is_hit_i
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/data_o
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/addr_o
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/is_hit_o
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/reading_valid_entry_o
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/sb_entries
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/rd_ptr
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/wr_ptr
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/data_from_pos
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/addr_from_pos
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/data_from_rd_ptr
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/addr_from_rd_ptr
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/is_hit_bits
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/is_hit
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/hit_position
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/sb_valid_entry
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/sb_state
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/sb_next_state
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/full
+add wave -noupdate -expand -group {Store Buffer} /cache_tb/cache/genblk1/ssb/empty
 TreeUpdate [SetDefaultTree]
 WaveRestoreCursors {{Cursor 1} {0 ps} 0}
 quietly wave cursor active 1

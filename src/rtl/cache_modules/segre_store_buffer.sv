@@ -13,6 +13,7 @@ module segre_store_buffer (
     //Input ports
     input logic[WORD_SIZE-1:0] data_i,
     input logic[WORD_SIZE-1:0] addr_i,
+    input memop_data_type_e data_type_i,
     //Input signals to determine behavior. Only one can be active at a time.
     input logic is_load_i,
     input logic is_store_i,
@@ -24,10 +25,11 @@ module segre_store_buffer (
     //Output ports
     output logic[WORD_SIZE-1:0] data_o,
     output logic[WORD_SIZE-1:0] addr_o,
+    output memop_data_type_e data_type_o,
     //Output signals depending on behavior
     output logic is_hit_o,
-    output logic reading_valid_entry_o
-
+    output logic reading_valid_entry_o,
+    output logic is_draining_o
 );
 
 //---------------------------INTERNAL STRUCTURES/DEFINITIONS------------------------//
@@ -35,6 +37,7 @@ module segre_store_buffer (
 typedef struct packed {
     logic [WORD_SIZE-1:0] data;
     logic [WORD_SIZE-1:0] address;
+    memop_data_type_e data_type;
 } sb_entry_t;
 //I hope this garbage is right because it is not highlighting it...
 sb_entry_t [NUM_SB_ENTRIES-1:0] sb_entries;
@@ -45,8 +48,10 @@ logic [SB_ENTRY_BITS-1:0] wr_ptr;
 
 logic [WORD_SIZE-1:0] data_from_pos;
 logic [WORD_SIZE-1:0] addr_from_pos;
+memop_data_type_e data_type_from_pos;
 logic [WORD_SIZE-1:0] data_from_rd_ptr;
 logic [WORD_SIZE-1:0] addr_from_rd_ptr;
+memop_data_type_e data_type_from_rd_ptr;
 
 logic [NUM_SB_ENTRIES-1:0] is_hit_bits;
 logic is_hit;
@@ -54,24 +59,9 @@ logic [NUM_SB_ENTRIES-1:0] hit_position;
 
 logic [NUM_SB_ENTRIES-1:0] sb_valid_entry;
 
-/*
- * FIXME NOT VALID ANYMOREEEEEEE
- * Filthy definition of states:
- *  - EMPTY (if empty and cache not busy do nothing)
- *
- *  - NOT_EMPTY (hi ha alguna peticio adins, si estem en aquest estat
- *      i la cache no esta busy escrivim la peticio mes vella a la cache,
- *      si la cache esta busy i es un load, comprovem si es hit si es hit fem
- *      servir la dada del SB, si miss al SB i hit a cache (sudote), si hi ha dos misses,
- *      anem a memoria a demanarli al papa. Si es un store el fotem, comprovem si estem full,
- *      en aquest cas anem a estat full de
- *  - FULL  (if full and store, stall pipeline and jump to FLUSHING :3 )
- *
- *  - FLUSHING :3 (disable writes, when finished, jump to EMPTY (writes allowed))
- */
- typedef enum logic [1:0] {
-    NOT_FLUSHING,
-    FLUSHING
+typedef enum logic [1:0] {
+    NOT_DRAINING,
+    DRAINING
  } sb_states_t;
 
 sb_states_t sb_state;
@@ -89,7 +79,7 @@ assign empty = !(|sb_valid_entry);
 always_ff @ (posedge clk_i, negedge rsn_i) begin : update_state
     //Initial state
     if (!rsn_i) begin
-       sb_state <= NOT_FLUSHING;
+       sb_state <= NOT_DRAINING;
     end
     //Next states
     else begin
@@ -99,23 +89,23 @@ end
 
 always_comb begin : next_state
     if (!rsn_i) begin
-        sb_next_state = NOT_FLUSHING;
+        sb_next_state = NOT_DRAINING;
     end
     else begin
         case (sb_state)
-            NOT_FLUSHING: begin
+            NOT_DRAINING: begin
                 /* When there is a load miss (miss in the cache tags) where the index (cache line)
                  * collides with one that has valid data, and we have a hit in the store buffer meaning that
                  * there is pending request for that line, we have to block the pipeline and flush the store buffer completely.
                  */
                if ((is_store_i && full) /* TODO PENDING CASE EXPLAINED ABOVE */ ) begin
-                sb_next_state = FLUSHING;
+                sb_next_state = DRAINING;
                end
             end
 
-            FLUSHING: begin
+            DRAINING: begin
                 if (empty) begin
-                    sb_next_state = NOT_FLUSHING;
+                    sb_next_state = NOT_DRAINING;
                 end
             end
         endcase
@@ -134,11 +124,12 @@ always @(posedge clk_i, negedge rsn_i) begin : writing_to_sb
     end
     else begin
         case (sb_state)
-            NOT_FLUSHING: begin
+            NOT_DRAINING: begin
                 if (is_store_i && is_hit_i && !full) begin
                     //Add new entry
                     sb_entries[wr_ptr].data <= data_i;
                     sb_entries[wr_ptr].address <= addr_i;
+                    sb_entries[wr_ptr].data_type <= data_type_i;
                     sb_valid_entry[wr_ptr] <= 1;
                     wr_ptr <= wr_ptr + 1;
                 end
@@ -149,7 +140,7 @@ always @(posedge clk_i, negedge rsn_i) begin : writing_to_sb
                 end
             end
 
-            FLUSHING: begin
+            DRAINING: begin
                 if (!empty) begin
                     sb_valid_entry[rd_ptr] <= 0;
                     rd_ptr <= rd_ptr + 1;
@@ -163,15 +154,16 @@ always_comb begin : reading_from_sb
     if (!rsn_i) begin
         data_from_pos = 0;
         addr_from_pos = 0;
+        data_type_from_pos = BYTE;
         data_from_rd_ptr = 0;
         addr_from_rd_ptr = 0;
+        data_type_from_rd_ptr = BYTE;
     end
     else begin
 
         case (sb_state)
 
-            NOT_FLUSHING: begin
-
+            NOT_DRAINING: begin
                 if (is_load_i) begin
                 // Iterate over the structure to see whether there is
                 // a matching address (hit), or not (miss)
@@ -184,18 +176,21 @@ always_comb begin : reading_from_sb
                         // 1: data from store buffer
                         data_from_pos = sb_entries[hit_position].data;
                         addr_from_pos = sb_entries[hit_position].address;
+                        data_type_from_pos = sb_entries[hit_position].data_type;
                     end
                 end
-                else if (is_alu_i) begin
+                else if (is_alu_i && !empty) begin
                     data_from_rd_ptr = sb_entries[rd_ptr].data;
                     addr_from_rd_ptr = sb_entries[rd_ptr].address;
+                    data_type_from_rd_ptr = sb_entries[rd_ptr].data_type;
                 end
             end
 
-            FLUSHING: begin
+            DRAINING: begin
                 if (!empty) begin
                     data_from_rd_ptr = sb_entries[rd_ptr].data;
                     addr_from_rd_ptr = sb_entries[rd_ptr].address;
+                    data_type_from_rd_ptr = sb_entries[rd_ptr].data_type;
                 end
             end
         endcase
@@ -219,11 +214,10 @@ always_comb begin
     end
 end
 
-assign data_o = (is_hit && sb_state == NOT_FLUSHING && is_load_i) ? data_from_pos : data_from_rd_ptr;
-assign addr_o = (is_hit && sb_state == NOT_FLUSHING && is_load_i) ? addr_from_pos : addr_from_rd_ptr;
-assign reading_valid_entry_o = (is_alu_i || sb_state == FLUSHING) && !empty;
+assign data_o = (is_hit && (sb_state == NOT_DRAINING) && is_load_i) ? data_from_pos : data_from_rd_ptr;
+assign addr_o = (is_hit && (sb_state == NOT_DRAINING) && is_load_i) ? addr_from_pos : addr_from_rd_ptr;
+assign data_type_o = (is_hit && (sb_state == NOT_DRAINING) && is_load_i) ? data_type_from_pos : data_type_from_rd_ptr;
+assign reading_valid_entry_o = (is_alu_i || sb_state == DRAINING) && !empty;
+assign is_draining_o = (sb_state == DRAINING) || full;
 
 endmodule : segre_store_buffer
-
-// TODO PLEASE HELP
-// STORE HOW THE ACCESS IS (MEMOP DATA TYPE AAAAAAAAAAAA)

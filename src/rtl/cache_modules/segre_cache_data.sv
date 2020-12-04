@@ -93,5 +93,6 @@ always_ff @(posedge clk_i, negedge rsn_i) begin
 end
 
 assign to_mem_cache_line_o = cache_data[addr_index];
+assign data_o = cache_data[addr_index];
 
 endmodule : segre_cache_data
