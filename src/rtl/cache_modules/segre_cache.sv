@@ -65,6 +65,7 @@ logic is_hit_from_tags;
 logic is_hit;
 logic [WORD_SIZE-1:0] data_from_cache_data;
 logic reading_valid_entry_sb_o;
+logic draining_buffer_sb_o;
 logic is_hit_sb_o;
 
 assign write_line_from_mem = ((cache_rd_act_state == REQ_MEM_DATA_RD || cache_wr_act_state == REQ_MEM_DATA_WR) && rcvd_mem_request_i);
@@ -80,6 +81,8 @@ assign writeback_mem_o = is_writeback ? 1'b1 : 1'b0;
 assign data_o = (cache_rd_act_state == READING_DATA) ? data_from_cache_data : 'b0;
 
 assign is_hit_o = is_hit && (cache_rd_act_state == REQ_MEM_DATA_RD || cache_rd_act_state == READING_DATA || cache_wr_act_state == READING_TAGS);
+
+assign store_buffer_draining_o = ICACHE_DCACHE ? draining_buffer_sb_o : 0;
 
 always_ff @(posedge clk_i, negedge rsn_i) begin
     if(!rsn_i) begin
@@ -102,19 +105,17 @@ always_comb begin
      *  - sb is draining
      *  - there is a miss in the cache and there is a hit in the sb, we need to drain first.
      */
-    // FIXME is_hit_sb_o is not sampled as it should. It's getting 0 instead of 1 at time 3530 ns
-    else if (!store_buffer_draining_o && (is_hit || !is_hit_sb_o)) begin
-        $display($sformatf("%d jaja resulta que: sb_draining: %h, is_hit: %h, is_hit_sb_o: %h .", $time, store_buffer_draining_o, is_hit, is_hit_sb_o));
-    // ! (!is_hit && is_hit_sb_o) -> is_hit || !is_hit_sb_o
+    else if (draining_buffer_sb_o || (!is_hit && is_hit_sb_o)) begin
+        cache_wr_next_state = cache_wr_act_state;
+        cache_rd_next_state = cache_rd_act_state;
+    end
+    else begin
         /*
          * Read next state
          */
         if (rd_i && cache_rd_act_state == READING_DATA) begin
             if (!is_hit) begin
                 if (dirty_bits[addr_index]) begin
-                    // TODO FIXME PLEASE TODO HELP TODO FIXME
-                    // WE NEED TO FLUSH THE STOREBUFFER SO PLEASE DON'T DO THIS
-                    // TODO FIXME PLEASE TODO HELP TODO FIXME
                     cache_rd_next_state = WRITEBACK_RD;
                 end
                 else begin
@@ -275,7 +276,7 @@ generate
 
             .reading_valid_entry_o(reading_valid_entry_sb_o),
 
-            .is_draining_o(store_buffer_draining_o)
+            .is_draining_o(draining_buffer_sb_o)
 
         );
 endgenerate
