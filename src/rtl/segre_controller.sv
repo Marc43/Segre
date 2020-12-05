@@ -19,6 +19,7 @@ fsm_state_e next_state;
 always_ff @(posedge clk_i) begin
     unique case(state)
         IF_STATE: begin
+            //
             if (mem_ready_i) begin
                 state <= ID_STATE;
             end

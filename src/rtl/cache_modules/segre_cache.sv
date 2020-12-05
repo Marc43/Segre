@@ -15,6 +15,7 @@ module segre_cache #(parameter ICACHE_DCACHE = ICACHE)
     input logic [WORD_SIZE-1:0] data_i,
     input logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] from_mem_cache_line_i,
     output logic is_hit_o, // If 1 hit, 0 miss (es un temazo!) (fer servir com rd de memoria ~is_hit)
+    output logic is_busy_o,
     output logic writeback_mem_o,
     output logic [WORD_SIZE-1:0] data_o,
     output logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] to_mem_cache_line_o,
@@ -66,7 +67,9 @@ logic is_hit;
 logic [WORD_SIZE-1:0] data_from_cache_data;
 logic reading_valid_entry_sb_o;
 logic draining_buffer_sb_o;
+logic draining_buffer;
 logic is_hit_sb_o;
+logic do_not_block_state_update;
 
 assign write_line_from_mem = ((cache_rd_act_state == REQ_MEM_DATA_RD || cache_wr_act_state == REQ_MEM_DATA_WR) && rcvd_mem_request_i);
 
@@ -82,7 +85,12 @@ assign data_o = (cache_rd_act_state == READING_DATA) ? data_from_cache_data : 'b
 
 assign is_hit_o = is_hit && (cache_rd_act_state == REQ_MEM_DATA_RD || cache_rd_act_state == READING_DATA || cache_wr_act_state == READING_TAGS);
 
-assign store_buffer_draining_o = ICACHE_DCACHE ? draining_buffer_sb_o : 0;
+assign draining_buffer = ICACHE_DCACHE ? draining_buffer_sb_o : 0;
+assign store_buffer_draining_o = ICACHE_DCACHE ? draining_buffer : 0;
+
+assign is_busy_o = draining_buffer ;
+
+assign do_not_block_state_update = ICACHE_DCACHE ? draining_buffer || (!is_hit && is_hit_sb_o) : 1;
 
 always_ff @(posedge clk_i, negedge rsn_i) begin
     if(!rsn_i) begin
@@ -105,7 +113,7 @@ always_comb begin
      *  - sb is draining
      *  - there is a miss in the cache and there is a hit in the sb, we need to drain first.
      */
-    else if (draining_buffer_sb_o || (!is_hit && is_hit_sb_o)) begin
+    else if (do_not_block_state_update) begin
         cache_wr_next_state = cache_wr_act_state;
         cache_rd_next_state = cache_rd_act_state;
     end
@@ -277,7 +285,6 @@ generate
             .reading_valid_entry_o(reading_valid_entry_sb_o),
 
             .is_draining_o(draining_buffer_sb_o)
-
         );
 endgenerate
 

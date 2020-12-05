@@ -20,7 +20,7 @@ module segre_soc ();
         .clk_i       (segre_core_if.clk),
         .rsn_i       (segre_core_if.rsn),
         .data_i      (segre_core_if.mem_wr_data),
-        .data_o      (segre_core_if.mem_rd_data),
+        .cache_line_o (segre_core_if.mem_rd_data),
         .addr_i      (segre_core_if.addr),
         .mem_ready_o (segre_core_if.mem_ready),
         .rd_i        (segre_core_if.mem_rd),

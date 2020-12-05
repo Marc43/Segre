@@ -6,7 +6,7 @@ module segre_mem_stage (
     input logic rsn_i,
 
     // Memory
-    input logic  [WORD_SIZE-1:0] data_i,
+    input logic  [CACHE_LINE_SIZE_BYTES-1:0][7:0] data_i,
     output logic [WORD_SIZE-1:0] data_o,
     output logic [WORD_SIZE-1:0] addr_o,
     output logic memop_rd_o,
@@ -46,16 +46,16 @@ always_comb begin
         unique case(memop_type_i)
             BYTE: mem_data = { {24{data_i[7]}}, data_i[7:0] };
             HALF: mem_data = { {16{data_i[15]}}, data_i[15:0] };
-            WORD: mem_data = data_i;
-            default: mem_data = data_i;
+            WORD: mem_data = data_i[WORD_SIZE-1:0];
+            default: mem_data = data_i[WORD_SIZE-1:0];
         endcase
     end
     else begin
         unique case(memop_type_i)
             BYTE: mem_data = { {24{1'b0}}, data_i[7:0] };
             HALF: mem_data = { {16{1'b0}}, data_i[15:0] };
-            WORD: mem_data = data_i;
-            default: mem_data = data_i;
+            WORD: mem_data = data_i[WORD_SIZE-1:0];
+            default: mem_data = data_i[WORD_SIZE-1:0];
         endcase
     end
 end

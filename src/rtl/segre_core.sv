@@ -6,7 +6,7 @@ module segre_core (
     input logic rsn_i,
 
     // Memory signals
-    input  logic [WORD_SIZE-1:0] mem_rd_data_i,
+    input  logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] mem_rd_data_i,
     output logic [WORD_SIZE-1:0] mem_wr_data_o,
     output logic [ADDR_SIZE-1:0] addr_o,
     input  logic mem_ready_i,
@@ -77,7 +77,7 @@ segre_if_stage if_stage (
     .rsn_i (rsn_i),
 
     // Memory
-    .instr_i     (mem_rd_data_i),
+    .cache_instr_line_i (mem_rd_data_i),
     .mem_ready_i (mem_ready_i),
     .pc_o        (if_addr),
     .mem_rd_o    (if_mem_rd),
@@ -90,7 +90,10 @@ segre_if_stage if_stage (
 
     // WB interface
     .tkbr_i      (wb_tkbr),
-    .new_pc_i    (wb_new_pc)
+    .new_pc_i    (wb_new_pc),
+
+    // To controller signals
+    .waiting_mem_req_o (waiting_mem_req_if)
 );
 
 segre_id_stage id_stage (

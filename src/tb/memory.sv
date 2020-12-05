@@ -22,7 +22,7 @@ module memory (
     input memop_data_type_e data_type_i,
     input logic [WORD_SIZE-1:0] addr_i,
     input logic [WORD_SIZE-1:0] data_i,
-    output logic [WORD_SIZE-1:0] data_o
+    output logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] cache_line_o
 );
 
 parameter NUM_WORDS = 1024 * 64; // 64Kb
@@ -35,7 +35,7 @@ parameter REQUEST_DURATION = 9;
 
 logic [7:0] mem [NUM_WORDS-1:0];
 
-logic [WORD_SIZE-1:0] rd_data;
+logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] rd_data;
 
 // If read or write, there's a request to mem
 logic mem_request;
@@ -167,7 +167,10 @@ always @(posedge clk_i) begin
 
         // Read
         if (read_data && aux_rd) begin
-            rd_data = {mem[addr_i+3], mem[addr_i+2], mem[addr_i+1], mem[addr_i]};
+            rd_data = 0;
+            for (int i = CACHE_LINE_SIZE_BYTES-1; i >= 0; i--) begin
+                rd_data = {rd_data, mem[addr_i+i]};
+            end
         end
 
         // Write
@@ -198,7 +201,7 @@ always @(posedge clk_i) begin
 end
 
 always @(posedge clk_i) begin
-    data_o <= rd_data;
+    cache_line_o <= rd_data;
 end
 
 task memory_verbose;
@@ -211,4 +214,4 @@ task memory_verbose;
     end
 endtask
 
-endmodule
+endmodule : memory
