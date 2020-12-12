@@ -56,7 +56,7 @@ function logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] write_value_into_line(input logi
 
 endfunction : write_value_into_line
 
-function logic [WORD_SIZE-1:0] read_from_cache(input logic [N-1:M] addr_index, input logic [M-1:0] addr_byte, input memop_data_type_e data_type);
+function logic [WORD_SIZE-1:0] read_from_cache(input logic [N-1:M] addr_index, input logic [M-1:0] addr_byte, input memop_data_type_e data_type, input [NUMBER_OF_LINES-1:0][CACHE_LINE_SIZE_BYTES-1:0][7:0] cache_data);
     case (data_type)
         BYTE: begin
             return cache_data[addr_index][addr_byte];
@@ -93,6 +93,6 @@ always_ff @(posedge clk_i, negedge rsn_i) begin
 end
 
 assign to_mem_cache_line_o = cache_data[addr_index];
-assign data_o = cache_data[addr_index];
+assign data_o = read_from_cache(addr_index, addr_byte, data_type_i, cache_data);
 
 endmodule : segre_cache_data

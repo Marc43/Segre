@@ -76,7 +76,7 @@ module top_tb;
     endtask
 
     function bit keep_running_tb();
-        if (soc.segre_core_if.addr < soc.tb_mem.DATA_REGION && soc.segre_core_if.mem_rd_data == 32'hfff01073) begin
+        if (soc.dut.id_instr == 32'hfff01073) begin
             return 0;
         end
 
@@ -131,14 +131,12 @@ module top_tb;
         forever begin
             static string instr_decoded;
             @(posedge clk);
-            if (soc.segre_core_if.mem_rd) begin
-                if (soc.segre_core_if.addr < soc.tb_mem.DATA_REGION) begin
-                    $display("DATA TO SEND LIBDECODER: %0d", soc.segre_core_if.mem_rd_data);
+            if (soc.dut.fsm_state == IF_STATE) begin
+                    $display("DATA TO SEND LIBDECODER: %0d", soc.dut.id_instr);
 `ifndef USE_MODELSIM
-                    instr_decoded = decode_instruction(int'(soc.segre_core_if.mem_rd_data));
+                    instr_decoded = decode_instruction(int'(soc.dut.id_instr));
 `endif
-                    `uvm_info("top_tb", $sformatf("PC: 0x%0h: %s (0x%0h) ", soc.segre_core_if.addr, instr_decoded, soc.segre_core_if.mem_rd_data), UVM_LOW)
-                end
+                    `uvm_info("top_tb", $sformatf("PC: 0x%0h: %s (0x%0h) ", soc.dut.if_addr, instr_decoded, soc.dut.id_instr), UVM_LOW)
             end
         end
         `uvm_fatal("top_tb", "Shouldn't have reach this part of the monitor_tb")

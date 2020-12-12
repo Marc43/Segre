@@ -17,6 +17,7 @@ module segre_core (
 //IF STAGE
 logic [WORD_SIZE-1:0] if_addr;
 logic if_mem_rd;
+logic instruction_hit_if;
 // ID STAGE
 logic [WORD_SIZE-1:0] id_instr;
 // REGISTER FILE
@@ -93,7 +94,7 @@ segre_if_stage if_stage (
     .new_pc_i    (wb_new_pc),
 
     // To controller signals
-    .waiting_mem_req_o (waiting_mem_req_if)
+    .instruction_hit_o (instruction_hit_if)
 );
 
 segre_id_stage id_stage (
@@ -231,6 +232,7 @@ segre_controller controller (
 
     .is_mem_instr_i (mem_stage_rdwr),
     .mem_ready_i (mem_ready_i),
+    .instruction_hit_if_i (instruction_hit_if),
 
     // State
     .state_o (fsm_state)

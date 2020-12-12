@@ -22,7 +22,7 @@ module segre_if_stage (
     input logic [WORD_SIZE-1:0] new_pc_i,
 
     // To controller signals
-    output logic waiting_mem_req_o
+    output logic instruction_hit_o
 );
 
 // Cache inputs
@@ -44,6 +44,7 @@ assign rd = (fsm_state_i == IF_STATE) ? 1'b1 : 1'b0;
 assign wr = 0;
 assign is_alu = 0;
 assign data = 0;
+assign instruction_hit_o = is_hit;
 
 logic [ADDR_SIZE-1:0] nxt_pc;
 
@@ -62,7 +63,7 @@ instruction_cache
 
     .rcvd_mem_request_i(mem_ready_i),
     .data_type_i(data_type),
-    .addr_i(nxt_pc),
+    .addr_i(pc_o),
     .data_i(data),
     .from_mem_cache_line_i(cache_instr_line_i),
 
@@ -80,15 +81,15 @@ always_ff @(posedge clk_i) begin
     if (!rsn_i) begin
         nxt_pc <= 0;
     end
-    else if (!mem_ready_i && fsm_state_i == IF_STATE) begin
+    else if (!instruction_hit_o && fsm_state_i == IF_STATE) begin
         nxt_pc <= nxt_pc;
+    end
+    else if (instruction_hit_o && fsm_state_i == IF_STATE) begin
+        nxt_pc <= nxt_pc + 4;
     end
     else begin
         if (tkbr_i && fsm_state_i == WB_STATE) begin
             nxt_pc <= new_pc_i;
-        end
-        else if (fsm_state_i == WB_STATE) begin
-            nxt_pc <= nxt_pc + 4;
         end
         else begin
             nxt_pc <= nxt_pc;

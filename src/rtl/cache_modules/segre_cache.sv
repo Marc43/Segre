@@ -90,7 +90,7 @@ assign store_buffer_draining_o = ICACHE_DCACHE ? draining_buffer : 0;
 
 assign is_busy_o = draining_buffer ;
 
-assign do_not_block_state_update = ICACHE_DCACHE ? draining_buffer || (!is_hit && is_hit_sb_o) : 1;
+assign do_not_block_state_update = ICACHE_DCACHE ? draining_buffer || (!is_hit && is_hit_sb_o) : 0;
 
 always_ff @(posedge clk_i, negedge rsn_i) begin
     if(!rsn_i) begin

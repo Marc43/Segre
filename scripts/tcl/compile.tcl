@@ -20,6 +20,13 @@ vlib $work_dir
 # Compile packages
 vlog -sv -work $work_dir $pkg_dir/segre_pkg.sv
 
+# Compile C A C H E
+vlog -sv -work $work_dir $rtl_dir/cache_modules/segre_cache_data.sv
+vlog -sv -work $work_dir $rtl_dir/cache_modules/segre_cache_tags.sv
+vlog -sv -work $work_dir $rtl_dir/cache_modules/segre_cache.sv
+
+vlog -sv -work $work_dir $rtl_dir/cache_modules/segre_store_buffer.sv
+
 # Compile rtl
 vlog -sv -work $work_dir $rtl_dir/segre_controller.sv
 vlog -sv -work $work_dir $rtl_dir/segre_if_stage.sv
@@ -32,6 +39,7 @@ vlog -sv -work $work_dir $rtl_dir/segre_mem_stage.sv
 vlog -sv -work $work_dir $rtl_dir/segre_register_file.sv
 vlog -sv -work $work_dir $rtl_dir/segre_core.sv
 vlog -sv -work $work_dir $rtl_dir/segre_soc.sv
+
 
 # Compile tb
 vlog -sv -work $work_dir $tb_dir/interface.sv
