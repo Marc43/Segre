@@ -76,7 +76,7 @@ module top_tb;
     endtask
 
     function bit keep_running_tb();
-        if (soc.dut.id_instr == 32'hfff01073) begin
+        if (soc.dut.id_instr == 32'hfff01073 && soc.dut.fsm_state == ID_STATE) begin
             return 0;
         end
 

@@ -16,24 +16,29 @@ module segre_mem_stage (
     // EX MEM interface
     // ALU
     input logic [WORD_SIZE-1:0] alu_res_i,
+
     // Register file
     input logic rf_we_i,
     input logic [REG_SIZE-1:0] rf_waddr_i,
     input logic [WORD_SIZE-1:0] rf_st_data_i,
+
     // Memop
     input memop_data_type_e memop_type_i,
     input logic memop_sign_ext_i,
     input logic memop_rd_i,
     input logic memop_wr_i,
+
     // Branch | Jal
     input logic tkbr_i,
     input logic [WORD_SIZE-1:0] new_pc_i,
 
     // MEM WB interface
     output logic [WORD_SIZE-1:0] op_res_o,
+
     // Register file
     output logic rf_we_o,
     output logic [REG_SIZE-1:0] rf_waddr_o,
+
     // Branch | Jal
     output logic tkbr_o,
     output logic [WORD_SIZE-1:0] new_pc_o

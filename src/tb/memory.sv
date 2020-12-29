@@ -37,6 +37,10 @@ logic [7:0] mem [NUM_WORDS-1:0];
 
 logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] rd_data;
 
+// This signal is used to get the first 4 bits of the addr to 0 in order to read cache lines correctly
+logic [WORD_SIZE-1:0] aligned_addr_to_cache_lines;
+assign aligned_addr_to_cache_lines = {addr_i >> 4, 4'b0000}; // For a good desing, use parameters...
+
 // If read or write, there's a request to mem
 logic mem_request;
 assign mem_request = rd_i | wr_i;
@@ -169,7 +173,7 @@ always @(posedge clk_i) begin
         if (read_data && aux_rd) begin
             rd_data = 0;
             for (int i = CACHE_LINE_SIZE_BYTES-1; i >= 0; i--) begin
-                rd_data = {rd_data, mem[addr_i+i]};
+                rd_data = {rd_data, mem[aligned_addr_to_cache_lines+i]};
             end
         end
 

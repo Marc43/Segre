@@ -1,4 +1,5 @@
 onerror {resume}
+quietly virtual function -install /top_tb/soc/dut/if_stage/instruction_cache/data -env /top_tb/#INITIAL#56 { &{/top_tb/soc/dut/if_stage/instruction_cache/data/cache_data[3][3], /top_tb/soc/dut/if_stage/instruction_cache/data/cache_data[3][2], /top_tb/soc/dut/if_stage/instruction_cache/data/cache_data[3][1], /top_tb/soc/dut/if_stage/instruction_cache/data/cache_data[3][0] }} instr_0
 quietly WaveActivateNextPane {} 0
 add wave -noupdate -group {Testbench Memory} /top_tb/soc/tb_mem/clk_i
 add wave -noupdate -group {Testbench Memory} /top_tb/soc/tb_mem/rsn_i
@@ -68,27 +69,27 @@ add wave -noupdate -group DUT /top_tb/soc/dut/wb_new_pc
 add wave -noupdate -group DUT /top_tb/soc/dut/wb_tkbr
 add wave -noupdate -group DUT /top_tb/soc/dut/mem_stage_rdwr
 add wave -noupdate -divider Stages
-add wave -noupdate -group {IF Stage} /top_tb/soc/dut/if_stage/clk_i
-add wave -noupdate -group {IF Stage} /top_tb/soc/dut/if_stage/rsn_i
-add wave -noupdate -group {IF Stage} /top_tb/soc/dut/if_stage/cache_instr_line_i
-add wave -noupdate -group {IF Stage} /top_tb/soc/dut/if_stage/mem_ready_i
-add wave -noupdate -group {IF Stage} /top_tb/soc/dut/if_stage/pc_o
-add wave -noupdate -group {IF Stage} /top_tb/soc/dut/if_stage/mem_rd_o
-add wave -noupdate -group {IF Stage} /top_tb/soc/dut/if_stage/fsm_state_i
-add wave -noupdate -group {IF Stage} /top_tb/soc/dut/if_stage/instr_o
-add wave -noupdate -group {IF Stage} /top_tb/soc/dut/if_stage/tkbr_i
-add wave -noupdate -group {IF Stage} /top_tb/soc/dut/if_stage/new_pc_i
-add wave -noupdate -group {IF Stage} /top_tb/soc/dut/if_stage/data_type
-add wave -noupdate -group {IF Stage} /top_tb/soc/dut/if_stage/rd
-add wave -noupdate -group {IF Stage} /top_tb/soc/dut/if_stage/wr
-add wave -noupdate -group {IF Stage} /top_tb/soc/dut/if_stage/is_alu
-add wave -noupdate -group {IF Stage} /top_tb/soc/dut/if_stage/data
-add wave -noupdate -group {IF Stage} /top_tb/soc/dut/if_stage/store_buffer_draining
-add wave -noupdate -group {IF Stage} /top_tb/soc/dut/if_stage/is_hit
-add wave -noupdate -group {IF Stage} /top_tb/soc/dut/if_stage/writeback
-add wave -noupdate -group {IF Stage} /top_tb/soc/dut/if_stage/to_mem_cache_line
-add wave -noupdate -group {IF Stage} /top_tb/soc/dut/if_stage/instr_to_feed_decode
-add wave -noupdate -group {IF Stage} /top_tb/soc/dut/if_stage/nxt_pc
+add wave -noupdate -expand -group {IF Stage} /top_tb/soc/dut/if_stage/clk_i
+add wave -noupdate -expand -group {IF Stage} /top_tb/soc/dut/if_stage/rsn_i
+add wave -noupdate -expand -group {IF Stage} /top_tb/soc/dut/if_stage/cache_instr_line_i
+add wave -noupdate -expand -group {IF Stage} /top_tb/soc/dut/if_stage/mem_ready_i
+add wave -noupdate -expand -group {IF Stage} /top_tb/soc/dut/if_stage/pc_o
+add wave -noupdate -expand -group {IF Stage} /top_tb/soc/dut/if_stage/mem_rd_o
+add wave -noupdate -expand -group {IF Stage} /top_tb/soc/dut/if_stage/fsm_state_i
+add wave -noupdate -expand -group {IF Stage} /top_tb/soc/dut/if_stage/instr_o
+add wave -noupdate -expand -group {IF Stage} /top_tb/soc/dut/if_stage/tkbr_i
+add wave -noupdate -expand -group {IF Stage} /top_tb/soc/dut/if_stage/new_pc_i
+add wave -noupdate -expand -group {IF Stage} /top_tb/soc/dut/if_stage/data_type
+add wave -noupdate -expand -group {IF Stage} /top_tb/soc/dut/if_stage/rd
+add wave -noupdate -expand -group {IF Stage} /top_tb/soc/dut/if_stage/wr
+add wave -noupdate -expand -group {IF Stage} /top_tb/soc/dut/if_stage/is_alu
+add wave -noupdate -expand -group {IF Stage} /top_tb/soc/dut/if_stage/data
+add wave -noupdate -expand -group {IF Stage} /top_tb/soc/dut/if_stage/store_buffer_draining
+add wave -noupdate -expand -group {IF Stage} /top_tb/soc/dut/if_stage/is_hit
+add wave -noupdate -expand -group {IF Stage} /top_tb/soc/dut/if_stage/writeback
+add wave -noupdate -expand -group {IF Stage} /top_tb/soc/dut/if_stage/to_mem_cache_line
+add wave -noupdate -expand -group {IF Stage} /top_tb/soc/dut/if_stage/instr_to_feed_decode
+add wave -noupdate -expand -group {IF Stage} /top_tb/soc/dut/if_stage/nxt_pc
 add wave -noupdate -group {ID Stage} /top_tb/soc/dut/id_stage/clk_i
 add wave -noupdate -group {ID Stage} /top_tb/soc/dut/id_stage/rsn_i
 add wave -noupdate -group {ID Stage} /top_tb/soc/dut/id_stage/fsm_state_i
@@ -207,13 +208,142 @@ add wave -noupdate /top_tb/soc/dut/controller/mem_ready_i
 add wave -noupdate /top_tb/soc/dut/controller/state_o
 add wave -noupdate /top_tb/soc/dut/controller/state
 add wave -noupdate /top_tb/soc/dut/controller/next_state
+add wave -noupdate /top_tb/soc/dut/if_stage/clk_i
+add wave -noupdate /top_tb/soc/dut/if_stage/rsn_i
+add wave -noupdate /top_tb/soc/dut/if_stage/cache_instr_line_i
+add wave -noupdate /top_tb/soc/dut/if_stage/mem_ready_i
+add wave -noupdate /top_tb/soc/dut/if_stage/pc_o
+add wave -noupdate /top_tb/soc/dut/if_stage/mem_rd_o
+add wave -noupdate /top_tb/soc/dut/if_stage/fsm_state_i
+add wave -noupdate /top_tb/soc/dut/if_stage/instr_o
+add wave -noupdate /top_tb/soc/dut/if_stage/tkbr_i
+add wave -noupdate /top_tb/soc/dut/if_stage/new_pc_i
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_hit_o
+add wave -noupdate /top_tb/soc/dut/if_stage/data_type
+add wave -noupdate /top_tb/soc/dut/if_stage/rd
+add wave -noupdate /top_tb/soc/dut/if_stage/wr
+add wave -noupdate /top_tb/soc/dut/if_stage/is_alu
+add wave -noupdate /top_tb/soc/dut/if_stage/data
+add wave -noupdate /top_tb/soc/dut/if_stage/store_buffer_draining
+add wave -noupdate /top_tb/soc/dut/if_stage/is_hit
+add wave -noupdate /top_tb/soc/dut/if_stage/writeback
+add wave -noupdate /top_tb/soc/dut/if_stage/to_mem_cache_line
+add wave -noupdate /top_tb/soc/dut/if_stage/instr_to_feed_decode
+add wave -noupdate /top_tb/soc/dut/if_stage/nxt_pc
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/clk_i
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/rsn_i
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/rd_i
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/wr_i
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/is_alu_i
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/rcvd_mem_request_i
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/data_type_i
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/addr_i
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/data_i
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/from_mem_cache_line_i
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/is_hit_o
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/writeback_mem_o
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/data_o
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/to_mem_cache_line_o
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/store_buffer_draining_o
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/addr_tag
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/addr_index
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/addr_byte
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/valid_bits
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/dirty_bits
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/cache_wr_act_state
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/cache_rd_act_state
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/cache_wr_next_state
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/cache_rd_next_state
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/is_writeback
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/write_line_from_mem
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/write_into_word
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/is_hit_from_tags
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/is_hit
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/data_from_cache_data
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/reading_valid_entry_sb_o
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/draining_buffer_sb_o
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/is_hit_sb_o
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/cache_sb_mux_data
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/cache_sb_mux_addr
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/cache_sb_mux_dtype
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/data_sb_o
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/addr_sb_o
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/data_type_sb_o
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/sb_muxes_select
+add wave -noupdate -divider DCache
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/clk_i
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/rsn_i
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/rd_i
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/wr_i
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/is_alu_i
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/rcvd_mem_request_i
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/data_type_i
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/addr_i
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/data_i
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/from_mem_cache_line_i
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/is_hit_o
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/is_busy_o
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/writeback_mem_o
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/data_o
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/to_mem_cache_line_o
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/store_buffer_draining_o
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/addr_tag
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/addr_index
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/addr_byte
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/valid_bits
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/dirty_bits
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/cache_wr_act_state
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/cache_rd_act_state
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/cache_wr_next_state
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/cache_rd_next_state
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/is_writeback
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/write_line_from_mem
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/write_into_word
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/is_hit_from_tags
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/is_hit
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/data_from_cache_data
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/reading_valid_entry_sb_o
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/draining_buffer_sb_o
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/draining_buffer
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/is_hit_sb_o
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/do_not_block_state_update
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/cache_sb_mux_data
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/cache_sb_mux_addr
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/cache_sb_mux_dtype
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/data_sb_o
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/addr_sb_o
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/data_type_sb_o
+add wave -noupdate /top_tb/soc/dut/if_stage/instruction_cache/sb_muxes_select
+add wave -noupdate -expand -group Data /top_tb/soc/dut/if_stage/instruction_cache/data/clk_i
+add wave -noupdate -expand -group Data /top_tb/soc/dut/if_stage/instruction_cache/data/rsn_i
+add wave -noupdate -expand -group Data /top_tb/soc/dut/if_stage/instruction_cache/data/wr_into_word_i
+add wave -noupdate -expand -group Data /top_tb/soc/dut/if_stage/instruction_cache/data/data_type_i
+add wave -noupdate -expand -group Data /top_tb/soc/dut/if_stage/instruction_cache/data/wr_line_i
+add wave -noupdate -expand -group Data /top_tb/soc/dut/if_stage/instruction_cache/data/addr_i
+add wave -noupdate -expand -group Data /top_tb/soc/dut/if_stage/instruction_cache/data/data_i
+add wave -noupdate -expand -group Data /top_tb/soc/dut/if_stage/instruction_cache/data/from_mem_cache_line_i
+add wave -noupdate -expand -group Data /top_tb/soc/dut/if_stage/instruction_cache/data/to_mem_cache_line_o
+add wave -noupdate -expand -group Data /top_tb/soc/dut/if_stage/instruction_cache/data/data_o
+add wave -noupdate -expand -group Data /top_tb/soc/dut/if_stage/instruction_cache/data/addr_tag
+add wave -noupdate -expand -group Data /top_tb/soc/dut/if_stage/instruction_cache/data/addr_index
+add wave -noupdate -expand -group Data /top_tb/soc/dut/if_stage/instruction_cache/data/addr_byte
+add wave -noupdate -expand -group Data -expand -subitemconfig {{/top_tb/soc/dut/if_stage/instruction_cache/data/cache_data[3]} -expand} /top_tb/soc/dut/if_stage/instruction_cache/data/cache_data
+add wave -noupdate -expand -group Tags /top_tb/soc/dut/if_stage/instruction_cache/tags/clk_i
+add wave -noupdate -expand -group Tags /top_tb/soc/dut/if_stage/instruction_cache/tags/rsn_i
+add wave -noupdate -expand -group Tags /top_tb/soc/dut/if_stage/instruction_cache/tags/addr_i
+add wave -noupdate -expand -group Tags /top_tb/soc/dut/if_stage/instruction_cache/tags/wr_en_i
+add wave -noupdate -expand -group Tags /top_tb/soc/dut/if_stage/instruction_cache/tags/is_hit_o
+add wave -noupdate -expand -group Tags /top_tb/soc/dut/if_stage/instruction_cache/tags/addr_tag
+add wave -noupdate -expand -group Tags /top_tb/soc/dut/if_stage/instruction_cache/tags/addr_index
+add wave -noupdate -expand -group Tags /top_tb/soc/dut/if_stage/instruction_cache/tags/addr_byte
+add wave -noupdate -expand -group Tags -expand /top_tb/soc/dut/if_stage/instruction_cache/tags/cache_tags
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {163012 ps} 0}
+WaveRestoreCursors {{Cursor 1} {5767354 ps} 0}
 quietly wave cursor active 1
-configure wave -namecolwidth 348
+configure wave -namecolwidth 191
 configure wave -valuecolwidth 100
 configure wave -justifyvalue left
-configure wave -signalnamewidth 0
+configure wave -signalnamewidth 1
 configure wave -snapdistance 10
 configure wave -datasetprefix 0
 configure wave -rowmargin 4
@@ -224,4 +354,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {36547 ps} {483247 ps}
+WaveRestoreZoom {5889465 ps} {6421381 ps}

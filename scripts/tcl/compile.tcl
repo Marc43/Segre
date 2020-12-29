@@ -56,3 +56,5 @@ vsim -debugDB -dpicpppath /usr/bin/gcc -l build/sim_transcript +TEST_NAME=$test_
 
 # Add the wave to the simulation
 do scripts/wave.do
+
+run -all

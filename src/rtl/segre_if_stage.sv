@@ -63,7 +63,7 @@ instruction_cache
 
     .rcvd_mem_request_i(mem_ready_i),
     .data_type_i(data_type),
-    .addr_i(pc_o),
+    .addr_i(nxt_pc),
     .data_i(data),
     .from_mem_cache_line_i(cache_instr_line_i),
 
@@ -100,7 +100,7 @@ end
 assign mem_rd_o = rd && !is_hit;
 
 always_ff @(posedge clk_i) begin
-    instr_o <= is_hit ? instr_to_feed_decode : NOP_INSTR;
+    instr_o <= (is_hit && (fsm_state_i == IF_STATE)) ? instr_to_feed_decode : NOP_INSTR;
     pc_o    <= nxt_pc;
 end
 
