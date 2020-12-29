@@ -125,9 +125,17 @@ typedef struct packed {
 parameter ARB_BUF_SIZE = 16;
 parameter ARB_PTR_SIZE = $clog2(ARB_BUF_SIZE);
 
-//Virtual memory
+// Virtual memory (simplified TLB entry example, excluding internal index) 
+// |                    VPage bits            |||||||  internal page index  |
+// |31--------------------------------------12|||||||11--------------------0|
+// |                                          |||||||                       |
+
 parameter PHYSICAL_ADDR_SIZE = 20;
+parameter VIRT_PAGE_BITS = 20;
+parameter PHYS_PAGE_BITS = 8;
+
 parameter TLB_ENTRIES = 32;
-parameter TLB_ENTRY_BITS = $clog2(TLB_ENTRIES);//Number of bits needed to represent NUM_SB_ENTRIES
+parameter TLB_ENTRY_BITS = $clog2(TLB_ENTRIES); //Should be 5 (to have 32 TLB entries)
+parameter TLB_TAG_BITS = VIRT_PAGE_BITS - TLB_ENTRY_BITS; //Should be 15
 
 endpackage : segre_pkg
