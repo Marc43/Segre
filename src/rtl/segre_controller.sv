@@ -8,6 +8,8 @@ module segre_controller (
     input logic is_mem_instr_i,
     input logic mem_ready_i,
     input logic instruction_hit_if_i,
+    input logic data_cache_is_busy_i,
+    input logic data_cache_is_hit_i,
 
     // State
     output fsm_state_e state_o
@@ -30,17 +32,14 @@ always_comb begin
         ID_STATE: next_state = EX_STATE;
         EX_STATE: next_state = MEM_STATE;
         MEM_STATE: begin
-              if (is_mem_instr_i) begin
-                  if (mem_ready_i) begin
-                    next_state = WB_STATE;
-                  end
-                  else begin
-                    next_state = MEM_STATE;
-                  end
+
+              if (data_cache_is_busy_i || (!data_cache_is_hit_i && is_mem_instr_i)) begin
+                next_state = MEM_STATE;
               end
               else begin
                 next_state = WB_STATE;
               end
+
     // Equivalent to:
     //            if (is_mem_instr_i && !mem_ready_i) begin
     //                next_state = MEM_STATE;

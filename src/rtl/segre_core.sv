@@ -7,13 +7,14 @@ module segre_core (
 
     // Memory signals
     input  logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] mem_rd_data_i,
-    output logic [WORD_SIZE-1:0] mem_wr_data_o,
+    output logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] mem_wr_data_o,
     output logic [ADDR_SIZE-1:0] addr_o,
     input  logic mem_ready_i,
     output logic mem_rd_o,
     output logic mem_wr_o,
     output memop_data_type_e mem_data_type_o
 );
+
 //IF STAGE
 logic [WORD_SIZE-1:0] if_addr;
 logic if_mem_rd;
@@ -45,7 +46,7 @@ memop_data_type_e mem_memop_type;
 memop_data_type_e mem_data_type;
 logic [WORD_SIZE-1:0] mem_alu_res;
 logic [WORD_SIZE-1:0] mem_addr;
-logic [WORD_SIZE-1:0] mem_wr_data;
+logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] mem_wr_data;
 logic [WORD_SIZE-1:0] mem_rf_st_data;
 logic [REG_SIZE-1:0]  mem_rf_waddr;
 logic mem_memop_rd;
@@ -56,6 +57,8 @@ logic mem_rd;
 logic mem_wr;
 logic mem_tkbr;
 logic [WORD_SIZE-1:0] mem_new_pc;
+logic mem_data_cache_is_busy;
+logic mem_data_cache_is_hit;
 // WB STAGE
 logic [WORD_SIZE-1:0] wb_res;
 logic [REG_SIZE-1:0] wb_rf_waddr;
@@ -64,7 +67,7 @@ logic [WORD_SIZE-1:0] wb_new_pc;
 logic wb_tkbr;
 
 logic mem_stage_rdwr;
-assign mem_stage_rdwr = fsm_state == MEM_STATE && (mem_rd || mem_wr);
+assign mem_stage_rdwr = (fsm_state == MEM_STATE) && (mem_rd || mem_wr);
 
 assign addr_o          = fsm_state == MEM_STATE ? mem_addr       : if_addr;
 assign mem_rd_o        = fsm_state == MEM_STATE ? mem_rd         : if_mem_rd;
@@ -179,13 +182,20 @@ segre_mem_stage mem_stage (
     .clk_i            (clk_i),
     .rsn_i            (rsn_i),
 
+    // To Logic
+    .cache_is_busy_o (mem_data_cache_is_busy),
+    .cache_is_hit_o  (mem_data_cache_is_hit),
+
     // Memory
-    .data_i           (mem_rd_data_i),
-    .data_o           (mem_wr_data),
+    //.data_i         (mem_rd_data_i),
+    //.data_o           (mem_wr_data),
     .addr_o           (mem_addr),
     .memop_rd_o       (mem_rd),
     .memop_wr_o       (mem_wr),
     .memop_type_o     (mem_data_type),
+    .cache_line_i     (mem_rd_data_i),
+    .mem_ready_i      (mem_ready_i),
+    .to_mem_cache_line_o (mem_wr_data),
 
     // EX MEM interface
     // ALU
@@ -233,6 +243,8 @@ segre_controller controller (
     .is_mem_instr_i (mem_stage_rdwr),
     .mem_ready_i (mem_ready_i),
     .instruction_hit_if_i (instruction_hit_if),
+    .data_cache_is_busy_i (mem_data_cache_is_busy),
+    .data_cache_is_hit_i  (mem_data_cache_is_hit),
 
     // State
     .state_o (fsm_state)

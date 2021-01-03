@@ -163,6 +163,7 @@ always @(posedge clk_i) begin
             aux_rd = 1'b0;
             aux_wr = 1'b0;
             mem_ready_o = 1'b1;
+            cyc_counter = 0;
         end
         else begin
             read_data = 1'b0;

@@ -77,18 +77,44 @@ assign write_line_from_mem = ((cache_rd_act_state == REQ_MEM_DATA_RD || cache_wr
 assign write_into_word = ICACHE_DCACHE ? (cache_wr_act_state == WRITING_DATA) || reading_valid_entry_sb_o
                                        : (cache_wr_act_state == WRITING_DATA);
 assign is_writeback = cache_rd_act_state == WRITEBACK_RD || cache_wr_act_state == WRITEBACK_WR;
-assign is_hit = valid_bits[addr_index] && is_hit_from_tags;
+assign is_hit = valid_bits[addr_index] && is_hit_from_tags; // Doesn't take into account the state of the cache
 
+// lmao quan hem escrit aquesta brossa jajajaj
 assign writeback_mem_o = is_writeback ? 1'b1 : 1'b0;
 
 assign data_o = (cache_rd_act_state == READING_DATA) ? data_from_cache_data : 'b0;
 
-assign is_hit_o = is_hit && (cache_rd_act_state == REQ_MEM_DATA_RD || cache_rd_act_state == READING_DATA || cache_wr_act_state == READING_TAGS);
+// This signal takes into account whether the states are the correct ones.
+// Becoming uglier change by change...
+logic is_hit_in_tags_state;
+assign is_hit_in_tags_state = is_hit && ((cache_rd_act_state == READING_DATA) && (cache_wr_act_state == READING_TAGS));
+
+assign is_hit_o = is_hit_in_tags_state;
 
 assign draining_buffer = ICACHE_DCACHE ? draining_buffer_sb_o : 0;
 assign store_buffer_draining_o = ICACHE_DCACHE ? draining_buffer : 0;
 
-assign is_busy_o = draining_buffer ;
+// Draining buffer or the operation is a miss. Then we consider the cache to be busy, this may be changed when pipelined TODO
+
+// This is kind of "complicated" for what it is, but I need to have it as a register. May be changed...
+//
+logic is_busy;
+
+always_ff @(posedge clk_i) begin
+    if (!rsn_i) begin
+        is_busy <= 0;
+    end
+    else begin
+        if ((cache_rd_act_state == READING_DATA) && rd_i || (cache_wr_act_state == READING_TAGS) && wr_i) begin
+            is_busy <= draining_buffer || !is_hit_in_tags_state;
+        end
+        else if (is_hit_in_tags_state) begin
+            is_busy <= draining_buffer;
+        end
+    end
+end
+
+assign is_busy_o = is_busy;
 
 assign do_not_block_state_update = ICACHE_DCACHE ? draining_buffer || (!is_hit && is_hit_sb_o) : 0;
 
