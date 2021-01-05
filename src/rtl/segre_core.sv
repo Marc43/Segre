@@ -69,10 +69,10 @@ logic wb_tkbr;
 logic mem_stage_rdwr;
 assign mem_stage_rdwr = (fsm_state == MEM_STATE) && (mem_rd || mem_wr);
 
-assign addr_o          = fsm_state == MEM_STATE ? mem_addr       : if_addr;
-assign mem_rd_o        = fsm_state == MEM_STATE ? mem_rd         : if_mem_rd;
-assign mem_wr_o        = fsm_state == MEM_STATE ? mem_wr         : 1'b0;
-assign mem_data_type_o = fsm_state == MEM_STATE ? mem_data_type  : WORD;
+assign addr_o          = (fsm_state == MEM_STATE) ? mem_addr       : if_addr;
+assign mem_rd_o        = (fsm_state == MEM_STATE) ? mem_rd         : if_mem_rd;
+assign mem_wr_o        = (fsm_state == MEM_STATE) ? mem_wr         : 1'b0;
+assign mem_data_type_o = (fsm_state == MEM_STATE) ? mem_data_type  : WORD;
 assign mem_wr_data_o   = mem_wr_data;
 
 segre_if_stage if_stage (

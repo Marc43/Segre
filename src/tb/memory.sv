@@ -21,7 +21,7 @@ module memory (
 
     input memop_data_type_e data_type_i,
     input logic [WORD_SIZE-1:0] addr_i,
-    input logic [WORD_SIZE-1:0] data_i,
+    input logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] data_i,
     output logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] cache_line_o
 );
 
