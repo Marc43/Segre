@@ -188,7 +188,7 @@ always_comb begin
             cache_wr_next_state = REQ_MEM_DATA_WR;
         end
         else if (cache_wr_act_state == REQ_MEM_DATA_WR && rcvd_mem_request_i) begin
-            cache_wr_next_state = READING_TAGS;
+            cache_wr_next_state = WRITING_DATA;
         end
     end
 end

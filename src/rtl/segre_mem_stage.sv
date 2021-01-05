@@ -62,7 +62,7 @@ logic check_if_hit;
 
 logic [WORD_SIZE-1:0] output_address;
 memop_data_type_e output_memop_type;
-
+logic [WORD_SIZE-1:0] output_data;
 
 memop_data_type_e muxed_memop_type;
 
@@ -120,7 +120,9 @@ assign is_alu = !memop_wr_i && !memop_rd_i;
 
 logic [WORD_SIZE-1:0] aux_addr;
 memop_data_type_e aux_memop;
+logic [WORD_SIZE-1:0] aux_data;
 
+assign aux_data = is_busy ? output_data : rf_st_data_i;
 assign aux_addr = is_busy ? output_address : alu_res_i;
 assign aux_memop = is_busy ? output_memop_type : memop_type_i;
 
@@ -141,7 +143,7 @@ data_cache
     .rcvd_mem_request_i (mem_ready_i),
     .data_type_i (aux_memop),
     .addr_i (aux_addr), // Address is calculated in the previous stage (ALU)
-    .data_i (rf_st_data_i), // Data to store comes from the register file
+    .data_i (aux_data), // Data to store comes from the register file
     .from_mem_cache_line_i (cache_line_i),
 
     .is_hit_o (is_hit),
@@ -185,6 +187,7 @@ logic [WORD_SIZE-1:0] new_pc_ff;
 always_ff @(posedge clk_i) begin
 
     if (!rsn_i) begin
+        output_data <= 0;
         output_address <= 0;
         output_memop_type <= BYTE;
         memop_rd_ff <= 0;
@@ -197,6 +200,7 @@ always_ff @(posedge clk_i) begin
     end
     else begin
         if (is_busy) begin
+            output_data <= output_data;
             output_address <= output_address;
             output_memop_type <= output_memop_type;
             memop_rd_ff <= memop_rd_ff;
@@ -208,6 +212,7 @@ always_ff @(posedge clk_i) begin
             memop_sign_ext_ff <= memop_sign_ext_ff;
         end
         else begin
+            output_data <= rf_st_data_i;
             output_address <= alu_res_i;
             output_memop_type <= memop_type_i;
             memop_rd_ff <= memop_rd_i;
@@ -233,13 +238,13 @@ always_ff @(posedge clk_i) begin
     // To WB
 
     // We need this monster because memop_rd_i signal is not re-sent because this is not pipelined TODO
-    op_res_o   = (is_busy ? memop_rd_ff : memop_rd_i) ? processed_read_cache_data : alu_res_i; // Load case : Bypassing ALU result case
+    op_res_o   <= (is_busy ? memop_rd_ff : memop_rd_i) ? processed_read_cache_data : alu_res_i; // Load case : Bypassing ALU result case
 
     // Ganas de llorar
-    rf_we_o    = check_if_hit ? (is_hit ? (is_busy ? rf_we_ff : rf_we_i) : 0) : rf_we_i;
-    rf_waddr_o = is_busy ? rf_waddr_ff : rf_waddr_i;
-    tkbr_o     = check_if_hit ? (is_hit ? (is_busy ? tkbr_ff : tkbr_i) : 0) : tkbr_i;
-    new_pc_o   = is_busy ? new_pc_ff : new_pc_i;
+    rf_we_o    <= check_if_hit ? (is_hit ? (is_busy ? rf_we_ff : rf_we_i) : 0) : rf_we_i;
+    rf_waddr_o <= is_busy ? rf_waddr_ff : rf_waddr_i;
+    tkbr_o     <= check_if_hit ? (is_hit ? (is_busy ? tkbr_ff : tkbr_i) : 0) : tkbr_i;
+    new_pc_o   <= is_busy ? new_pc_ff : new_pc_i;
 
 end
 

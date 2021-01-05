@@ -165,7 +165,6 @@ add wave -noupdate -group {EX Stage} /top_tb/soc/dut/ex_stage/alu_res
 add wave -noupdate -group {EX Stage} /top_tb/soc/dut/ex_stage/tkbr
 add wave -noupdate -expand -group {MEM Stage} /top_tb/soc/dut/mem_stage/clk_i
 add wave -noupdate -expand -group {MEM Stage} /top_tb/soc/dut/mem_stage/rsn_i
-add wave -noupdate -expand -group {MEM Stage} /top_tb/soc/dut/mem_stage/data_o
 add wave -noupdate -expand -group {MEM Stage} /top_tb/soc/dut/mem_stage/addr_o
 add wave -noupdate -expand -group {MEM Stage} /top_tb/soc/dut/mem_stage/memop_rd_o
 add wave -noupdate -expand -group {MEM Stage} /top_tb/soc/dut/mem_stage/memop_wr_o
