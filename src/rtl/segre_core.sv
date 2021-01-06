@@ -67,7 +67,7 @@ logic [WORD_SIZE-1:0] wb_new_pc;
 logic wb_tkbr;
 
 logic mem_stage_rdwr;
-assign mem_stage_rdwr = (fsm_state == MEM_STATE) && (mem_rd || mem_wr);
+assign mem_stage_rdwr = (fsm_state == MEM_STATE) && (mem_memop_rd || mem_memop_wr);
 
 assign addr_o          = (fsm_state == MEM_STATE) ? mem_addr       : if_addr;
 assign mem_rd_o        = (fsm_state == MEM_STATE) ? mem_rd         : if_mem_rd;

@@ -6,7 +6,8 @@ module segre_cache_tags (
     input logic rsn_i,
     input logic [WORD_SIZE-1:0] addr_i,
     input logic wr_en_i,
-    output logic is_hit_o
+    output logic is_hit_o,
+    output logic [WORD_SIZE-N-1:0] tag_in_index_o
 );
 
 logic [WORD_SIZE-1:N] addr_tag;
@@ -31,5 +32,6 @@ always_ff @(posedge clk_i, negedge rsn_i) begin
 end
 
 assign is_hit_o = (cache_tags[addr_index] == addr_tag);
+assign tag_in_index_o = cache_tags[addr_index];
 
 endmodule : segre_cache_tags

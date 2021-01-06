@@ -15,7 +15,6 @@ add wave -noupdate -group {Testbench Memory} /top_tb/soc/tb_mem/mem_request
 add wave -noupdate -group {Testbench Memory} /top_tb/soc/tb_mem/cyc_counter
 add wave -noupdate -group {Testbench Memory} /top_tb/soc/tb_mem/aux_rd
 add wave -noupdate -group {Testbench Memory} /top_tb/soc/tb_mem/aux_wr
-add wave -noupdate -group {Testbench Memory} /top_tb/soc/tb_mem/read_data
 add wave -noupdate -group {Testbench Memory} /top_tb/soc/tb_mem/num_of_instructions
 add wave -noupdate -group {Testbench Memory} /top_tb/soc/tb_mem/hex_file_fd
 add wave -noupdate -group DUT /top_tb/soc/dut/clk_i

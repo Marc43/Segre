@@ -17,9 +17,12 @@ module segre_cache #(parameter ICACHE_DCACHE = ICACHE)
     output logic is_hit_o, // If 1 hit, 0 miss (es un temazo!) (fer servir com rd de memoria ~is_hit)
     output logic is_busy_o,
     output logic writeback_mem_o,
+    output logic [WORD_SIZE-1:0] writeback_addr_o,
     output logic [WORD_SIZE-1:0] data_o,
     output logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] to_mem_cache_line_o,
-    output logic store_buffer_draining_o
+    output logic store_buffer_draining_o,
+    output logic rd_o,
+    output logic wr_o
 );
 
 /*
@@ -74,7 +77,7 @@ logic do_not_block_state_update;
 assign write_line_from_mem = ((cache_rd_act_state == REQ_MEM_DATA_RD || cache_wr_act_state == REQ_MEM_DATA_WR) && rcvd_mem_request_i);
 
 // If is ICACHE, value is 0, then we must use only the state, if it's 1 is DCACHE, we must take into account SB writes.
-assign write_into_word = ICACHE_DCACHE ? (cache_wr_act_state == WRITING_DATA) || reading_valid_entry_sb_o
+assign write_into_word = ICACHE_DCACHE ? ((cache_wr_act_state == WRITING_DATA) && (cache_rd_act_state == READING_TAGS)) || reading_valid_entry_sb_o
                                        : (cache_wr_act_state == WRITING_DATA);
 assign is_writeback = cache_rd_act_state == WRITEBACK_RD || cache_wr_act_state == WRITEBACK_WR;
 assign is_hit = valid_bits[addr_index] && is_hit_from_tags; // Doesn't take into account the state of the cache
@@ -117,6 +120,9 @@ end
 assign is_busy_o = is_busy;
 
 assign do_not_block_state_update = ICACHE_DCACHE ? draining_buffer || (!is_hit && is_hit_sb_o) : 0;
+
+assign rd_o = (cache_rd_act_state == REQ_MEM_DATA_RD);
+assign wr_o = (cache_wr_act_state == WRITEBACK_WR) || (cache_rd_act_state == WRITEBACK_RD);
 
 always_ff @(posedge clk_i, negedge rsn_i) begin
     if(!rsn_i) begin
@@ -177,18 +183,32 @@ always_comb begin
                     cache_wr_next_state = WRITEBACK_WR;
                 end
                 else begin
-                    cache_wr_next_state = REQ_MEM_DATA_WR;
+                    cache_wr_next_state = WRITING_DATA;
+                    cache_rd_next_state = REQ_MEM_DATA_RD;
                 end
+            end
+            else begin
+                cache_wr_next_state = WRITING_DATA;
             end
         end
         else if (cache_wr_act_state == WRITING_DATA) begin
-            cache_wr_next_state = READING_TAGS;
+            if (cache_rd_act_state != READING_TAGS) begin
+                cache_wr_next_state = WRITING_DATA;
+            end
+            else if (valid_bits[addr_index]) begin
+                cache_wr_next_state = READING_TAGS;
+            end
+            else begin
+                cache_wr_next_state = READING_TAGS;
+                cache_rd_next_state = REQ_MEM_DATA_RD;
+            end
         end
         else if (cache_wr_act_state == WRITEBACK_WR) begin
             cache_wr_next_state = REQ_MEM_DATA_WR;
         end
         else if (cache_wr_act_state == REQ_MEM_DATA_WR && rcvd_mem_request_i) begin
             cache_wr_next_state = WRITING_DATA;
+            cache_rd_next_state = REQ_MEM_DATA_RD;
         end
     end
 end
@@ -206,6 +226,31 @@ always_ff @(posedge clk_i, negedge rsn_i) begin
             valid_bits[addr_index] <= 1'b1;
             dirty_bits[addr_index] <= 1'b0;
         end
+        else if (is_writeback) begin
+            valid_bits[addr_index] <= 1'b0;
+            dirty_bits[addr_index] <= 1'b0;
+        end
+    end
+end
+
+logic [WORD_SIZE-N-1:0] tag_in_cacheline;
+logic [WORD_SIZE-1:0] writeback_addr;
+
+// Pick the stable one when there is no writeback.
+assign writeback_addr_o = !is_writeback ? writeback_addr : {tag_in_cacheline, addr_index, 4'b0000};
+
+always_ff @(posedge clk_i, negedge rsn_i) begin
+    if (!rsn_i) begin
+        writeback_addr <= 0;
+    end
+    else begin
+        if (is_writeback) begin
+            writeback_addr <= {tag_in_cacheline, addr_index, 4'b0000};
+        end
+        else begin
+            writeback_addr <= writeback_addr;
+        end
+
     end
 end
 
@@ -280,7 +325,10 @@ segre_cache_tags tags (
     .addr_i(addr_i),
     .wr_en_i(write_line_from_mem),
 
-    .is_hit_o(is_hit_from_tags)
+    .is_hit_o(is_hit_from_tags),
+
+    // Tag in the index of addr_i
+    .tag_in_index_o(tag_in_cacheline)
 );
 
 generate

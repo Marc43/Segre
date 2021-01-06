@@ -121,6 +121,9 @@ assign is_alu = !memop_wr_i && !memop_rd_i;
 logic [WORD_SIZE-1:0] aux_addr;
 memop_data_type_e aux_memop;
 logic [WORD_SIZE-1:0] aux_data;
+logic [WORD_SIZE-1:0] writeback_addr;
+logic rd;
+logic wr;
 
 assign aux_data = is_busy ? output_data : rf_st_data_i;
 assign aux_addr = is_busy ? output_address : alu_res_i;
@@ -151,8 +154,11 @@ data_cache
     .data_o (read_cache_data),
 
     .writeback_mem_o (writeback),
+    .writeback_addr_o (writeback_addr),
     .to_mem_cache_line_o (to_mem_cache_line),
-    .store_buffer_draining_o (store_buffer_draining)
+    .store_buffer_draining_o (store_buffer_draining),
+    .rd_o (rd),
+    .wr_o (wr)
 
 );
 
@@ -164,9 +170,9 @@ assign cache_is_busy_o = is_busy;
 assign cache_is_hit_o = is_hit;
 
 // It is a load or a missed store, both cases require a read from main memory
-assign memop_rd_o   = (memop_wr_i || memop_rd_i) && !is_hit;
+assign memop_rd_o   = rd; //(memop_wr_i || memop_rd_i) && !is_hit;
 // This also requires a stall TODO
-assign memop_wr_o   = writeback;
+assign memop_wr_o   = wr; //writeback;
 //assign addr_o       = alu_res_i;
 //assign memop_type_o = memop_type_i;
 
@@ -227,7 +233,9 @@ always_ff @(posedge clk_i) begin
 
 end
 
-assign addr_o = output_address;
+// Si hem d'anar a memoria a llegir, vull la de output_address, si no, writeback_addr
+assign addr_o = writeback ? writeback_addr : (is_busy ? output_address : alu_res_i);
+
 assign memop_type_o = output_memop_type;
 
 
