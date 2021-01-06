@@ -25,6 +25,9 @@ vlog -sv -work $work_dir $rtl_dir/cache_modules/segre_cache_data.sv
 vlog -sv -work $work_dir $rtl_dir/cache_modules/segre_cache_tags.sv
 vlog -sv -work $work_dir $rtl_dir/cache_modules/segre_cache.sv
 
+# Compile TLB and fail miserably
+vlog -sv -work $work_dir $rtl_dir/segre_dtlb.sv
+
 vlog -sv -work $work_dir $rtl_dir/cache_modules/segre_store_buffer.sv
 
 # Compile rtl
