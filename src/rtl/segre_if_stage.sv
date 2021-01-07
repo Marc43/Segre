@@ -47,6 +47,7 @@ assign data = 0;
 assign instruction_hit_o = is_hit;
 
 logic [ADDR_SIZE-1:0] nxt_pc;
+logic [ADDR_SIZE-1:0] nxt_pc_ff;
 
 segre_cache
 #(
@@ -63,7 +64,7 @@ instruction_cache
 
     .rcvd_mem_request_i(mem_ready_i),
     .data_type_i(data_type),
-    .addr_i(nxt_pc),
+    .addr_i(nxt_pc_ff),
     .data_i(data),
     .from_mem_cache_line_i(cache_instr_line_i),
 
@@ -77,31 +78,40 @@ instruction_cache
 
 );
 
-always_ff @(posedge clk_i) begin
+always_comb begin
     if (!rsn_i) begin
-        nxt_pc <= 0;
+        nxt_pc = 0;
     end
     else if (!instruction_hit_o && fsm_state_i == IF_STATE) begin
-        nxt_pc <= nxt_pc;
+        nxt_pc = nxt_pc;
     end
     else if (instruction_hit_o && fsm_state_i == IF_STATE) begin
-        nxt_pc <= nxt_pc + 4;
+        nxt_pc = nxt_pc + 4;
     end
     else begin
         if (tkbr_i && fsm_state_i == WB_STATE) begin
-            nxt_pc <= new_pc_i;
+            nxt_pc = new_pc_i;
         end
         else begin
-            nxt_pc <= nxt_pc;
+            nxt_pc = nxt_pc;
         end
     end
 end
 
-assign mem_rd_o = rd && !is_hit;
+assign mem_rd_o = rd && !is_hit && rsn_i;
+
+always_ff @(posedge clk_i) begin
+    if (!rsn_i) begin
+        nxt_pc_ff <= 0;
+    end
+    else begin
+        nxt_pc_ff <= nxt_pc;
+    end
+end
 
 always_ff @(posedge clk_i) begin
     instr_o <= (is_hit && (fsm_state_i == IF_STATE)) ? instr_to_feed_decode : NOP_INSTR;
-    pc_o    <= nxt_pc;
+    pc_o    <= (tkbr_i && fsm_state_i == WB_STATE) ? new_pc_i : nxt_pc;
 end
 
 endmodule : segre_if_stage
