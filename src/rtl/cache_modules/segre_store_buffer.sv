@@ -140,7 +140,7 @@ always @(posedge clk_i, negedge rsn_i) begin : writing_to_sb
     else begin
         case (sb_state)
             NOT_DRAINING: begin
-                if (is_store_i && is_hit_i && !full) begin
+                if (is_store_i && !full) begin
                     //Add new entry
                     sb_entries[wr_ptr].data <= data_i;
                     sb_entries[wr_ptr].address <= addr_i;

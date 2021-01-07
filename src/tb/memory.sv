@@ -38,7 +38,6 @@ logic [7:0] mem [NUM_WORDS-1:0];
 logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] rd_data;
 
 logic [$clog2(REQUEST_DURATION)-1:0] cyc_counter;
-
 logic mem_ready;
 assign mem_ready_o = mem_ready;
 
@@ -52,7 +51,7 @@ always_ff @(posedge clk_i) begin
         addr_i_ff <= 0;
     end
     else begin
-        if (((rd_i || wr_i) && (cyc_counter != 1)) || mem_ready) begin
+        if ((cyc_counter == 1) || mem_ready) begin
             addr_i_ff <= addr_i;
         end
         else begin
@@ -145,27 +144,28 @@ initial begin
     end
 end
 
+
 always @(posedge clk_i) begin
 
     if (!rsn_i) begin
-        cyc_counter = 'b0;
-        aux_rd = 1'b0;
-        aux_wr = 1'b0;
+        cyc_counter <= 'b0;
+        aux_rd <= 1'b0;
+        aux_wr <= 1'b0;
     end
     else begin
 
         // Start the count of REQUEST_DURATION cycles
         if (mem_request || cyc_counter != 1) begin
-            cyc_counter = cyc_counter + 1;
+            cyc_counter <= cyc_counter + 1;
         end
 
         if (mem_request) begin
-            aux_rd = rd_i;
-            aux_wr = wr_i;
+            aux_rd <= rd_i;
+            aux_wr <= wr_i;
         end
         else begin
-            aux_rd = aux_rd;
-            aux_wr = aux_wr;
+            aux_rd <= aux_rd;
+            aux_wr <= aux_wr;
         end
 
         /*
@@ -174,38 +174,43 @@ always @(posedge clk_i) begin
          * - When different from above, not ready and not reading.
          */
         if (cyc_counter == REQUEST_DURATION-1) begin
-            write_read_data = aux_rd || aux_wr;
+            write_read_data <= aux_rd || aux_wr;
         end
         else if (cyc_counter == REQUEST_DURATION) begin
-            write_read_data = 1'b0;
-            aux_rd = 1'b0;
-            aux_wr = 1'b0;
-            mem_ready = 1'b1;
-            cyc_counter = 0;
+            write_read_data <= 1'b0;
+            aux_rd <= 1'b0;
+            aux_wr <= 1'b0;
+            mem_ready <= 1'b1;
+            cyc_counter <= 0;
         end
         else begin
-            write_read_data = 1'b0;
-            mem_ready = 1'b0;
+            write_read_data <= 1'b0;
+            mem_ready <= 1'b0;
         end
+
+    end
+
+    // Write
+    if (write_read_data && aux_wr) begin
+        for (int i = 0; i < CACHE_LINE_SIZE_BYTES; i++) begin
+            mem[aligned_addr_to_cache_lines+i] <= data_i[i];
+        end
+    end
+
+    memory_verbose();
+end
+
+always_comb begin
+    if (rsn_i) begin
 
         // Read
         if (write_read_data && aux_rd) begin
-            rd_data = 0;
             for (int i = CACHE_LINE_SIZE_BYTES-1; i >= 0; i--) begin
                 rd_data = {rd_data, mem[aligned_addr_to_cache_lines+i]};
             end
         end
 
-        // Write
-        if (write_read_data && aux_wr) begin
-            for (int i = 0; i < CACHE_LINE_SIZE_BYTES; i++) begin
-                mem[aligned_addr_to_cache_lines+i] = data_i[i];
-            end
-        end
-
     end
-
-    memory_verbose();
 end
 
 always @(posedge clk_i) begin
