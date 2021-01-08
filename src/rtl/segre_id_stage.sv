@@ -34,7 +34,11 @@ module segre_id_stage (
     output logic [WORD_SIZE-1:0] memop_rf_data_o,
     // Branch | Jump
     output logic [WORD_SIZE-1:0] br_src_a_o,
-    output logic [WORD_SIZE-1:0] br_src_b_o
+    output logic [WORD_SIZE-1:0] br_src_b_o,
+
+    // pc + 4
+    output logic is_jaljalr_o,
+    output logic [ADDR_SIZE-1:0] seq_new_pc_o
 );
 
 logic [WORD_SIZE-1:0] imm_u_type;
@@ -164,6 +168,8 @@ always_ff @(posedge clk_i) begin
     br_src_b_o       <= br_src_b;
     alu_opcode_o     <= alu_opcode;
     memop_rf_data_o <= rf_data_b_i;
+    seq_new_pc_o <= pc_i + 4;
+    is_jaljalr_o <= (alu_opcode == ALU_JAL) || (alu_opcode == ALU_JALR);
 
 end
 

@@ -37,7 +37,13 @@ module segre_ex_stage (
     output logic memop_sign_ext_o,
     // Tkbr
     output logic tkbr_o,
-    output logic [WORD_SIZE-1:0] new_pc_o
+    output logic [ADDR_SIZE-1:0] new_pc_o,
+
+    // pc + 4
+    input logic [ADDR_SIZE-1:0] seq_new_pc_i,
+    output logic [ADDR_SIZE-1:0] seq_new_pc_o,
+    input logic is_jaljalr_i,
+    output logic is_jaljalr_o
 );
 
 logic [WORD_SIZE-1:0] alu_res;
@@ -74,6 +80,8 @@ always_ff @(posedge clk_i) begin
     memop_sign_ext_o <= memop_sign_ext_i;
     tkbr_o           <= tkbr;
     new_pc_o         <= alu_res;
+    seq_new_pc_o     <= seq_new_pc_i;
+    is_jaljalr_o     <= is_jaljalr_i;
 
 end
 

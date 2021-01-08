@@ -111,7 +111,7 @@ end
 
 always_ff @(posedge clk_i) begin
     instr_o <= (is_hit && (fsm_state_i == IF_STATE)) ? instr_to_feed_decode : NOP_INSTR;
-    pc_o    <= (tkbr_i && fsm_state_i == WB_STATE) ? new_pc_i : nxt_pc;
+    pc_o    <= (tkbr_i && fsm_state_i == WB_STATE) ? new_pc_i : nxt_pc_ff;
 end
 
 endmodule : segre_if_stage

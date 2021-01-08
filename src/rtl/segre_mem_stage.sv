@@ -46,7 +46,10 @@ module segre_mem_stage (
 
     // Branch | Jal
     output logic tkbr_o,
-    output logic [WORD_SIZE-1:0] new_pc_o
+    output logic [ADDR_SIZE-1:0] new_pc_o,
+
+    input logic is_jaljalr_i,
+    input logic [ADDR_SIZE-1:0] seq_new_pc_i
 );
 
 logic [WORD_SIZE-1:0] read_cache_data;
@@ -246,7 +249,7 @@ always_ff @(posedge clk_i) begin
     // To WB
 
     // We need this monster because memop_rd_i signal is not re-sent because this is not pipelined TODO
-    op_res_o   <= (is_busy ? memop_rd_ff : memop_rd_i) ? processed_read_cache_data : alu_res_i; // Load case : Bypassing ALU result case
+    op_res_o   <= (is_busy ? memop_rd_ff : memop_rd_i) ? processed_read_cache_data : (is_jaljalr_i ? seq_new_pc_i : alu_res_i); // Load case : Bypassing ALU result case
 
     // Ganas de llorar
     rf_we_o    <= check_if_hit ? (is_hit ? (is_busy ? rf_we_ff : rf_we_i) : 0) : rf_we_i;

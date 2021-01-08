@@ -35,12 +35,14 @@ logic [WORD_SIZE-1:0] ex_alu_src_b;
 logic [WORD_SIZE-1:0] ex_rf_st_data;
 logic ex_rf_we;
 logic [REG_SIZE-1:0] ex_rf_waddr;
+logic ex_is_jaljalr;
 alu_opcode_e ex_alu_opcode;
 logic ex_memop_rd;
 logic ex_memop_wr;
 logic ex_memop_sign_ext;
 logic [WORD_SIZE-1:0] ex_br_src_a;
 logic [WORD_SIZE-1:0] ex_br_src_b;
+logic [ADDR_SIZE-1:0] ex_seq_new_pc;
 // MEM STAGE
 memop_data_type_e mem_memop_type;
 memop_data_type_e mem_data_type;
@@ -59,6 +61,8 @@ logic mem_tkbr;
 logic [WORD_SIZE-1:0] mem_new_pc;
 logic mem_data_cache_is_busy;
 logic mem_data_cache_is_hit;
+logic mem_is_jaljalr;
+logic [ADDR_SIZE-1:0] mem_seq_new_pc;
 // WB STAGE
 logic [WORD_SIZE-1:0] wb_res;
 logic [REG_SIZE-1:0] wb_rf_waddr;
@@ -134,7 +138,11 @@ segre_id_stage id_stage (
     .memop_rf_data_o   (ex_rf_st_data),
     // Branch | Jump
     .br_src_a_o        (ex_br_src_a),
-    .br_src_b_o        (ex_br_src_b)
+    .br_src_b_o        (ex_br_src_b),
+
+    // pc + 4
+    .seq_new_pc_o (ex_seq_new_pc),
+    .is_jaljalr_o (ex_is_jaljalr)
 );
 
 segre_ex_stage ex_stage (
@@ -174,7 +182,13 @@ segre_ex_stage ex_stage (
     .memop_sign_ext_o (mem_memop_sign_ext),
     // Branch | Jal
     .tkbr_o           (mem_tkbr),
-    .new_pc_o         (mem_new_pc)
+    .new_pc_o         (mem_new_pc),
+
+    // pc + 4
+    .seq_new_pc_i (ex_seq_new_pc),
+    .seq_new_pc_o (mem_seq_new_pc),
+    .is_jaljalr_i (ex_is_jaljalr),
+    .is_jaljalr_o (mem_is_jaljalr)
 );
 
 segre_mem_stage mem_stage (
@@ -218,7 +232,11 @@ segre_mem_stage mem_stage (
     .rf_we_o          (wb_rf_we),
     .rf_waddr_o       (wb_rf_waddr),
     .tkbr_o           (wb_tkbr),
-    .new_pc_o         (wb_new_pc)
+    .new_pc_o         (wb_new_pc),
+
+    // pc + 4
+    .seq_new_pc_i (mem_seq_new_pc),
+    .is_jaljalr_i (mem_is_jaljalr)
 );
 
 segre_register_file segre_rf (
