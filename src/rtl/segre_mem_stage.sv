@@ -49,7 +49,12 @@ module segre_mem_stage (
     output logic [ADDR_SIZE-1:0] new_pc_o,
 
     input logic is_jaljalr_i,
-    input logic [ADDR_SIZE-1:0] seq_new_pc_i
+    input logic [ADDR_SIZE-1:0] seq_new_pc_i,
+
+    input logic block_mem_i, // Block this stage (flip-flops)
+    input logic inject_nops_i, // Inject NOPs to the following stages
+    output logic valid_wb_o // Indicate the next stage if it's processing valid data
+
 );
 
 logic [WORD_SIZE-1:0] read_cache_data;
@@ -238,25 +243,70 @@ end
 
 // Si hem d'anar a memoria a llegir, vull la de output_address, si no, writeback_addr
 assign addr_o = writeback ? writeback_addr : (is_busy ? output_address : alu_res_i);
-
 assign memop_type_o = output_memop_type;
-
-
 assign check_if_hit = memop_rd_i || memop_wr_i || memop_rd_ff || memop_wr_ff;
 
-always_ff @(posedge clk_i) begin
+logic rf_we_q;
+logic tkbr_q;
+logic [REG_SIZE-1:0] rf_waddr_q;
+logic [WORD_SIZE-1:0] op_res_q;
+logic [WORD_SIZE-1:0] new_pc_q;
 
-    // To WB
+logic rf_we_d;
+logic tkbr_d;
+logic [REG_SIZE-1:0] rf_waddr_d;
+logic [WORD_SIZE-1:0] op_res_d;
+logic [WORD_SIZE-1:0] new_pc_d;
 
-    // We need this monster because memop_rd_i signal is not re-sent because this is not pipelined TODO
-    op_res_o   <= (is_busy ? memop_rd_ff : memop_rd_i) ? processed_read_cache_data : (is_jaljalr_i ? seq_new_pc_i : alu_res_i); // Load case : Bypassing ALU result case
+always_comb begin
+    if (!rsn_i) begin
+        rf_we_d = 0;
+        tkbr_d = 0;
+    end
+    else begin
+        if (block_mem_i) begin
+            op_res_d   = op_res_q;
+            rf_we_d    = rf_we_q;
+            rf_waddr_d = rf_waddr_q;
+            tkbr_d     = tkbr_q;
+            new_pc_d   = new_pc_q;
+        end
+        else if (inject_nops_i) begin
+            rf_we_d = 0;
+            tkbr_d = 0;
+        end
+        else begin
+            // We need this monster because memop_rd_i signal is not re-sent because this is not pipelined TODO
+            op_res_d   = (is_busy ? memop_rd_ff : memop_rd_i) ? processed_read_cache_data : (is_jaljalr_i ? seq_new_pc_i : alu_res_i); // Load case : Bypassing ALU result case
 
-    // Ganas de llorar
-    rf_we_o    <= check_if_hit ? (is_hit ? (is_busy ? rf_we_ff : rf_we_i) : 0) : rf_we_i;
-    rf_waddr_o <= is_busy ? rf_waddr_ff : rf_waddr_i;
-    tkbr_o     <= check_if_hit ? (is_hit ? (is_busy ? tkbr_ff : tkbr_i) : 0) : tkbr_i;
-    new_pc_o   <= is_busy ? new_pc_ff : new_pc_i;
+            // Ganas de llorar
+            rf_we_d    = check_if_hit ? (is_hit ? (is_busy ? rf_we_ff : rf_we_i) : 0) : rf_we_i;
+            rf_waddr_d = is_busy ? rf_waddr_ff : rf_waddr_i;
+            tkbr_d     = check_if_hit ? (is_hit ? (is_busy ? tkbr_ff : tkbr_i) : 0) : tkbr_i;
+            new_pc_d   = is_busy ? new_pc_ff : new_pc_i;
 
+        end
+    end
 end
+
+always_ff @(posedge clk_i) begin
+    if (!rsn_i) begin
+        rf_we_q <= 0;
+        tkbr_q <= 0;
+    end
+    else begin
+        op_res_q <= op_res_d;
+        rf_we_q <= rf_we_d;
+        rf_waddr_q <= rf_waddr_d;
+        tkbr_q <= tkbr_d;
+        new_pc_q <= new_pc_d;
+    end
+end
+
+assign op_res_o = op_res_q;
+assign rf_we_o = rf_we_q;
+assign rf_waddr_o = rf_waddr_q;
+assign tkbr_o = tkbr_q;
+assign new_pc_o = new_pc_q;
 
 endmodule

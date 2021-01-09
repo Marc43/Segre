@@ -101,7 +101,12 @@ segre_if_stage if_stage (
     .new_pc_i    (wb_new_pc),
 
     // To controller signals
-    .instruction_hit_o (instruction_hit_if)
+    .instruction_hit_o (instruction_hit_if),
+
+    .block_if_i (0),
+    .inject_nops_i (0)
+
+
 );
 
 segre_id_stage id_stage (
@@ -142,7 +147,10 @@ segre_id_stage id_stage (
 
     // pc + 4
     .seq_new_pc_o (ex_seq_new_pc),
-    .is_jaljalr_o (ex_is_jaljalr)
+    .is_jaljalr_o (ex_is_jaljalr),
+
+    .block_id_i (0),
+    .inject_nops_i (0)
 );
 
 segre_ex_stage ex_stage (
@@ -188,7 +196,10 @@ segre_ex_stage ex_stage (
     .seq_new_pc_i (ex_seq_new_pc),
     .seq_new_pc_o (mem_seq_new_pc),
     .is_jaljalr_i (ex_is_jaljalr),
-    .is_jaljalr_o (mem_is_jaljalr)
+    .is_jaljalr_o (mem_is_jaljalr),
+
+    .block_ex_i (0),
+    .inject_nops_i (0)
 );
 
 segre_mem_stage mem_stage (
@@ -236,7 +247,10 @@ segre_mem_stage mem_stage (
 
     // pc + 4
     .seq_new_pc_i (mem_seq_new_pc),
-    .is_jaljalr_i (mem_is_jaljalr)
+    .is_jaljalr_i (mem_is_jaljalr),
+
+    .block_mem_i (0),
+    .inject_nops_i (0)
 );
 
 segre_register_file segre_rf (

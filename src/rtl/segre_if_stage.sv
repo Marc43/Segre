@@ -8,21 +8,26 @@ module segre_if_stage (
     // Memory
     input  logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] cache_instr_line_i,
     input  logic mem_ready_i,
-    output logic [ADDR_SIZE-1:0] pc_o,
-    output logic mem_rd_o,
 
     // FSM state
     input fsm_state_e fsm_state_i,
-
-    // IF ID interface
-    output logic [WORD_SIZE-1:0] instr_o,
 
     // WB interface
     input logic tkbr_i,
     input logic [WORD_SIZE-1:0] new_pc_i,
 
-    // To controller signals
-    output logic instruction_hit_o
+    // To/From controller signals
+    input logic block_if_i, // Block this stage (flip-flops)
+    input logic inject_nops_i, // Inject NOPs to the following stages
+    output logic valid_id_o, // Indicate the next stage if it's processing valid data
+    output logic instruction_hit_o,
+    output logic mem_rd_o,
+
+    // IF ID interface
+    // To flip-flops
+    output logic [WORD_SIZE-1:0] instr_o,
+    output logic [ADDR_SIZE-1:0] pc_o
+
 );
 
 // Cache inputs
@@ -109,9 +114,46 @@ always_ff @(posedge clk_i) begin
     end
 end
 
-always_ff @(posedge clk_i) begin
-    instr_o <= (is_hit && (fsm_state_i == IF_STATE)) ? instr_to_feed_decode : NOP_INSTR;
-    pc_o    <= (tkbr_i && fsm_state_i == WB_STATE) ? new_pc_i : nxt_pc_ff;
+// Q is the output of the flip-flop, D should be the input but... jej
+logic [WORD_SIZE-1:0] instr_d;
+logic [ADDR_SIZE-1:0] pc_d;
+
+logic [WORD_SIZE-1:0] instr_q;
+logic [ADDR_SIZE-1:0] pc_q;
+
+always_comb begin : decoupling_registers
+    if (!rsn_i) begin
+        instr_d = NOP_INSTR;
+        pc_d    = 0;
+    end
+    else begin
+        if (block_if_i) begin
+            instr_d = instr_q;
+            pc_d = pc_q;
+        end
+        else if (inject_nops_i) begin
+            instr_d = NOP_INSTR;
+            pc_d    = 0;
+        end
+        else begin
+            instr_d = (is_hit && (fsm_state_i == IF_STATE)) ? instr_to_feed_decode : NOP_INSTR;
+            pc_d    = (tkbr_i && fsm_state_i == WB_STATE) ? new_pc_i : nxt_pc_ff;
+        end
+    end
 end
+
+always_ff @(posedge clk_i) begin
+    if (!rsn_i) begin
+        instr_q <= NOP_INSTR;
+        pc_q    <= 0;
+    end
+    else begin
+        instr_q <= instr_d;
+        pc_q <= pc_d;
+    end
+end
+
+assign instr_o = instr_q;
+assign pc_o = pc_q;
 
 endmodule : segre_if_stage
