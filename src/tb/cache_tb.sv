@@ -25,8 +25,9 @@ module cache_tb;
     logic clk;
     logic rsn;
 
-    logic rd;
-    logic wr;
+    logic rd; // is load
+    logic wr; // is store
+    logic is_alu;
     logic rcvd_mem_req;
     memop_data_type_e data_type;
     logic [WORD_SIZE-1:0] addr;
@@ -41,15 +42,22 @@ module cache_tb;
     logic [N-1:M] addr_index;
     logic [M-1:0] addr_byte;
 
+    logic is_draining;
+
     assign addr = {addr_tag, addr_index, addr_byte};
 
-    segre_cache cache
+    segre_cache
+    #(
+        .ICACHE_DCACHE(DCACHE)
+    )
+    cache
     (
         .clk_i (clk),
         .rsn_i (rsn),
 
         .rd_i (rd),
         .wr_i (wr),
+        .is_alu_i(is_alu),
         .rcvd_mem_request_i (rcvd_mem_req),
         .data_type_i (data_type),
         .addr_i (addr),
@@ -58,8 +66,11 @@ module cache_tb;
         .is_hit_o (is_hit),
         .writeback_mem_o (writeback_mem),
         .data_o (data_out),
-        .to_mem_cache_line_o (to_mem_cache_out)
+        .to_mem_cache_line_o (to_mem_cache_out),
+        .store_buffer_draining_o (is_draining)
     );
+
+    assign is_alu = !(rd || wr);
 
     `define display_outputs \
         $display($sformatf("is_hit_o: %h", is_hit)); \
@@ -69,6 +80,11 @@ module cache_tb;
 
     task petition(input logic [WORD_SIZE-1:N] tag_, input logic [N-1:M] index_, input logic [M-1:0] byte_,
                   input memop_data_type_e data_type_, input logic rdwr, input logic [WORD_SIZE-1:0] data);
+
+        if (is_draining) begin
+            @(negedge is_draining);
+            @(posedge clk);
+        end
 
         addr_tag = tag_;
         addr_index = index_;
@@ -80,19 +96,10 @@ module cache_tb;
         from_mem_cache_in = 0;
         data_in = data;
 
-        @(posedge clk); // Acknowledge the petition
-
-        rd = 0;
-        wr = 0;
-
         @(posedge clk); // Wait for hit/miss
 
         if (!is_hit || writeback_mem) begin
             repeat (10) @(posedge clk); // It's a miss, memory spends 10 cycles to read the line
-
-            // FIXME remove rd and wr from here m8
-            rd = rdwr;
-            wr = !rdwr;
 
             rcvd_mem_req = 1; // Line sent from memory
             from_mem_cache_in = 128'hff_ee_dd_cc_bb_aa_99_88_77_66_55_44_33_22_11_00;
@@ -101,12 +108,17 @@ module cache_tb;
 
             rcvd_mem_req = 0;
 
+            @(posedge clk);
+
+        end
+
+        if (is_draining) begin
+            @(negedge is_draining);
+            @(posedge clk);
         end
 
         rd = 0;
         wr = 0;
-
-        @(posedge clk); // Ready petition again
 
     endtask : petition
 
@@ -118,6 +130,7 @@ module cache_tb;
     always #10 clk = ~clk;
 
     initial begin
+        int cnt = 1;
         repeat(2) @(posedge clk);
         rsn <= 1;
 
@@ -132,6 +145,8 @@ module cache_tb;
          * |      TAG          |    INDEX   |  BYTE |
          *
          */
+
+        @(posedge rsn);
 
         for (int i = 0; i < NUMBER_OF_LINES; i++) begin
             for (int j = 0; j < CACHE_LINE_SIZE_BYTES; j++) begin
@@ -151,6 +166,11 @@ module cache_tb;
             end
         end
 
+          rsn <= 0;
+          repeat(2) @(posedge clk);
+          rsn <= 1;
+
+          @(posedge rsn);
 
 //        for (int i = 0; i < NUMBER_OF_LINES; i++) begin
 //            for (int j = 0; j < CACHE_LINE_SIZE_BYTES; j++) begin
@@ -158,9 +178,15 @@ module cache_tb;
 //            end
 //        end
 //
-//        rsn <= 0;
-//        repeat(2) @(posedge clk);
-//        rsn <= 1;
+
+          // 1 writes
+          petition(0, 0, 0, WORD, 0, 32'hdead_beef);
+//          petition(0, 0, 0, WORD, 0, 32'hdead_beef);
+//          petition(0, 0, 0, WORD, 0, 32'hdead_beef);
+//          petition(0, 0, 0, WORD, 0, 32'hdead_beef);
+          // 1 load
+          petition(1, 0, 0, WORD, 1, 32'h1234_5678);
+
 //
 //        for (int i = 0; i < NUMBER_OF_LINES; i++) begin
 //            for (int j = 0; j <= CACHE_LINE_SIZE_BYTES-2; j = j + 2) begin

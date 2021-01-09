@@ -7,6 +7,9 @@ module segre_controller (
 
     input logic is_mem_instr_i,
     input logic mem_ready_i,
+    input logic instruction_hit_if_i,
+    input logic data_cache_is_busy_i,
+    input logic data_cache_is_hit_i,
 
     // State
     output fsm_state_e state_o
@@ -16,30 +19,27 @@ module segre_controller (
 fsm_state_e state;
 fsm_state_e next_state;
 
-always_ff @(posedge clk_i) begin
+always_comb begin
     unique case(state)
         IF_STATE: begin
-            if (mem_ready_i) begin
-                state <= ID_STATE;
+            if (instruction_hit_if_i) begin
+                next_state = ID_STATE;
             end
             else begin
-                state <= IF_STATE;
+                next_state = IF_STATE;
             end
         end
-        ID_STATE: state <= EX_STATE;
-        EX_STATE: state <= MEM_STATE;
+        ID_STATE: next_state = EX_STATE;
+        EX_STATE: next_state = MEM_STATE;
         MEM_STATE: begin
-              if (is_mem_instr_i) begin
-                  if (mem_ready_i) begin
-                    state <= WB_STATE;
-                  end
-                  else begin
-                    state <= MEM_STATE;
-                  end
+
+              if (data_cache_is_busy_i || (!data_cache_is_hit_i && is_mem_instr_i)) begin
+                next_state = MEM_STATE;
               end
               else begin
-                state <= WB_STATE;
+                next_state = WB_STATE;
               end
+
     // Equivalent to:
     //            if (is_mem_instr_i && !mem_ready_i) begin
     //                next_state = MEM_STATE;
@@ -48,19 +48,19 @@ always_ff @(posedge clk_i) begin
     //                next_state = WB_STATE;
     //            end
         end
-        WB_STATE: state <= IF_STATE;
-        default: state <= IF_STATE;
+        WB_STATE: next_state = IF_STATE;
+        default: next_state = IF_STATE;
     endcase
 end
 
-//always_ff @(posedge clk_i) begin
-//    if (!rsn_i) begin
-//        state <= IF_STATE;
-//    end
-//    else begin
-//        state <= next_state;
-//    end
-//end
+always_ff @(posedge clk_i) begin
+    if (!rsn_i) begin
+        state <= IF_STATE;
+    end
+    else begin
+        state <= next_state;
+    end
+end
 
 assign state_o = state;
 

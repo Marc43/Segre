@@ -34,7 +34,11 @@ module segre_id_stage (
     output logic [WORD_SIZE-1:0] memop_rf_data_o,
     // Branch | Jump
     output logic [WORD_SIZE-1:0] br_src_a_o,
-    output logic [WORD_SIZE-1:0] br_src_b_o
+    output logic [WORD_SIZE-1:0] br_src_b_o,
+
+    // pc + 4
+    output logic is_jaljalr_o,
+    output logic [ADDR_SIZE-1:0] seq_new_pc_o
 );
 
 logic [WORD_SIZE-1:0] imm_u_type;
@@ -64,9 +68,9 @@ logic memop_wr;
 logic memop_sign_ext;
 alu_opcode_e alu_opcode;
 
+// Not in the flip-flop because this comes from the register file.
 assign rf_raddr_a_o = rf_raddr_a;
 assign rf_raddr_b_o = rf_raddr_b;
-assign memop_rf_data_o = rf_data_b_i;
 
 segre_decode decode (
     // Clock and Reset
@@ -151,17 +155,22 @@ always_comb begin : br_src_b_mux
 end
 
 always_ff @(posedge clk_i) begin
-    alu_src_a_o      = alu_src_a;
-    alu_src_b_o      = alu_src_b;
-    rf_we_o          = (fsm_state_i == ID_STATE) ? rf_we : 1'b0;
-    rf_waddr_o       = rf_waddr;
-    memop_sign_ext_o = memop_sign_ext;
-    memop_type_o     = memop_type;
-    memop_rd_o       = (fsm_state_i == ID_STATE) ? memop_rd : 1'b0;
-    memop_wr_o       = (fsm_state_i == ID_STATE) ? memop_wr : 1'b0;
-    br_src_a_o       = br_src_a;
-    br_src_b_o       = br_src_b;
-    alu_opcode_o     = alu_opcode;
+
+    alu_src_a_o      <= alu_src_a;
+    alu_src_b_o      <= alu_src_b;
+    rf_we_o          <= (fsm_state_i == ID_STATE) ? rf_we : 1'b0;
+    rf_waddr_o       <= rf_waddr;
+    memop_sign_ext_o <= memop_sign_ext;
+    memop_type_o     <= memop_type;
+    memop_rd_o       <= (fsm_state_i == ID_STATE) ? memop_rd : 1'b0;
+    memop_wr_o       <= (fsm_state_i == ID_STATE) ? memop_wr : 1'b0;
+    br_src_a_o       <= br_src_a;
+    br_src_b_o       <= br_src_b;
+    alu_opcode_o     <= alu_opcode;
+    memop_rf_data_o <= rf_data_b_i;
+    seq_new_pc_o <= pc_i + 4;
+    is_jaljalr_o <= (alu_opcode == ALU_JAL) || (alu_opcode == ALU_JALR);
+
 end
 
 endmodule

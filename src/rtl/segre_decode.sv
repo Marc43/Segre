@@ -196,7 +196,7 @@ always_comb begin
         OPCODE_STORE: begin
             src_a_mux_sel_o = ALU_A_REG;
             src_b_mux_sel_o = ALU_B_IMM;
-            b_imm_mux_sel_o = IMM_B_I;
+            b_imm_mux_sel_o = IMM_B_S;
             alu_opcode_o = ALU_ADD;
         end
         OPCODE_JAL: begin

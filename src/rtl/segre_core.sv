@@ -6,17 +6,19 @@ module segre_core (
     input logic rsn_i,
 
     // Memory signals
-    input  logic [WORD_SIZE-1:0] mem_rd_data_i,
-    output logic [WORD_SIZE-1:0] mem_wr_data_o,
+    input  logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] mem_rd_data_i,
+    output logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] mem_wr_data_o,
     output logic [ADDR_SIZE-1:0] addr_o,
     input  logic mem_ready_i,
     output logic mem_rd_o,
     output logic mem_wr_o,
     output memop_data_type_e mem_data_type_o
 );
+
 //IF STAGE
 logic [WORD_SIZE-1:0] if_addr;
 logic if_mem_rd;
+logic instruction_hit_if;
 // ID STAGE
 logic [WORD_SIZE-1:0] id_instr;
 // REGISTER FILE
@@ -33,18 +35,20 @@ logic [WORD_SIZE-1:0] ex_alu_src_b;
 logic [WORD_SIZE-1:0] ex_rf_st_data;
 logic ex_rf_we;
 logic [REG_SIZE-1:0] ex_rf_waddr;
+logic ex_is_jaljalr;
 alu_opcode_e ex_alu_opcode;
 logic ex_memop_rd;
 logic ex_memop_wr;
 logic ex_memop_sign_ext;
 logic [WORD_SIZE-1:0] ex_br_src_a;
 logic [WORD_SIZE-1:0] ex_br_src_b;
+logic [ADDR_SIZE-1:0] ex_seq_new_pc;
 // MEM STAGE
 memop_data_type_e mem_memop_type;
 memop_data_type_e mem_data_type;
 logic [WORD_SIZE-1:0] mem_alu_res;
 logic [WORD_SIZE-1:0] mem_addr;
-logic [WORD_SIZE-1:0] mem_wr_data;
+logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] mem_wr_data;
 logic [WORD_SIZE-1:0] mem_rf_st_data;
 logic [REG_SIZE-1:0]  mem_rf_waddr;
 logic mem_memop_rd;
@@ -55,6 +59,10 @@ logic mem_rd;
 logic mem_wr;
 logic mem_tkbr;
 logic [WORD_SIZE-1:0] mem_new_pc;
+logic mem_data_cache_is_busy;
+logic mem_data_cache_is_hit;
+logic mem_is_jaljalr;
+logic [ADDR_SIZE-1:0] mem_seq_new_pc;
 // WB STAGE
 logic [WORD_SIZE-1:0] wb_res;
 logic [REG_SIZE-1:0] wb_rf_waddr;
@@ -63,12 +71,12 @@ logic [WORD_SIZE-1:0] wb_new_pc;
 logic wb_tkbr;
 
 logic mem_stage_rdwr;
-assign mem_stage_rdwr = fsm_state == MEM_STATE && (mem_rd || mem_wr);
+assign mem_stage_rdwr = (fsm_state == MEM_STATE) && (mem_memop_rd || mem_memop_wr);
 
-assign addr_o          = fsm_state == MEM_STATE ? mem_addr       : if_addr;
-assign mem_rd_o        = fsm_state == MEM_STATE ? mem_rd         : if_mem_rd;
-assign mem_wr_o        = fsm_state == MEM_STATE ? mem_wr         : 1'b0;
-assign mem_data_type_o = fsm_state == MEM_STATE ? mem_data_type  : WORD;
+assign addr_o          = (fsm_state == MEM_STATE) ? mem_addr       : if_addr;
+assign mem_rd_o        = (fsm_state == MEM_STATE) ? mem_rd         : if_mem_rd;
+assign mem_wr_o        = (fsm_state == MEM_STATE) ? mem_wr         : 1'b0;
+assign mem_data_type_o = (fsm_state == MEM_STATE) ? mem_data_type  : WORD;
 assign mem_wr_data_o   = mem_wr_data;
 
 segre_if_stage if_stage (
@@ -77,7 +85,7 @@ segre_if_stage if_stage (
     .rsn_i (rsn_i),
 
     // Memory
-    .instr_i     (mem_rd_data_i),
+    .cache_instr_line_i (mem_rd_data_i),
     .mem_ready_i (mem_ready_i),
     .pc_o        (if_addr),
     .mem_rd_o    (if_mem_rd),
@@ -90,7 +98,10 @@ segre_if_stage if_stage (
 
     // WB interface
     .tkbr_i      (wb_tkbr),
-    .new_pc_i    (wb_new_pc)
+    .new_pc_i    (wb_new_pc),
+
+    // To controller signals
+    .instruction_hit_o (instruction_hit_if)
 );
 
 segre_id_stage id_stage (
@@ -127,7 +138,11 @@ segre_id_stage id_stage (
     .memop_rf_data_o   (ex_rf_st_data),
     // Branch | Jump
     .br_src_a_o        (ex_br_src_a),
-    .br_src_b_o        (ex_br_src_b)
+    .br_src_b_o        (ex_br_src_b),
+
+    // pc + 4
+    .seq_new_pc_o (ex_seq_new_pc),
+    .is_jaljalr_o (ex_is_jaljalr)
 );
 
 segre_ex_stage ex_stage (
@@ -167,7 +182,13 @@ segre_ex_stage ex_stage (
     .memop_sign_ext_o (mem_memop_sign_ext),
     // Branch | Jal
     .tkbr_o           (mem_tkbr),
-    .new_pc_o         (mem_new_pc)
+    .new_pc_o         (mem_new_pc),
+
+    // pc + 4
+    .seq_new_pc_i (ex_seq_new_pc),
+    .seq_new_pc_o (mem_seq_new_pc),
+    .is_jaljalr_i (ex_is_jaljalr),
+    .is_jaljalr_o (mem_is_jaljalr)
 );
 
 segre_mem_stage mem_stage (
@@ -175,13 +196,20 @@ segre_mem_stage mem_stage (
     .clk_i            (clk_i),
     .rsn_i            (rsn_i),
 
+    // To Logic
+    .cache_is_busy_o (mem_data_cache_is_busy),
+    .cache_is_hit_o  (mem_data_cache_is_hit),
+
     // Memory
-    .data_i           (mem_rd_data_i),
-    .data_o           (mem_wr_data),
+    //.data_i         (mem_rd_data_i),
+    //.data_o           (mem_wr_data),
     .addr_o           (mem_addr),
     .memop_rd_o       (mem_rd),
     .memop_wr_o       (mem_wr),
     .memop_type_o     (mem_data_type),
+    .cache_line_i     (mem_rd_data_i),
+    .mem_ready_i      (mem_ready_i),
+    .to_mem_cache_line_o (mem_wr_data),
 
     // EX MEM interface
     // ALU
@@ -204,7 +232,11 @@ segre_mem_stage mem_stage (
     .rf_we_o          (wb_rf_we),
     .rf_waddr_o       (wb_rf_waddr),
     .tkbr_o           (wb_tkbr),
-    .new_pc_o         (wb_new_pc)
+    .new_pc_o         (wb_new_pc),
+
+    // pc + 4
+    .seq_new_pc_i (mem_seq_new_pc),
+    .is_jaljalr_i (mem_is_jaljalr)
 );
 
 segre_register_file segre_rf (
@@ -228,6 +260,9 @@ segre_controller controller (
 
     .is_mem_instr_i (mem_stage_rdwr),
     .mem_ready_i (mem_ready_i),
+    .instruction_hit_if_i (instruction_hit_if),
+    .data_cache_is_busy_i (mem_data_cache_is_busy),
+    .data_cache_is_hit_i  (mem_data_cache_is_hit),
 
     // State
     .state_o (fsm_state)

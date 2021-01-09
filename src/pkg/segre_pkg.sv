@@ -100,7 +100,7 @@ parameter REG_SIZE  = 5;
 parameter CACHE_LINE_SIZE_BITS = 128;
 parameter CACHE_LINE_SIZE_BYTES = CACHE_LINE_SIZE_BITS/8;
 parameter NUMBER_OF_LINES = 4;
-parameter M = $clog2(CACHE_LINE_SIZE_BITS);
+parameter M = $clog2(CACHE_LINE_SIZE_BITS/8);
 parameter N = $clog2(NUMBER_OF_LINES) + M;
 parameter TAG_SIZE = WORD_SIZE - N + 1;
 
@@ -108,14 +108,26 @@ parameter TAG_SIZE = WORD_SIZE - N + 1;
 parameter NUM_SB_ENTRIES = 4;
 parameter SB_ENTRY_BITS = $clog2(NUM_SB_ENTRIES);//Number of bits needed to represent NUM_SB_ENTRIES
 
+typedef enum logic [0:0] {
+    ICACHE = 0,
+    DCACHE = 1
+} cache_id_e;
+
 typedef struct packed {
+    cache_id_e cache_id;
     logic rd;
     logic wr;
     logic [WORD_SIZE-1:0] addr;
     logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] cache_line;
 } cache_mem_req_t;
 
+// + 2 bits, one to know if the request is from icache/dcache
 parameter ARB_BUF_SIZE = 16;
 parameter ARB_PTR_SIZE = $clog2(ARB_BUF_SIZE);
+
+//Virtual memory
+parameter PHYSICAL_ADDR_SIZE = 20;
+parameter TLB_ENTRIES = 32;
+parameter TLB_ENTRY_BITS = $clog2(TLB_ENTRIES);//Number of bits needed to represent NUM_SB_ENTRIES
 
 endpackage : segre_pkg

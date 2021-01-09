@@ -37,7 +37,13 @@ module segre_ex_stage (
     output logic memop_sign_ext_o,
     // Tkbr
     output logic tkbr_o,
-    output logic [WORD_SIZE-1:0] new_pc_o
+    output logic [ADDR_SIZE-1:0] new_pc_o,
+
+    // pc + 4
+    input logic [ADDR_SIZE-1:0] seq_new_pc_i,
+    output logic [ADDR_SIZE-1:0] seq_new_pc_o,
+    input logic is_jaljalr_i,
+    output logic is_jaljalr_o
 );
 
 logic [WORD_SIZE-1:0] alu_res;
@@ -63,16 +69,20 @@ segre_tkbr trbr (
 );
 
 always_ff @(posedge clk_i) begin
-    alu_res_o        = (alu_opcode_i == ALU_JAL) ? br_src_a_i : alu_res;
-    rf_we_o          = rf_we_i;
-    rf_waddr_o       = rf_waddr_i;
-    rf_st_data_o     = rf_st_data_i;
-    memop_type_o     = memop_type_i;
-    memop_rd_o       = memop_rd_i;
-    memop_wr_o       = memop_wr_i;
-    memop_sign_ext_o = memop_sign_ext_i;
-    tkbr_o           = tkbr;
-    new_pc_o         = alu_res;
+
+    alu_res_o        <= (alu_opcode_i == ALU_JAL) ? br_src_a_i : alu_res;
+    rf_we_o          <= rf_we_i;
+    rf_waddr_o       <= rf_waddr_i;
+    rf_st_data_o     <= rf_st_data_i;
+    memop_type_o     <= memop_type_i;
+    memop_rd_o       <= memop_rd_i;
+    memop_wr_o       <= memop_wr_i;
+    memop_sign_ext_o <= memop_sign_ext_i;
+    tkbr_o           <= tkbr;
+    new_pc_o         <= alu_res;
+    seq_new_pc_o     <= seq_new_pc_i;
+    is_jaljalr_o     <= is_jaljalr_i;
+
 end
 
 
