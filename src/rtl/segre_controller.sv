@@ -5,63 +5,107 @@ module segre_controller (
     input logic clk_i,
     input logic rsn_i,
 
-    input logic is_mem_instr_i,
-    input logic mem_ready_i,
-    input logic instruction_hit_if_i,
-    input logic data_cache_is_busy_i,
-    input logic data_cache_is_hit_i,
+    // INSTRUCTION FETCH STAGE
 
-    // State
-    output fsm_state_e state_o
+    input logic ic_if_hit_i,
+
+    output logic block_if_o,
+    output logic inject_nops_if_o,
+
+    ///////////////////////////////////
+
+    // INSTRUCTION DECODE STAGE
+
+    input logic [REG_SIZE-1:0] src_a_identifier_id_i,
+    input logic [REG_SIZE-1:0] src_b_identifier_id_i,
+
+    output logic block_id_o,
+    output logic inject_nops_id_o,
+
+    //////////////////////////////////
+
+    // EXECUTION STAGE
+
+    input logic [REG_SIZE-1:0] dst_reg_identifier_ex_i,
+    input logic we_ex_i,
+
+    output logic block_ex_o,
+    output logic inject_nops_ex_o,
+
+    //////////////////////////////////
+
+    // MEM STAGE
+
+    input logic [REG_SIZE-1:0] dst_reg_identifier_mem_i,
+    input logic we_mem_i,
+
+    //////////////////////////////////
+
+    // WB STAGE
+
+    input logic [REG_SIZE-1:0] dst_reg_identifier_wb_i,
+    input logic we_wb_i
+
 
 );
 
-fsm_state_e state;
-fsm_state_e next_state;
+// INSTRUCTION FETCH CONTROL
 
-always_comb begin
-    unique case(state)
-        IF_STATE: begin
-            if (instruction_hit_if_i) begin
-                next_state = ID_STATE;
-            end
-            else begin
-                next_state = IF_STATE;
-            end
-        end
-        ID_STATE: next_state = EX_STATE;
-        EX_STATE: next_state = MEM_STATE;
-        MEM_STATE: begin
+logic block_if;
+logic inject_nops_if;
 
-              if (data_cache_is_busy_i || (!data_cache_is_hit_i && is_mem_instr_i)) begin
-                next_state = MEM_STATE;
-              end
-              else begin
-                next_state = WB_STATE;
-              end
-
-    // Equivalent to:
-    //            if (is_mem_instr_i && !mem_ready_i) begin
-    //                next_state = MEM_STATE;
-    //            end
-    //            else if (!is_mem_instr_i || mem_ready_i) begin
-    //                next_state = WB_STATE;
-    //            end
-        end
-        WB_STATE: next_state = IF_STATE;
-        default: next_state = IF_STATE;
-    endcase
-end
-
-always_ff @(posedge clk_i) begin
+always_comb begin : miss_when_fetching_instruction
     if (!rsn_i) begin
-        state <= IF_STATE;
+        block_if = 0;
+        inject_nops_if = 0;
     end
     else begin
-        state <= next_state;
+        if (!ic_if_hit_i) begin
+            block_if = 1;
+            inject_nops_if = 1;
+        end
+        else begin
+            block_if = 0;
+            inject_nops_if = 0;
+        end
     end
 end
 
-assign state_o = state;
+assign block_if_o = block_if;
+assign inject_nops_if_o = inject_nops_if;
 
-endmodule
+//////////////////////////////
+
+// DECODE CONTROL ( a little bit of EX too :) )
+
+logic block_id;
+logic inject_nops_id;
+logic inject_nops_ex;
+
+logic depEX;
+logic depMEM;
+logic depWB;
+
+assign depEX = ((src_a_identifier_id_i == dst_reg_identifier_ex_i) || (src_b_identifier_id_i == dst_reg_identifier_ex_i)) && we_ex_i;
+assign depMEM = ((src_a_identifier_id_i == dst_reg_identifier_mem_i) || (src_b_identifier_id_i == dst_reg_identifier_mem_i)) && we_mem_i;
+assign depWB = ((src_a_identifier_id_i == dst_reg_identifier_wb_i) || (src_b_identifier_id_i == dst_reg_identifier_wb_i)) && we_wb_i;
+
+always_comb begin : data_dependences_detection
+    if (!rsn_i) begin
+        block_id = 0;
+        inject_nops_id = 0;
+    end
+    else begin
+        if (depEX || depMEM || depWB) begin
+            block_id = 1;
+            inject_nops_ex = 1;
+        end
+        else begin
+            block_id = 0;
+            inject_nops_ex = 0;
+        end
+
+    end
+end
+
+endmodule : segre_controller

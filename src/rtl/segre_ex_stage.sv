@@ -6,6 +6,8 @@ module segre_ex_stage (
     input logic rsn_i,
 
     // ID EX interface
+    // RF
+    input logic [WORD_SIZE-1:0] rf_data_b_i,
     // ALU
     input alu_opcode_e alu_opcode_i,
     input logic [WORD_SIZE-1:0] alu_src_a_i,
@@ -42,7 +44,7 @@ module segre_ex_stage (
     output logic [ADDR_SIZE-1:0] new_pc_o,
 
     // pc + 4
-    input logic [ADDR_SIZE-1:0] seq_new_pc_i,
+    input logic [ADDR_SIZE-1:0] pc_i,
     output logic [ADDR_SIZE-1:0] seq_new_pc_o,
     input logic is_jaljalr_i,
     output logic is_jaljalr_o,
@@ -56,115 +58,135 @@ module segre_ex_stage (
 logic [WORD_SIZE-1:0] alu_res;
 logic tkbr;
 
-segre_alu alu (
-    // Clock and Reset
-    .clk_i (clk_i),
-    .rsn_i (rsn_i),
-
-    .alu_opcode_i (alu_opcode_i),
-    .alu_src_a_i  (alu_src_a_i),
-    .alu_src_b_i  (alu_src_b_i),
-
-    .alu_res_o (alu_res)
-);
-
-segre_tkbr trbr (
-    .br_src_a_i   (br_src_a_i),
-    .br_src_b_i   (br_src_b_i),
-    .alu_opcode_i (alu_opcode_i),
-    .tkbr_o       (tkbr)
-);
-
-logic [WORD_SIZE-1:0] alu_res_d;
+logic [WORD_SIZE-1:0] alu_src_a_d;
+logic [WORD_SIZE-1:0] alu_src_b_d;
 logic rf_we_d;
-logic [REG_SIZE-1:0] rf_waddr_d;
-logic [WORD_SIZE-1:0] rf_st_data_d;
+logic memop_sign_ext_d;
 memop_data_type_e memop_type_d;
 logic memop_rd_d;
 logic memop_wr_d;
-logic memop_sign_ext_d;
-logic [ADDR_SIZE-1:0] new_pc_d;
-logic is_jaljalr_d;
+alu_opcode_e alu_opcode_d;
+logic [WORD_SIZE-1:0] br_src_a_d;
+logic [WORD_SIZE-1:0] br_src_b_d;
+logic [WORD_SIZE-1:0] memop_rf_data_d;
 logic [ADDR_SIZE-1:0] seq_new_pc_d;
+logic is_jaljalr_d;
+logic [REG_SIZE-1:0] rf_waddr_d;
+logic [WORD_SIZE-1:0] rf_st_data_d;
 
-logic [WORD_SIZE-1:0] alu_res_q;
+logic [WORD_SIZE-1:0] alu_src_a_q;
+logic [WORD_SIZE-1:0] alu_src_b_q;
 logic rf_we_q;
-logic [REG_SIZE-1:0] rf_waddr_q;
-logic [WORD_SIZE-1:0] rf_st_data_q;
+logic memop_sign_ext_q;
 memop_data_type_e memop_type_q;
 logic memop_rd_q;
 logic memop_wr_q;
-logic memop_sign_ext_q;
-logic [ADDR_SIZE-1:0] new_pc_q;
-logic is_jaljalr_q;
+alu_opcode_e alu_opcode_q;
+logic [WORD_SIZE-1:0] br_src_a_q;
+logic [WORD_SIZE-1:0] br_src_b_q;
+logic [WORD_SIZE-1:0] memop_rf_data_q;
 logic [ADDR_SIZE-1:0] seq_new_pc_q;
+logic is_jaljalr_q;
+logic [REG_SIZE-1:0] rf_waddr_q;
+logic [WORD_SIZE-1:0] rf_st_data_q;
 
-always_comb begin
+always_comb begin : decoupling_register_ID_EX_1
     if (!rsn_i) begin
-        rf_we_d    = 0;
-        memop_rd_d = 0;
-        memop_wr_d = 0;
+        rf_we_d          = 0;
+        memop_rd_d       = 0;
+        memop_wr_d       = 0;
+        is_jaljalr_d = 0;
     end
     else begin
-        if (block_ex_i) begin
-            alu_res_d   = alu_res_q;
-            rf_we_d     = rf_we_q;
-            rf_waddr_d  = rf_waddr_q;
-            rf_st_data_d = rf_st_data_q;
-            memop_type_d = memop_type_q;
-            memop_rd_d  = memop_rd_q;
-            memop_wr_d  = memop_wr_q;
+        if (inject_nops_i) begin
+            rf_we_d          = 0;
+            memop_rd_d       = 0;
+            memop_wr_d       = 0;
+            is_jaljalr_d = 0;
+        end
+        else if (block_ex_i) begin
+            alu_src_a_d      = alu_src_a_q;
+            alu_src_b_d      = alu_src_b_q;
+            rf_we_d          = rf_we_q;
+            rf_waddr_d       = rf_waddr_q;
             memop_sign_ext_d = memop_sign_ext_q;
-            new_pc_d     = new_pc_q;
+            memop_type_d     = memop_type_q;
+            memop_rd_d       = memop_rd_q;
+            memop_wr_d       = memop_wr_q;
+            br_src_a_d       = br_src_a_q;
+            br_src_b_d       = br_src_b_q;
+            alu_opcode_d     = alu_opcode_q;
+            memop_rf_data_d  = memop_rf_data_q;
             seq_new_pc_d = seq_new_pc_q;
             is_jaljalr_d = is_jaljalr_q;
-        end
-        else if (inject_nops_i) begin
-            rf_we_d    = 0;
-            memop_rd_d = 0;
-            memop_wr_d = 0;
+            rf_st_data_d = rf_st_data_q;
         end
         else begin
-            alu_res_d        = (alu_opcode_i == ALU_JAL) ? br_src_a_i : alu_res;
+            alu_src_a_d      = alu_src_a_i;
+            alu_src_b_d      = alu_src_b_i;
             rf_we_d          = rf_we_i;
             rf_waddr_d       = rf_waddr_i;
-            rf_st_data_d     = rf_st_data_i;
+            memop_sign_ext_d = memop_sign_ext_i;
             memop_type_d     = memop_type_i;
             memop_rd_d       = memop_rd_i;
             memop_wr_d       = memop_wr_i;
-            memop_sign_ext_d = memop_sign_ext_i;
-            new_pc_d         = alu_res;
-            seq_new_pc_d     = seq_new_pc_i;
-            is_jaljalr_d     = is_jaljalr_i;
+            br_src_a_d       = br_src_a_i;
+            br_src_b_d       = br_src_b_i;
+            alu_opcode_d     = alu_opcode_i;
+            memop_rf_data_d  = rf_data_b_i;
+            seq_new_pc_d = pc_i + 4;
+            is_jaljalr_d = is_jaljalr_i;
+            rf_st_data_d = rf_st_data_i;
         end
     end
 end
 
-always_ff @(posedge clk_i) begin
+always_ff @(posedge clk_i) begin : decoupling_register_ID_EX_2
     if (!rsn_i) begin
-        rf_we_q <= 0;
-        memop_rd_q <= 0;
-        memop_wr_q <= 0;
+        rf_we_q          <= 0;
+        memop_rd_q       <= 0;
+        memop_wr_q       <= 0;
+        is_jaljalr_q     <= 0;
     end
     else begin
-        ////// This must be routed to IF stage at some point and to the logic...
-        tkbr_o <= tkbr;
-        ///////
-        alu_res_q   <= alu_res_d;
-        rf_we_q     <= rf_we_d;
-        rf_waddr_q  <= rf_waddr_d;
-        rf_st_data_q <= rf_st_data_d;
-        memop_type_q <= memop_type_d;
-        memop_rd_q  <= memop_rd_d;
-        memop_wr_q  <= memop_wr_d;
+        alu_src_a_q      <= alu_src_a_d;
+        alu_src_b_q      <= alu_src_b_d;
+        rf_we_q          <= rf_we_d;
+        rf_waddr_q       <= rf_waddr_d;
         memop_sign_ext_q <= memop_sign_ext_d;
-        new_pc_q     <= new_pc_d;
+        memop_type_q     <= memop_type_d;
+        memop_rd_q       <= memop_rd_d;
+        memop_wr_q       <= memop_wr_d;
+        br_src_a_q       <= br_src_a_d;
+        br_src_b_q       <= br_src_b_d;
+        alu_opcode_q     <= alu_opcode_d;
+        memop_rf_data_q  <= memop_rf_data_d;
         seq_new_pc_q <= seq_new_pc_d;
         is_jaljalr_q <= is_jaljalr_d;
     end
 end
 
-assign alu_res_o   = alu_res_q;
+segre_alu alu (
+    // Clock and Reset
+    .clk_i (clk_i),
+    .rsn_i (rsn_i),
+
+    .alu_opcode_i (alu_opcode_q),
+    .alu_src_a_i  (alu_src_a_q),
+    .alu_src_b_i  (alu_src_b_q),
+
+    .alu_res_o (alu_res)
+);
+
+segre_tkbr trbr (
+    .br_src_a_i   (br_src_a_q),
+    .br_src_b_i   (br_src_b_q),
+    .alu_opcode_i (alu_opcode_q),
+    .tkbr_o       (tkbr)
+);
+
+
+assign alu_res_o   = (alu_opcode_i == ALU_JAL) ? br_src_a_i : alu_res;
 assign rf_we_o     = rf_we_q;
 assign rf_waddr_o  = rf_waddr_q;
 assign rf_st_data_o = rf_st_data_q;
@@ -172,8 +194,11 @@ assign memop_type_o = memop_type_q;
 assign memop_rd_o  = memop_rd_q;
 assign memop_wr_o  = memop_wr_q;
 assign memop_sign_ext_o = memop_sign_ext_q;
-assign new_pc_o     = new_pc_q;
+assign new_pc_o     = alu_res;
 assign seq_new_pc_o = seq_new_pc_q;
 assign is_jaljalr_o = is_jaljalr_q;
+
+// TODO SEND THIS TO IF INTERFACE AND DO WHAT YOU HAVE TO DO, ALSO TO CONTROL
+assign tkbr_o = tkbr;
 
 endmodule : segre_ex_stage

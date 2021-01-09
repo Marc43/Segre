@@ -76,7 +76,8 @@ module top_tb;
     endtask
 
     function bit keep_running_tb();
-        if (soc.dut.id_instr == 32'hfff01073 && soc.dut.fsm_state == ID_STATE) begin
+        //if (soc.dut.id_instr == 32'hfff01073 && soc.dut.fsm_state == ID_STATE) begin
+        if (soc.dut.id_instr == 32'hfff01073) begin
             return 0;
         end
 
@@ -131,7 +132,7 @@ module top_tb;
         forever begin
             static string instr_decoded;
             @(posedge clk);
-            if (soc.dut.fsm_state == IF_STATE) begin
+            if (!(soc.dut.ctrl_block_if || soc.dut.ctrl_inject_nops_if)) begin
                     $display("DATA TO SEND LIBDECODER: %0d", soc.dut.id_instr);
 `ifndef USE_MODELSIM
                     instr_decoded = decode_instruction(int'(soc.dut.id_instr));

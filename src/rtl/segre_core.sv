@@ -15,6 +15,29 @@ module segre_core (
     output memop_data_type_e mem_data_type_o
 );
 
+logic ic_if_hit;
+logic ctrl_block_if;
+logic ctrl_inject_nops_if;
+
+segre_controller controller (
+    // Clock and Reset
+    .clk_i (clk_i),
+    .rsn_i (rsn_i),
+
+    // Instruction Fetch
+    ////////////////////
+
+    // Inputs
+    .ic_if_hit_i (ic_if_hit),
+
+    // Outputs
+    .block_if_o (ctrl_block_if),
+    .inject_nops_if_o (ctrl_inject_nops_if)
+
+    ////////////////////
+
+);
+
 //IF STAGE
 logic [WORD_SIZE-1:0] if_addr;
 logic if_mem_rd;
@@ -26,9 +49,8 @@ logic [REG_SIZE-1:0] rf_raddr_a;
 logic [REG_SIZE-1:0] rf_raddr_b;
 logic [WORD_SIZE-1:0] rf_data_a;
 logic [WORD_SIZE-1:0] rf_data_b;
-// FSM
-fsm_state_e fsm_state;
 // EX STAGE
+logic [WORD_SIZE-1:0] ex_pc;
 memop_data_type_e ex_memop_type;
 logic [WORD_SIZE-1:0] ex_alu_src_a;
 logic [WORD_SIZE-1:0] ex_alu_src_b;
@@ -42,7 +64,6 @@ logic ex_memop_wr;
 logic ex_memop_sign_ext;
 logic [WORD_SIZE-1:0] ex_br_src_a;
 logic [WORD_SIZE-1:0] ex_br_src_b;
-logic [ADDR_SIZE-1:0] ex_seq_new_pc;
 // MEM STAGE
 memop_data_type_e mem_memop_type;
 memop_data_type_e mem_data_type;
@@ -71,12 +92,20 @@ logic [WORD_SIZE-1:0] wb_new_pc;
 logic wb_tkbr;
 
 logic mem_stage_rdwr;
-assign mem_stage_rdwr = (fsm_state == MEM_STATE) && (mem_memop_rd || mem_memop_wr);
+assign mem_stage_rdwr = (mem_memop_rd || mem_memop_wr);
 
-assign addr_o          = (fsm_state == MEM_STATE) ? mem_addr       : if_addr;
-assign mem_rd_o        = (fsm_state == MEM_STATE) ? mem_rd         : if_mem_rd;
-assign mem_wr_o        = (fsm_state == MEM_STATE) ? mem_wr         : 1'b0;
-assign mem_data_type_o = (fsm_state == MEM_STATE) ? mem_data_type  : WORD;
+//assign addr_o          = (fsm_state == MEM_STATE) ? mem_addr       : if_addr;
+//assign mem_rd_o        = (fsm_state == MEM_STATE) ? mem_rd         : if_mem_rd;
+//assign mem_wr_o        = (fsm_state == MEM_STATE) ? mem_wr         : 1'b0;
+//assign mem_data_type_o = (fsm_state == MEM_STATE) ? mem_data_type  : WORD;
+
+// TODO This is DONE THIS WAY BECASUE I AM ONLY TESTING ARITHMETIC/LOGIC INSTRUCTIONS
+// OF COURSE AT SOME POINT WE HAVE TO ARBITRATE BETWEEN MEMORY ACCESSES OF STAGES
+// INSTRUCTION FETCH AND MEMORY.
+assign addr_o          = if_addr;
+assign mem_rd_o        = if_mem_rd;
+assign mem_wr_o        = 1'b0;
+assign mem_data_type_o = WORD;
 assign mem_wr_data_o   = mem_wr_data;
 
 segre_if_stage if_stage (
@@ -90,9 +119,6 @@ segre_if_stage if_stage (
     .pc_o        (if_addr),
     .mem_rd_o    (if_mem_rd),
 
-    // FSM state
-    .fsm_state_i (fsm_state),
-
     // IF ID interface
     .instr_o     (id_instr),
 
@@ -101,11 +127,10 @@ segre_if_stage if_stage (
     .new_pc_i    (wb_new_pc),
 
     // To controller signals
-    .instruction_hit_o (instruction_hit_if),
+    .instruction_hit_o (ic_if_hit),
 
-    .block_if_i (0),
-    .inject_nops_i (0)
-
+    .block_if_i (ctrl_block_if),
+    .inject_nops_i (ctrl_inject_nops_if)
 
 );
 
@@ -113,9 +138,6 @@ segre_id_stage id_stage (
     // Clock and Reset
     .clk_i            (clk_i),
     .rsn_i            (rsn_i),
-
-    // FSM State
-    .fsm_state_i      (fsm_state),
 
     // IF ID interface
     .instr_i          (id_instr),
@@ -128,6 +150,7 @@ segre_id_stage id_stage (
     .rf_data_b_i      (rf_data_b),
 
     // ID EX interface
+    .pc_o             (ex_pc),
     // ALU
     .alu_opcode_o     (ex_alu_opcode),
     .alu_src_a_o      (ex_alu_src_a),
@@ -145,8 +168,6 @@ segre_id_stage id_stage (
     .br_src_a_o        (ex_br_src_a),
     .br_src_b_o        (ex_br_src_b),
 
-    // pc + 4
-    .seq_new_pc_o (ex_seq_new_pc),
     .is_jaljalr_o (ex_is_jaljalr),
 
     .block_id_i (0),
@@ -193,7 +214,7 @@ segre_ex_stage ex_stage (
     .new_pc_o         (mem_new_pc),
 
     // pc + 4
-    .seq_new_pc_i (ex_seq_new_pc),
+    .pc_i (ex_pc_i),
     .seq_new_pc_o (mem_seq_new_pc),
     .is_jaljalr_i (ex_is_jaljalr),
     .is_jaljalr_o (mem_is_jaljalr),
@@ -265,21 +286,6 @@ segre_register_file segre_rf (
     .data_b_o    (rf_data_b),
     .waddr_i     (wb_rf_waddr),
     .data_w_i    (wb_res)
-);
-
-segre_controller controller (
-    // Clock and Reset
-    .clk_i (clk_i),
-    .rsn_i (rsn_i),
-
-    .is_mem_instr_i (mem_stage_rdwr),
-    .mem_ready_i (mem_ready_i),
-    .instruction_hit_if_i (instruction_hit_if),
-    .data_cache_is_busy_i (mem_data_cache_is_busy),
-    .data_cache_is_hit_i  (mem_data_cache_is_hit),
-
-    // State
-    .state_o (fsm_state)
 );
 
 endmodule : segre_core
