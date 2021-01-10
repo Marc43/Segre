@@ -8,6 +8,7 @@ module segre_id_stage (
     // IF and ID stage
     input logic [WORD_SIZE-1:0] instr_i,
     input logic [WORD_SIZE-1:0] pc_i,
+    input logic valid_if_i,
 
     // Register file read operands
     output logic [REG_SIZE-1:0]  rf_raddr_a_o,
@@ -43,7 +44,7 @@ module segre_id_stage (
 
     input logic block_id_i, // Block this stage (flip-flops)
     input logic inject_nops_i, // Inject NOPs to the following stages
-    output logic valid_ex_o, // Indicate the next stage if it's processing valid data
+    output logic valid_id_o, // Indicate the next stage if it's processing valid data
 
     // Signals needed to detect hazards
 
@@ -84,23 +85,30 @@ logic [ADDR_SIZE-1:0] pc_d;
 logic [WORD_SIZE-1:0] instr_q;
 logic [ADDR_SIZE-1:0] pc_q;
 
+logic valid_id_d;
+logic valid_id_q;
+
 always_comb begin : decoupling_register_F_ID_1
     if (!rsn_i) begin
         instr_d = NOP_INSTR;
         pc_d    = 0;
+        valid_id_d = 0;
     end
     else begin
         if (inject_nops_i) begin
             instr_d = NOP_INSTR;
             pc_d    = pc_q;
+            valid_id_d = 0;
         end
         else if (block_id_i) begin
             instr_d = instr_q;
             pc_d = pc_q;
+            valid_id_d = 0;
         end
         else begin
             instr_d = instr_i;
             pc_d = pc_i;
+            valid_id_d = valid_if_i;
         end
     end
 end
@@ -109,10 +117,12 @@ always_ff @(posedge clk_i) begin : decoupling_register_F_ID_2
     if (!rsn_i) begin
         instr_q <= NOP_INSTR;
         pc_q    <= 0;
+        valid_id_q <= 0;
     end
     else begin
         instr_q <= instr_d;
         pc_q <= pc_d;
+        valid_id_q <= valid_id_d;
     end
 end
 
@@ -220,5 +230,6 @@ assign src_a_identifier_o = rf_raddr_a;
 assign src_b_identifier_o = rf_raddr_b;
 
 assign pc_o = pc_q;
+assign valid_id_o = valid_id_q;
 
 endmodule : segre_id_stage

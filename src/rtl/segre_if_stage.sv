@@ -16,7 +16,7 @@ module segre_if_stage (
     // To/From controller signals
     input logic block_if_i, // Block this stage (flip-flops)
     input logic inject_nops_i, // Inject NOPs to the following stages
-    output logic valid_id_o, // Indicate the next stage if it's processing valid data
+    output logic valid_if_o, // Indicate the next stage if it's processing valid data
     output logic instruction_hit_o,
     output logic mem_rd_o,
 
@@ -51,12 +51,27 @@ assign is_alu = 0;
 assign data = 0;
 assign instruction_hit_o = is_hit;
 
-// Q is the output of the flip-flop, D should be the input but... jej
-logic [WORD_SIZE-1:0] instr_d;
-logic [ADDR_SIZE-1:0] pc_d;
+logic [ADDR_SIZE-1:0] pc;
 
-logic [WORD_SIZE-1:0] instr_q;
-logic [ADDR_SIZE-1:0] pc_q;
+// This was creating a loop
+//assign pc = !rsn_i ? 0 : (is_hit ? pc_i + 4 : pc_i);
+
+always_comb begin : pc_mux
+    if (!rsn_i) begin
+        pc = 0;
+    end
+    else begin
+        if (block_if_i) begin
+            pc = pc;
+        end
+        else begin
+            pc = pc_i + 4;
+        end
+    end
+
+end
+
+assign valid_if_o = (block_if_i || !rsn_i) ? 1'b0 : 1'b1;
 
 segre_cache
 #(
@@ -73,7 +88,7 @@ instruction_cache
 
     .rcvd_mem_request_i(mem_ready_i),
     .data_type_i(data_type),
-    .addr_i(pc_q),
+    .addr_i(pc_i),
     .data_i(data),
     .from_mem_cache_line_i(cache_instr_line_i),
 
@@ -113,6 +128,6 @@ instruction_cache
 
 assign mem_rd_o = rd && !is_hit && rsn_i;
 assign instr_o = instr_to_feed_decode;
-assign pc_o = is_hit ? pc_i + 4 : pc_i;
+assign pc_o = pc;
 
 endmodule : segre_if_stage

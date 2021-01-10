@@ -5,6 +5,8 @@ module segre_ex_stage (
     input logic clk_i,
     input logic rsn_i,
 
+    input valid_id_i,
+
     // ID EX interface
     // RF
     input logic [WORD_SIZE-1:0] rf_data_b_i,
@@ -51,7 +53,7 @@ module segre_ex_stage (
 
     input logic block_ex_i, // Block this stage (flip-flops)
     input logic inject_nops_i, // Inject NOPs to the following stages
-    output logic valid_mem_o // Indicate the next stage if it's processing valid data
+    output logic valid_ex_o // Indicate the next stage if it's processing valid data
 
 );
 
@@ -73,6 +75,7 @@ logic [ADDR_SIZE-1:0] seq_new_pc_d;
 logic is_jaljalr_d;
 logic [REG_SIZE-1:0] rf_waddr_d;
 logic [WORD_SIZE-1:0] rf_st_data_d;
+logic valid_ex_d;
 
 logic [WORD_SIZE-1:0] alu_src_a_q;
 logic [WORD_SIZE-1:0] alu_src_b_q;
@@ -89,6 +92,7 @@ logic [ADDR_SIZE-1:0] seq_new_pc_q;
 logic is_jaljalr_q;
 logic [REG_SIZE-1:0] rf_waddr_q;
 logic [WORD_SIZE-1:0] rf_st_data_q;
+logic valid_ex_q;
 
 always_comb begin : decoupling_register_ID_EX_1
     if (!rsn_i) begin
@@ -96,6 +100,7 @@ always_comb begin : decoupling_register_ID_EX_1
         memop_rd_d       = 0;
         memop_wr_d       = 0;
         is_jaljalr_d = 0;
+        valid_ex_d = 0;
     end
     else begin
         if (inject_nops_i) begin
@@ -103,6 +108,7 @@ always_comb begin : decoupling_register_ID_EX_1
             memop_rd_d       = 0;
             memop_wr_d       = 0;
             is_jaljalr_d = 0;
+            valid_ex_d = 0;
         end
         else if (block_ex_i) begin
             alu_src_a_d      = alu_src_a_q;
@@ -120,6 +126,7 @@ always_comb begin : decoupling_register_ID_EX_1
             seq_new_pc_d = seq_new_pc_q;
             is_jaljalr_d = is_jaljalr_q;
             rf_st_data_d = rf_st_data_q;
+            valid_ex_d = 0;
         end
         else begin
             alu_src_a_d      = alu_src_a_i;
@@ -137,6 +144,7 @@ always_comb begin : decoupling_register_ID_EX_1
             seq_new_pc_d = pc_i + 4;
             is_jaljalr_d = is_jaljalr_i;
             rf_st_data_d = rf_st_data_i;
+            valid_ex_d = valid_id_i;
         end
     end
 end
@@ -147,6 +155,7 @@ always_ff @(posedge clk_i) begin : decoupling_register_ID_EX_2
         memop_rd_q       <= 0;
         memop_wr_q       <= 0;
         is_jaljalr_q     <= 0;
+        valid_ex_q <= 0;
     end
     else begin
         alu_src_a_q      <= alu_src_a_d;
@@ -163,6 +172,7 @@ always_ff @(posedge clk_i) begin : decoupling_register_ID_EX_2
         memop_rf_data_q  <= memop_rf_data_d;
         seq_new_pc_q <= seq_new_pc_d;
         is_jaljalr_q <= is_jaljalr_d;
+        valid_ex_q <= valid_ex_d;
     end
 end
 
@@ -200,5 +210,6 @@ assign is_jaljalr_o = is_jaljalr_q;
 
 // TODO SEND THIS TO IF INTERFACE AND DO WHAT YOU HAVE TO DO, ALSO TO CONTROL
 assign tkbr_o = tkbr;
+assign valid_ex_o = valid_ex_q;
 
 endmodule : segre_ex_stage

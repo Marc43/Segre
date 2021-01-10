@@ -15,9 +15,103 @@ module segre_core (
     output memop_data_type_e mem_data_type_o
 );
 
+//IF STAGE
+logic [WORD_SIZE-1:0] if_addr;
+logic if_mem_rd;
+logic instruction_hit_if;
+logic valid_if;
+
+// ID STAGE
+logic [WORD_SIZE-1:0] id_instr;
+logic [REG_SIZE-1:0] src_a_identifier_id;
+logic [REG_SIZE-1:0] src_b_identifier_id;
+logic valid_id;
+
+// REGISTER FILE
+logic [REG_SIZE-1:0] rf_raddr_a;
+logic [REG_SIZE-1:0] rf_raddr_b;
+logic [WORD_SIZE-1:0] rf_data_a;
+logic [WORD_SIZE-1:0] rf_data_b;
+
+// ID STAGE
+logic [WORD_SIZE-1:0] id_pc;
+memop_data_type_e id_memop_type;
+logic [WORD_SIZE-1:0] id_alu_src_a;
+logic [WORD_SIZE-1:0] id_alu_src_b;
+logic [WORD_SIZE-1:0] id_rf_st_data;
+logic id_rf_we;
+logic [REG_SIZE-1:0] id_rf_waddr;
+logic id_is_jaljalr;
+alu_opcode_e id_alu_opcode;
+logic id_memop_rd;
+logic id_memop_wr;
+logic id_memop_sign_ext;
+logic [WORD_SIZE-1:0] id_br_src_a;
+logic [WORD_SIZE-1:0] id_br_src_b;
+
+// EX STAGE
+memop_data_type_e ex_memop_type;
+memop_data_type_e ex_data_type;
+logic [WORD_SIZE-1:0] ex_alu_res;
+logic [WORD_SIZE-1:0] ex_addr;
+logic [WORD_SIZE-1:0] ex_rf_st_data;
+logic [REG_SIZE-1:0]  ex_rf_waddr;
+logic ex_memop_rd;
+logic ex_memop_wr;
+logic ex_memop_sign_ext;
+logic ex_rf_we;
+logic ex_rd;
+logic ex_wr;
+logic ex_tkbr;
+logic [WORD_SIZE-1:0] ex_new_pc;
+logic ex_data_cache_is_busy;
+logic ex_data_cache_is_hit;
+logic ex_is_jaljalr;
+logic [ADDR_SIZE-1:0] ex_seq_new_pc;
+logic valid_ex;
+
+// MEM STAGE
+logic [WORD_SIZE-1:0] mem_res;
+logic mem_rf_we;
+logic [REG_SIZE-1:0] mem_rf_waddr;
+logic mem_tkbr;
+logic [ADDR_SIZE-1:0] mem_new_pc;
+logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] mem_wr_data;
+logic valid_mem;
+
+
+//// WB STAGE Use _q instead.
+logic [WORD_SIZE-1:0] wb_res_d;
+logic wb_rf_we_d;
+logic [REG_SIZE-1:0] wb_rf_waddr_d;
+logic tkbr_d;
+logic [ADDR_SIZE-1:0] wb_new_pc_d;
+logic valid_wb_d;
+
+logic [WORD_SIZE-1:0] wb_res_q;
+logic wb_rf_we_q;
+logic [REG_SIZE-1:0] wb_rf_waddr_q;
+logic tkbr_q;
+logic [ADDR_SIZE-1:0] wb_new_pc_q;
+logic valid_wb_q;
+
+
 logic ic_if_hit;
 logic ctrl_block_if;
 logic ctrl_inject_nops_if;
+
+logic ctrl_block_id;
+logic ctrl_inject_nops_id;
+
+// Not used right now
+logic ctrl_block_ex;
+logic ctrl_inject_nops_ex;
+
+logic ctrl_block_mem;
+logic ctrl_inject_nops_mem;
+
+logic ctrl_block_wb;
+logic ctrl_inject_nops_wb;
 
 segre_controller controller (
     // Clock and Reset
@@ -29,70 +123,66 @@ segre_controller controller (
 
     // Inputs
     .ic_if_hit_i (ic_if_hit),
+    .valid_if_i (valid_if),
 
     // Outputs
     .block_if_o (ctrl_block_if),
-    .inject_nops_if_o (ctrl_inject_nops_if)
+    .inject_nops_if_o (ctrl_inject_nops_if),
 
     ////////////////////
 
+    // Instruction Decode
+    ////////////////////
+
+    // Inputs
+    .valid_id_i (valid_id),
+    .src_a_identifier_id_i (src_a_identifier_id),
+    .src_b_identifier_id_i (src_b_identifier_id),
+
+    // Outuputs
+    .block_id_o (ctrl_block_id),
+    .inject_nops_id_o (ctrl_inject_nops_id),
+
+    ////////////////////
+
+    // Execution
+    ////////////////////
+
+    // Inputs
+    .valid_ex_i (valid_ex),
+    .dst_reg_identifier_ex_i (ex_rf_waddr),
+    .we_ex_i (ex_rf_we),
+
+    // Outputs
+    .block_ex_o (ctrl_block_ex),
+    .inject_nops_ex_o (ctrl_inject_nops_ex),
+
+    ////////////////////
+
+    // Memory
+
+    // Inputs
+    .valid_mem_i (valid_mem),
+    .dst_reg_identifier_mem_i (mem_rf_waddr),
+    .we_mem_i (mem_rf_we),
+
+    // Outputs
+    .block_mem_o (ctrl_block_mem),
+    .inject_nops_mem_o (ctrl_inject_nops_mem_o),
+
+    ////////////////////
+
+    // Writeback
+
+    // Inputs
+    .valid_wb_i (valid_wb_q),
+    .dst_reg_identifier_wb_i (wb_rf_waddr_q),
+    .we_wb_i (wb_rf_we_q),
+
+    // Outputs
+    .block_wb_o (ctrl_block_wb),
+    .inject_nops_wb_o (ctrl_inject_nops_wb)
 );
-
-//IF STAGE
-logic [WORD_SIZE-1:0] if_addr;
-logic if_mem_rd;
-logic instruction_hit_if;
-// ID STAGE
-logic [WORD_SIZE-1:0] id_instr;
-// REGISTER FILE
-logic [REG_SIZE-1:0] rf_raddr_a;
-logic [REG_SIZE-1:0] rf_raddr_b;
-logic [WORD_SIZE-1:0] rf_data_a;
-logic [WORD_SIZE-1:0] rf_data_b;
-// EX STAGE
-logic [WORD_SIZE-1:0] ex_pc;
-memop_data_type_e ex_memop_type;
-logic [WORD_SIZE-1:0] ex_alu_src_a;
-logic [WORD_SIZE-1:0] ex_alu_src_b;
-logic [WORD_SIZE-1:0] ex_rf_st_data;
-logic ex_rf_we;
-logic [REG_SIZE-1:0] ex_rf_waddr;
-logic ex_is_jaljalr;
-alu_opcode_e ex_alu_opcode;
-logic ex_memop_rd;
-logic ex_memop_wr;
-logic ex_memop_sign_ext;
-logic [WORD_SIZE-1:0] ex_br_src_a;
-logic [WORD_SIZE-1:0] ex_br_src_b;
-// MEM STAGE
-memop_data_type_e mem_memop_type;
-memop_data_type_e mem_data_type;
-logic [WORD_SIZE-1:0] mem_alu_res;
-logic [WORD_SIZE-1:0] mem_addr;
-logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] mem_wr_data;
-logic [WORD_SIZE-1:0] mem_rf_st_data;
-logic [REG_SIZE-1:0]  mem_rf_waddr;
-logic mem_memop_rd;
-logic mem_memop_wr;
-logic mem_memop_sign_ext;
-logic mem_rf_we;
-logic mem_rd;
-logic mem_wr;
-logic mem_tkbr;
-logic [WORD_SIZE-1:0] mem_new_pc;
-logic mem_data_cache_is_busy;
-logic mem_data_cache_is_hit;
-logic mem_is_jaljalr;
-logic [ADDR_SIZE-1:0] mem_seq_new_pc;
-// WB STAGE
-logic [WORD_SIZE-1:0] wb_res;
-logic [REG_SIZE-1:0] wb_rf_waddr;
-logic wb_rf_we;
-logic [WORD_SIZE-1:0] wb_new_pc;
-logic wb_tkbr;
-
-logic mem_stage_rdwr;
-assign mem_stage_rdwr = (mem_memop_rd || mem_memop_wr);
 
 //assign addr_o          = (fsm_state == MEM_STATE) ? mem_addr       : if_addr;
 //assign mem_rd_o        = (fsm_state == MEM_STATE) ? mem_rd         : if_mem_rd;
@@ -113,6 +203,9 @@ segre_if_stage if_stage (
     .clk_i (clk_i),
     .rsn_i (rsn_i),
 
+    // ID-IF
+    .pc_i (id_pc),
+
     // Memory
     .cache_instr_line_i (mem_rd_data_i),
     .mem_ready_i (mem_ready_i),
@@ -121,10 +214,11 @@ segre_if_stage if_stage (
 
     // IF ID interface
     .instr_o     (id_instr),
+    .valid_if_o  (valid_if),
 
     // WB interface
-    .tkbr_i      (wb_tkbr),
-    .new_pc_i    (wb_new_pc),
+    .tkbr_i      (tkbr_q),
+    .new_pc_i    (wb_new_pc_q),
 
     // To controller signals
     .instruction_hit_o (ic_if_hit),
@@ -142,6 +236,7 @@ segre_id_stage id_stage (
     // IF ID interface
     .instr_i          (id_instr),
     .pc_i             (if_addr),
+    .valid_if_i       (valid_if),
 
     // Register file read operands
     .rf_raddr_a_o     (rf_raddr_a),
@@ -150,28 +245,32 @@ segre_id_stage id_stage (
     .rf_data_b_i      (rf_data_b),
 
     // ID EX interface
-    .pc_o             (ex_pc),
+    .pc_o             (id_pc),
     // ALU
-    .alu_opcode_o     (ex_alu_opcode),
-    .alu_src_a_o      (ex_alu_src_a),
-    .alu_src_b_o      (ex_alu_src_b),
+    .alu_opcode_o     (id_alu_opcode),
+    .alu_src_a_o      (id_alu_src_a),
+    .alu_src_b_o      (id_alu_src_b),
     // Register file
-    .rf_we_o          (ex_rf_we),
-    .rf_waddr_o       (ex_rf_waddr),
+    .rf_we_o          (id_rf_we),
+    .rf_waddr_o       (id_rf_waddr),
     // Memop
-    .memop_type_o      (ex_memop_type),
-    .memop_rd_o        (ex_memop_rd),
-    .memop_wr_o        (ex_memop_wr),
-    .memop_sign_ext_o  (ex_memop_sign_ext),
-    .memop_rf_data_o   (ex_rf_st_data),
+    .memop_type_o      (id_memop_type),
+    .memop_rd_o        (id_memop_rd),
+    .memop_wr_o        (id_memop_wr),
+    .memop_sign_ext_o  (id_memop_sign_ext),
+    .memop_rf_data_o   (id_rf_st_data),
     // Branch | Jump
-    .br_src_a_o        (ex_br_src_a),
-    .br_src_b_o        (ex_br_src_b),
+    .br_src_a_o        (id_br_src_a),
+    .br_src_b_o        (id_br_src_b),
 
-    .is_jaljalr_o (ex_is_jaljalr),
+    .is_jaljalr_o (id_is_jaljalr),
 
-    .block_id_i (0),
-    .inject_nops_i (0)
+    .src_a_identifier_o (src_a_identifier_id),
+    .src_b_identifier_o (src_b_identifier_id),
+
+    .block_id_i (ctrl_block_id),
+    .inject_nops_i (ctrl_inject_nops_id),
+    .valid_id_o (valid_id)
 );
 
 segre_ex_stage ex_stage (
@@ -179,54 +278,59 @@ segre_ex_stage ex_stage (
     .clk_i            (clk_i),
     .rsn_i            (rsn_i),
 
+    .valid_id_i       (valid_id),
+
     // ID EX interface
     // ALU
-    .alu_opcode_i     (ex_alu_opcode),
-    .alu_src_a_i      (ex_alu_src_a),
-    .alu_src_b_i      (ex_alu_src_b),
+    .alu_opcode_i     (id_alu_opcode),
+    .alu_src_a_i      (id_alu_src_a),
+    .alu_src_b_i      (id_alu_src_b),
     // Register file
-    .rf_we_i          (ex_rf_we),
-    .rf_waddr_i       (ex_rf_waddr),
-    .rf_st_data_i     (ex_rf_st_data),
+    .rf_we_i          (id_rf_we),
+    .rf_waddr_i       (id_rf_waddr),
+    .rf_st_data_i     (id_rf_st_data),
     // Memop
-    .memop_type_i      (ex_memop_type),
-    .memop_rd_i        (ex_memop_rd),
-    .memop_wr_i        (ex_memop_wr),
-    .memop_sign_ext_i  (ex_memop_sign_ext),
+    .memop_type_i      (id_memop_type),
+    .memop_rd_i        (id_memop_rd),
+    .memop_wr_i        (id_memop_wr),
+    .memop_sign_ext_i  (id_memop_sign_ext),
     // Branch | Jump
-    .br_src_a_i        (ex_br_src_a),
-    .br_src_b_i        (ex_br_src_b),
+    .br_src_a_i        (id_br_src_a),
+    .br_src_b_i        (id_br_src_b),
 
     // EX MEM interface
     // ALU
-    .alu_res_o        (mem_alu_res),
+    .alu_res_o        (ex_alu_res),
     // Register file
-    .rf_we_o          (mem_rf_we),
-    .rf_waddr_o       (mem_rf_waddr),
-    .rf_st_data_o     (mem_rf_st_data),
+    .rf_we_o          (ex_rf_we),
+    .rf_waddr_o       (ex_rf_waddr),
+    .rf_st_data_o     (ex_rf_st_data),
     // Memop
-    .memop_type_o     (mem_memop_type),
-    .memop_rd_o       (mem_memop_rd),
-    .memop_wr_o       (mem_memop_wr),
-    .memop_sign_ext_o (mem_memop_sign_ext),
+    .memop_type_o     (ex_memop_type),
+    .memop_rd_o       (ex_memop_rd),
+    .memop_wr_o       (ex_memop_wr),
+    .memop_sign_ext_o (ex_memop_sign_ext),
     // Branch | Jal
-    .tkbr_o           (mem_tkbr),
-    .new_pc_o         (mem_new_pc),
+    .tkbr_o           (ex_tkbr),
+    .new_pc_o         (ex_new_pc),
 
     // pc + 4
-    .pc_i (ex_pc_i),
-    .seq_new_pc_o (mem_seq_new_pc),
-    .is_jaljalr_i (ex_is_jaljalr),
-    .is_jaljalr_o (mem_is_jaljalr),
+    .pc_i (id_pc_i),
+    .seq_new_pc_o (ex_seq_new_pc),
+    .is_jaljalr_i (id_is_jaljalr),
+    .is_jaljalr_o (ex_is_jaljalr),
 
-    .block_ex_i (0),
-    .inject_nops_i (0)
+    .block_ex_i (ctrl_block_ex),
+    .inject_nops_i (ctrl_inject_nops_ex),
+    .valid_ex_o (valid_ex)
 );
 
 segre_mem_stage mem_stage (
     // Clock and Reset
     .clk_i            (clk_i),
     .rsn_i            (rsn_i),
+
+    .valid_ex_i       (valid_ex),
 
     // To Logic
     .cache_is_busy_o (mem_data_cache_is_busy),
@@ -239,53 +343,100 @@ segre_mem_stage mem_stage (
     .memop_rd_o       (mem_rd),
     .memop_wr_o       (mem_wr),
     .memop_type_o     (mem_data_type),
-    .cache_line_i     (mem_rd_data_i),
-    .mem_ready_i      (mem_ready_i),
+    .cache_line_i     (ex_rd_data_i),
+    .mem_ready_i      (ex_ready_i),
     .to_mem_cache_line_o (mem_wr_data),
 
     // EX MEM interface
     // ALU
-    .alu_res_i        (mem_alu_res),
+    .alu_res_i        (ex_alu_res),
     // Register file
-    .rf_we_i          (mem_rf_we),
-    .rf_waddr_i       (mem_rf_waddr),
-    .rf_st_data_i     (mem_rf_st_data),
+    .rf_we_i          (ex_rf_we),
+    .rf_waddr_i       (ex_rf_waddr),
+    .rf_st_data_i     (ex_rf_st_data),
     // Memop
-    .memop_type_i     (mem_memop_type),
-    .memop_rd_i       (mem_memop_rd),
-    .memop_wr_i       (mem_memop_wr),
-    .memop_sign_ext_i (mem_memop_sign_ext),
+    .memop_type_i     (ex_memop_type),
+    .memop_rd_i       (ex_memop_rd),
+    .memop_wr_i       (ex_memop_wr),
+    .memop_sign_ext_i (ex_memop_sign_ext),
     // Branch | Jal
-    .tkbr_i           (mem_tkbr),
-    .new_pc_i         (mem_new_pc),
+    .tkbr_i           (ex_tkbr),
+    .new_pc_i         (ex_new_pc),
 
     // MEM WB intereface
-    .op_res_o         (wb_res),
-    .rf_we_o          (wb_rf_we),
-    .rf_waddr_o       (wb_rf_waddr),
-    .tkbr_o           (wb_tkbr),
-    .new_pc_o         (wb_new_pc),
+    .op_res_o         (mem_res),
+    .rf_we_o          (mem_rf_we),
+    .rf_waddr_o       (mem_rf_waddr),
+    .tkbr_o           (mem_tkbr),
+    .new_pc_o         (mem_new_pc),
 
     // pc + 4
-    .seq_new_pc_i (mem_seq_new_pc),
-    .is_jaljalr_i (mem_is_jaljalr),
+    .seq_new_pc_i (ex_seq_new_pc),
+    .is_jaljalr_i (ex_is_jaljalr),
 
-    .block_mem_i (0),
-    .inject_nops_i (0)
+    .block_mem_i (ctrl_block_mem),
+    .inject_nops_i (ctrl_inject_nops_mem),
+    .valid_mem_o (valid_mem)
 );
+
+always_comb begin : decoupling_register_MEM_WB_1
+    if (!rsn_i) begin
+        wb_rf_we_d = 0;
+        tkbr_d = 0;
+        valid_wb_d = 0;
+    end
+    else begin
+        if (ctrl_inject_nops_wb) begin
+            wb_rf_we_d = 0;
+            tkbr_d = 0;
+            valid_wb_d = 0;
+        end
+        else if (ctrl_block_wb) begin
+            wb_res_d = wb_res_q;
+            wb_rf_we_d = wb_rf_we_q;
+            wb_rf_waddr_d = wb_rf_waddr_q;
+            tkbr_d = tkbr_q;
+            wb_new_pc_d = wb_new_pc_q;
+        end
+        else begin
+            wb_res_d = mem_res;
+            wb_rf_we_d = mem_rf_we;
+            wb_rf_waddr_d = mem_rf_waddr;
+            tkbr_d = mem_tkbr;
+            wb_new_pc_d = mem_new_pc;
+            valid_wb_d = valid_mem;
+        end
+    end
+end
+
+always_ff @(posedge clk_i) begin : decoupling_register_MEM_WB_2
+    if (!rsn_i) begin
+        wb_rf_we_q <= 0;
+        tkbr_q <= 0;
+        valid_wb_q <= 0;
+    end
+    else begin
+        wb_res_q <= wb_res_d;
+        wb_rf_we_q <= wb_rf_we_d;
+        wb_rf_waddr_q <= wb_rf_waddr_d;
+        tkbr_q <= tkbr_d;
+        wb_new_pc_q <= wb_new_pc_d;
+        valid_wb_q <= valid_wb_d;
+    end
+end
 
 segre_register_file segre_rf (
     // Clock and Reset
     .clk_i       (clk_i),
     .rsn_i       (rsn_i),
 
-    .we_i        (wb_rf_we),
+    .we_i        (wb_rf_we_q),
     .raddr_a_i   (rf_raddr_a),
     .data_a_o    (rf_data_a),
     .raddr_b_i   (rf_raddr_b),
     .data_b_o    (rf_data_b),
-    .waddr_i     (wb_rf_waddr),
-    .data_w_i    (wb_res)
+    .waddr_i     (wb_rf_waddr_q),
+    .data_w_i    (wb_res_q)
 );
 
 endmodule : segre_core

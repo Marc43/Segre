@@ -5,6 +5,8 @@ module segre_mem_stage (
     input logic clk_i,
     input logic rsn_i,
 
+    input logic valid_ex_i,
+
     // To logic
     output logic cache_is_busy_o,
     output logic cache_is_hit_o,
@@ -53,7 +55,7 @@ module segre_mem_stage (
 
     input logic block_mem_i, // Block this stage (flip-flops)
     input logic inject_nops_i, // Inject NOPs to the following stages
-    output logic valid_wb_o // Indicate the next stage if it's processing valid data
+    output logic valid_mem_o // Indicate the next stage if it's processing valid data
 
 );
 
@@ -85,7 +87,8 @@ logic memop_sign_ext_d;
 logic [ADDR_SIZE-1:0] new_pc_d;
 logic is_jaljalr_d;
 logic [ADDR_SIZE-1:0] seq_new_pc_d;
-logic tkbr_q;
+logic tkbr_d;
+logic valid_mem_d;
 
 logic [WORD_SIZE-1:0] alu_res_q;
 logic rf_we_q;
@@ -98,7 +101,8 @@ logic memop_sign_ext_q;
 logic [ADDR_SIZE-1:0] new_pc_q;
 logic is_jaljalr_q;
 logic [ADDR_SIZE-1:0] seq_new_pc_q;
-logic tkbr_d;
+logic tkbr_q;
+logic valid_mem_q;
 
 always_comb begin : decoupling_registers_EX_MEM_1
     if (!rsn_i) begin
@@ -106,6 +110,7 @@ always_comb begin : decoupling_registers_EX_MEM_1
         memop_rd_d = 0;
         memop_wr_d = 0;
         tkbr_d = 0;
+        valid_mem_d = 0;
     end
     else begin
         if (inject_nops_i) begin
@@ -113,6 +118,7 @@ always_comb begin : decoupling_registers_EX_MEM_1
             memop_rd_d = 0;
             memop_wr_d = 0;
             tkbr_d = 0;
+            valid_mem_d = 0;
         end
         else if (block_mem_i) begin
             alu_res_d   = alu_res_q;
@@ -127,6 +133,7 @@ always_comb begin : decoupling_registers_EX_MEM_1
             seq_new_pc_d = seq_new_pc_q;
             is_jaljalr_d = is_jaljalr_q;
             tkbr_d = tkbr_q;
+            valid_mem_d = valid_mem_q;
         end
         else begin
             alu_res_d        = alu_res_i;
@@ -141,6 +148,7 @@ always_comb begin : decoupling_registers_EX_MEM_1
             seq_new_pc_d     = seq_new_pc_i;
             is_jaljalr_d     = is_jaljalr_i;
             tkbr_d           = tkbr_i;
+            valid_mem_d = valid_ex_i;
         end
     end
 end
@@ -151,6 +159,7 @@ always_ff @(posedge clk_i) begin : decoupling_registers_EX_MEM_2
         memop_rd_q <= 0;
         memop_wr_q <= 0;
         tkbr_q <= 0;
+        valid_mem_q <= 0;
     end
     else begin
 //        ////// This must be routed to IF stage at some point and to the logic...
@@ -168,6 +177,7 @@ always_ff @(posedge clk_i) begin : decoupling_registers_EX_MEM_2
         seq_new_pc_q <= seq_new_pc_d;
         is_jaljalr_q <= is_jaljalr_d;
         tkbr_q <= tkbr_d;
+        valid_mem_q <= valid_mem_d;
     end
 end
 
@@ -354,5 +364,6 @@ assign rf_we_o    = check_if_hit ? (is_hit ? (is_busy ? rf_we_ff : rf_we_q) : 0)
 assign rf_waddr_o = is_busy ? rf_waddr_ff : rf_waddr_q;
 assign tkbr_o     = check_if_hit ? (is_hit ? (is_busy ? tkbr_ff : tkbr_q) : 0) : tkbr_q;
 assign new_pc_o   = is_busy ? new_pc_ff : new_pc_q;
+assign valid_mem_o = valid_mem_q;
 
 endmodule

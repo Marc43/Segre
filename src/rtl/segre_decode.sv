@@ -64,64 +64,69 @@ assign waddr_o = instr_i[`REG_RD];
 *    DECODER     *
 *****************/
 always_comb begin
-    rf_we_o          = 1'b0;
-    illegal_ins      = 1'b0;
-    memop_rd_o       = 1'b0;
-    memop_wr_o       = 1'b0;
-    memop_sign_ext_o = 1'b0;
-    memop_type_o     = WORD;
-    instr_opcode     = opcode_e'(instr_i[6:0]);
+    if (!rsn_i) begin
+        rf_we_o          = 1'b0;
+        illegal_ins      = 1'b0;
+        memop_rd_o       = 1'b0;
+        memop_wr_o       = 1'b0;
+        memop_sign_ext_o = 1'b0;
+        memop_type_o     = WORD;
+        instr_opcode     = opcode_e'(instr_i[6:0]);
+    end
+    else begin
 
-    unique case(instr_opcode)
+        unique case(instr_opcode)
 
-        /*****************
-        *      ALU       *
-        *****************/
-        OPCODE_LUI: begin // Load Upper Immediate
-            rf_we_o = 1'b1;
-        end
-        OPCODE_OP_IMM: begin
-            rf_we_o = 1'b1;
-        end
-        OPCODE_OP: begin
-            rf_we_o = 1'b1;
-        end
-        OPCODE_LOAD: begin
-            rf_we_o = 1'b1;
-            memop_rd_o = 1'b1;
-            memop_sign_ext_o = ~instr_i[14];
-            unique case(instr_i[`FUNC_3])
-                3'b000, 3'b100: memop_type_o = BYTE;
-                3'b001, 3'b101: memop_type_o = HALF;
-                3'b010:         memop_type_o = WORD;
-                default: ;
-            endcase
-        end
-        OPCODE_STORE: begin
-            memop_wr_o = 1'b1;
-            unique case(instr_i[`FUNC_3])
-                3'b000: memop_type_o = BYTE;
-                3'b001: memop_type_o = HALF;
-                3'b010: memop_type_o = WORD;
-                default: ;
-            endcase
-        end
-        OPCODE_JAL: begin
-            rf_we_o = 1'b1;
-        end
-        OPCODE_JALR: begin
-            rf_we_o = 1'b1;
-        end
-        OPCODE_AUIPC: begin
-            rf_we_o = 1'b1;
-        end
-        default: begin
-            if (rsn_i) begin
-                illegal_ins = 1'b1;
-                assert (0) else $display("OPCODE: %h not implemented", instr_opcode);
+            /*****************
+            *      ALU       *
+            *****************/
+            OPCODE_LUI: begin // Load Upper Immediate
+                rf_we_o = 1'b1;
             end
-        end
-    endcase
+            OPCODE_OP_IMM: begin
+                rf_we_o = 1'b1;
+            end
+            OPCODE_OP: begin
+                rf_we_o = 1'b1;
+            end
+            OPCODE_LOAD: begin
+                rf_we_o = 1'b1;
+                memop_rd_o = 1'b1;
+                memop_sign_ext_o = ~instr_i[14];
+                unique case(instr_i[`FUNC_3])
+                    3'b000, 3'b100: memop_type_o = BYTE;
+                    3'b001, 3'b101: memop_type_o = HALF;
+                    3'b010:         memop_type_o = WORD;
+                    default: ;
+                endcase
+            end
+            OPCODE_STORE: begin
+                memop_wr_o = 1'b1;
+                unique case(instr_i[`FUNC_3])
+                    3'b000: memop_type_o = BYTE;
+                    3'b001: memop_type_o = HALF;
+                    3'b010: memop_type_o = WORD;
+                    default: ;
+                endcase
+                rf_we_o = 1'b0;
+            end
+            OPCODE_JAL: begin
+                rf_we_o = 1'b1;
+            end
+            OPCODE_JALR: begin
+                rf_we_o = 1'b1;
+            end
+            OPCODE_AUIPC: begin
+                rf_we_o = 1'b1;
+            end
+            default: begin
+                if (rsn_i) begin
+                    illegal_ins = 1'b1;
+                    assert (0) else $display("OPCODE: %h not implemented", instr_opcode);
+                end
+            end
+        endcase
+    end
 end
 
 /********************
