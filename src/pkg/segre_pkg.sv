@@ -125,6 +125,16 @@ typedef struct packed {
 parameter ARB_BUF_SIZE = 16;
 parameter ARB_PTR_SIZE = $clog2(ARB_BUF_SIZE);
 
+//EXCEPTION RELATED STUFF
+//Num of CSR registers (the literal number, not this 2^REG_SIZE bullshit)
+parameter CSR_REG_SIZE = 3;
+parameter CSR_ID_BIT_SIZE = 12; //Num of bits needed for the ids of CSR regs
+
+//IDs of the CSR registers
+parameter MTVEC_ID = 12'h305;
+parameter MEPC_ID = 12'h341;
+parameter MCAUSE_ID = 12'h342;
+
 // Virtual memory (simplified TLB entry example, excluding internal index) 
 // |                    VPage bits            |||||||  internal page index  |
 // |31--------------------------------------12|||||||11--------------------0|
