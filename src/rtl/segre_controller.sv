@@ -5,6 +5,8 @@ module segre_controller (
     input logic clk_i,
     input logic rsn_i,
 
+    output logic finish_test_o,
+
     // INSTRUCTION FETCH STAGE
 
     input valid_if_i,
@@ -22,6 +24,8 @@ module segre_controller (
 
     input logic [REG_SIZE-1:0] src_a_identifier_id_i,
     input logic [REG_SIZE-1:0] src_b_identifier_id_i,
+
+    input logic [WORD_SIZE-1:0] decode_instr_i,
 
     output logic block_id_o,
     output logic inject_nops_id_o,
@@ -65,6 +69,16 @@ module segre_controller (
 
 );
 
+logic finish_test_d_1;
+logic finish_test_d_2;
+logic finish_test_d_3;
+logic finish_test_d_4;
+
+logic finish_test_q_1;
+logic finish_test_q_2;
+logic finish_test_q_3;
+logic finish_test_q_4;
+
 logic or_block_if_id;
 logic or_block_id_ex;
 logic or_block_ex_mem;
@@ -85,6 +99,10 @@ always_comb begin : miss_when_fetching_instruction
         if (!ic_if_hit_i) begin
             block_if = 1;
             inject_nops_id = !or_block_id_ex;
+        end
+        else if (((decode_instr_i == 32'hfff01073) && valid_id_i) || finish_test_q_1) begin
+            block_if = 1;
+            inject_nops_id = 1;
         end
         else begin
             block_if = 0;
@@ -147,5 +165,83 @@ assign inject_nops_if_o = 0; //inject_nops_if; TODO Is this really possible?
 assign inject_nops_ex_o = inject_nops_ex;
 assign inject_nops_mem_o = 0;
 assign inject_nops_wb_o = 0;
+
+// Finish test signal
+
+always_comb begin
+    if (!rsn_i) begin
+        finish_test_d_1 = 0;
+    end
+    else begin
+        if (!finish_test_q_1) begin
+            finish_test_d_1 = ((decode_instr_i == 32'hfff01073) && valid_id_i);
+        end
+    end
+end
+
+always_ff @(posedge clk_i) begin
+    if (!rsn_i) begin
+        finish_test_q_1 <= 0;
+    end
+    else begin
+        finish_test_q_1 <= finish_test_d_1;
+    end
+end
+
+always_comb begin
+    if (!rsn_i) begin
+        finish_test_d_2 = 0;
+    end
+    else begin
+        finish_test_d_2 = finish_test_q_1;
+    end
+end
+
+always_ff @(posedge clk_i) begin
+    if (!rsn_i) begin
+        finish_test_q_2 <= 0;
+    end
+    else begin
+        finish_test_q_2 <= finish_test_d_2;
+    end
+end
+
+always_comb begin
+    if (!rsn_i) begin
+        finish_test_d_3 = 0;
+    end
+    else begin
+        finish_test_d_3 = finish_test_q_2;
+    end
+end
+
+always_ff @(posedge clk_i) begin
+    if (!rsn_i) begin
+        finish_test_q_3 <= 0;
+    end
+    else begin
+        finish_test_q_3 <= finish_test_d_3;
+    end
+end
+
+always_comb begin
+    if (!rsn_i) begin
+        finish_test_d_4 = 0;
+    end
+    else begin
+        finish_test_d_4 = finish_test_q_3;
+    end
+end
+
+always_ff @(posedge clk_i) begin
+    if (!rsn_i) begin
+        finish_test_q_4 <= 0;
+    end
+    else begin
+        finish_test_q_4 <= finish_test_q_3;
+    end
+end
+
+assign finish_test_o = finish_test_q_4;
 
 endmodule : segre_controller

@@ -20,11 +20,12 @@ logic [WORD_SIZE-1:0] if_addr;
 logic if_mem_rd;
 logic instruction_hit_if;
 logic valid_if;
+logic [WORD_SIZE-1:0] if_instr;
 
 // ID STAGE
-logic [WORD_SIZE-1:0] id_instr;
 logic [REG_SIZE-1:0] src_a_identifier_id;
 logic [REG_SIZE-1:0] src_b_identifier_id;
+logic [WORD_SIZE-1:0] instr_id;
 logic valid_id;
 
 // REGISTER FILE
@@ -138,6 +139,7 @@ segre_controller controller (
     .valid_id_i (valid_id),
     .src_a_identifier_id_i (src_a_identifier_id),
     .src_b_identifier_id_i (src_b_identifier_id),
+    .decode_instr_i (instr_id),
 
     // Outuputs
     .block_id_o (ctrl_block_id),
@@ -213,7 +215,7 @@ segre_if_stage if_stage (
     .mem_rd_o    (if_mem_rd),
 
     // IF ID interface
-    .instr_o     (id_instr),
+    .instr_o     (if_instr),
     .valid_if_o  (valid_if),
 
     // WB interface
@@ -234,7 +236,7 @@ segre_id_stage id_stage (
     .rsn_i            (rsn_i),
 
     // IF ID interface
-    .instr_i          (id_instr),
+    .instr_i          (if_instr),
     .pc_i             (if_addr),
     .valid_if_i       (valid_if),
 
@@ -270,7 +272,9 @@ segre_id_stage id_stage (
 
     .block_id_i (ctrl_block_id),
     .inject_nops_i (ctrl_inject_nops_id),
-    .valid_id_o (valid_id)
+    .valid_id_o (valid_id),
+
+    .instr_id_o (instr_id)
 );
 
 segre_ex_stage ex_stage (

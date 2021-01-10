@@ -49,7 +49,11 @@ module segre_id_stage (
     // Signals needed to detect hazards
 
     output logic [REG_SIZE-1:0] src_a_identifier_o,
-    output logic [REG_SIZE-1:0] src_b_identifier_o
+    output logic [REG_SIZE-1:0] src_b_identifier_o,
+
+    // To detect the end of the test
+
+    output logic [WORD_SIZE-1:0] instr_id_o
 );
 
 logic [WORD_SIZE-1:0] imm_u_type;
@@ -231,5 +235,7 @@ assign src_b_identifier_o = rf_raddr_b;
 
 assign pc_o = pc_q;
 assign valid_id_o = valid_id_q;
+
+assign instr_id_o = instr_q;
 
 endmodule : segre_id_stage
