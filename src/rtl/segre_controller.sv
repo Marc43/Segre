@@ -7,11 +7,13 @@ module segre_controller (
 
     output logic finish_test_o,
 
+    output logic sel_mem_req_o,
+
     // INSTRUCTION FETCH STAGE
 
     input valid_if_i,
 
-    input logic ic_if_hit_i,
+    input logic ic_if_hit_i, // instruction cache @ if stage
 
     output logic block_if_o,
     output logic inject_nops_if_o, // Not used
@@ -45,6 +47,8 @@ module segre_controller (
     //////////////////////////////////
 
     // MEM STAGE
+
+    input logic dc_mem_hit_i, // data cache hit @ mem stage
 
     input logic valid_mem_i,
 
@@ -145,13 +149,36 @@ always_comb begin : data_dependences_detection
     end
 end
 
+//////////////////////////////
+// MEM CONTROL
+
+logic block_mem;
+logic inject_nops_wb;
+
+always_comb begin : cache_miss_in_mem
+    if (!rsn_i) begin
+        block_mem = 0;
+        inject_nops_wb = 0;
+    end
+    else begin
+        if (!dc_mem_hit_i) begin
+            block_mem = 1;
+            inject_nops_wb = 1;
+        end
+        else begin
+            block_mem = 0;
+            inject_nops_wb = 0;
+        end
+    end
+end
+
 /*
  * Recorda que d'alguna manera has de fer que es bloquejin les etapes anteriors tambe, si no, no funcionara res... TODO
  */
 
 assign or_block_if_id = block_if || block_id;
 assign or_block_id_ex = block_id; //|| block_ex_o;
-assign or_block_ex_mem = 0; //|| block_mem_o;
+assign or_block_ex_mem = block_mem; //|| block_mem_o;
 assign or_block_mem_wb = 0; // || block_wb_o;
 
 assign block_if_o = or_block_if_id;
@@ -164,7 +191,7 @@ assign inject_nops_id_o = inject_nops_id;
 assign inject_nops_if_o = 0; //inject_nops_if; TODO Is this really possible?
 assign inject_nops_ex_o = inject_nops_ex;
 assign inject_nops_mem_o = 0;
-assign inject_nops_wb_o = 0;
+assign inject_nops_wb_o = inject_nops_wb;
 
 // Finish test signal
 
@@ -243,5 +270,42 @@ always_ff @(posedge clk_i) begin
 end
 
 assign finish_test_o = finish_test_q_4;
+
+// Arbiter part
+
+/*
+ * As long as caches do keep the requests
+ * until they are served we can just give priority
+ * to the IC rather than the DC.
+ *
+ * We need ic_hit and dc_hit, we will capture the
+ * rcvd_mem_req and send it to which one we have to.
+ *
+ * Also, we will have and output controlling
+ * the muxes of addr and data to main memory.
+ */
+
+logic rcvd_mem_req;
+logic sel_mem_req;
+
+always_comb begin
+    if (!rsn_i) begin
+        rcvd_mem_req = 0;
+        sel_mem_req = 0;
+    end
+    else begin
+        if (ic_if_hit_i && dc_mem_hit_i) begin
+            sel_mem_req = 0; // Select IC addr and data
+        end
+        else if (ic_if_hit_i) begin
+            sel_mem_req = 0;
+        end
+        else begin
+            sel_mem_req = 1; // Select DC addr and data
+        end
+    end
+end
+
+assign sel_mem_req_o = sel_mem_req;
 
 endmodule : segre_controller

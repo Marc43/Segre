@@ -79,7 +79,10 @@ logic mem_tkbr;
 logic [ADDR_SIZE-1:0] mem_new_pc;
 logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] mem_wr_data;
 logic valid_mem;
-
+logic [ADDR_SIZE-1:0] mem_addr;
+logic mem_rd;
+logic mem_wr;
+memop_data_type_e mem_data_type;
 
 //// WB STAGE Use _q instead.
 logic [WORD_SIZE-1:0] wb_res_d;
@@ -114,10 +117,14 @@ logic ctrl_inject_nops_mem;
 logic ctrl_block_wb;
 logic ctrl_inject_nops_wb;
 
+logic sel_mem_req;
+
 segre_controller controller (
     // Clock and Reset
     .clk_i (clk_i),
     .rsn_i (rsn_i),
+
+    .sel_mem_req_o (sel_mem_req),
 
     // Instruction Fetch
     ////////////////////
@@ -167,6 +174,7 @@ segre_controller controller (
     .valid_mem_i (valid_mem),
     .dst_reg_identifier_mem_i (mem_rf_waddr),
     .we_mem_i (mem_rf_we),
+    .dc_mem_hit_i (mem_data_cache_is_hit),
 
     // Outputs
     .block_mem_o (ctrl_block_mem),
@@ -194,11 +202,37 @@ segre_controller controller (
 // TODO This is DONE THIS WAY BECASUE I AM ONLY TESTING ARITHMETIC/LOGIC INSTRUCTIONS
 // OF COURSE AT SOME POINT WE HAVE TO ARBITRATE BETWEEN MEMORY ACCESSES OF STAGES
 // INSTRUCTION FETCH AND MEMORY.
-assign addr_o          = if_addr;
-assign mem_rd_o        = if_mem_rd;
-assign mem_wr_o        = 1'b0;
-assign mem_data_type_o = WORD;
+assign addr_o          = sel_mem_req ? mem_addr : if_addr;
+assign mem_rd_o        = sel_mem_req ? mem_rd : if_mem_rd;
+assign mem_wr_o        = sel_mem_req ? mem_wr : 1'b0;
+assign mem_data_type_o = sel_mem_req ? mem_data_type : WORD;
 assign mem_wr_data_o   = mem_wr_data;
+
+logic mem_ready_to_if_stage;
+logic mem_ready_to_mem_stage;
+
+always_comb begin : mux_mem_ready
+    if (!rsn_i) begin
+        mem_ready_to_if_stage = 0;
+        mem_ready_to_mem_stage = 0;
+    end
+    else begin
+        case (sel_mem_req)
+            0 :  begin
+                mem_ready_to_if_stage = mem_ready_i;
+                mem_ready_to_mem_stage = 0;
+            end
+            1 : begin
+                mem_ready_to_if_stage = 0;
+                mem_ready_to_mem_stage = mem_ready_i;
+            end
+            default: begin
+                mem_ready_to_if_stage = mem_ready_i;
+                mem_ready_to_mem_stage = 0;
+            end
+        endcase
+    end
+end
 
 segre_if_stage if_stage (
     // Clock and Reset
@@ -210,7 +244,7 @@ segre_if_stage if_stage (
 
     // Memory
     .cache_instr_line_i (mem_rd_data_i),
-    .mem_ready_i (mem_ready_i),
+    .mem_ready_i (mem_ready_to_if_stage),
     .pc_o        (if_addr),
     .mem_rd_o    (if_mem_rd),
 
@@ -348,7 +382,7 @@ segre_mem_stage mem_stage (
     .memop_wr_o       (mem_wr),
     .memop_type_o     (mem_data_type),
     .cache_line_i     (ex_rd_data_i),
-    .mem_ready_i      (ex_ready_i),
+    .mem_ready_i      (mem_ready_to_mem_stage),
     .to_mem_cache_line_o (mem_wr_data),
 
     // EX MEM interface
