@@ -65,11 +65,10 @@ module segre_controller (
 
 );
 
-assign block_ex_o = 0;
-assign block_mem_o = 0;
-assign block_wb_o = 0;
-assign inject_nops_mem_o = 0;
-assign inject_nops_wb_o = 0;
+logic or_block_if_id;
+logic or_block_id_ex;
+logic or_block_ex_mem;
+logic or_block_mem_wb;
 
 // INSTRUCTION FETCH CONTROL
 
@@ -85,7 +84,7 @@ always_comb begin : miss_when_fetching_instruction
     else begin
         if (!ic_if_hit_i) begin
             block_if = 1;
-            inject_nops_id = 1;
+            inject_nops_id = !or_block_id_ex;
         end
         else begin
             block_if = 0;
@@ -94,8 +93,6 @@ always_comb begin : miss_when_fetching_instruction
     end
 end
 
-assign block_if_o = block_if;
-assign inject_nops_if_o = 0; //inject_nops_if; TODO Is this really possible?
 
 //////////////////////////////
 
@@ -134,8 +131,21 @@ end
  * Recorda que d'alguna manera has de fer que es bloquejin les etapes anteriors tambe, si no, no funcionara res... TODO
  */
 
-assign block_id_o = block_id;
+assign or_block_if_id = block_if || block_id;
+assign or_block_id_ex = block_id; //|| block_ex_o;
+assign or_block_ex_mem = 0; //|| block_mem_o;
+assign or_block_mem_wb = 0; // || block_wb_o;
+
+assign block_if_o = or_block_if_id;
+assign block_id_o = or_block_id_ex;
+assign block_ex_o = or_block_ex_mem;
+assign block_mem_o = or_block_mem_wb;
+assign block_wb_o = 0;
+
 assign inject_nops_id_o = inject_nops_id;
+assign inject_nops_if_o = 0; //inject_nops_if; TODO Is this really possible?
 assign inject_nops_ex_o = inject_nops_ex;
+assign inject_nops_mem_o = 0;
+assign inject_nops_wb_o = 0;
 
 endmodule : segre_controller

@@ -55,6 +55,6 @@ if { $use_modelsim } {
 vsim -debugDB -dpicpppath /usr/bin/gcc -l build/sim_transcript +TEST_NAME=$test_name -voptargs=+acc -sv_lib lib/libdecoder $work_dir.top_tb
 
 # Add the wave to the simulation
-do pipelined.do
+do pipelined_windows.do
 
 run -all

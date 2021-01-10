@@ -126,7 +126,7 @@ always_comb begin : decoupling_register_ID_EX_1
             seq_new_pc_d = seq_new_pc_q;
             is_jaljalr_d = is_jaljalr_q;
             rf_st_data_d = rf_st_data_q;
-            valid_ex_d = 0;
+            valid_ex_d = valid_ex_q;
         end
         else begin
             alu_src_a_d      = alu_src_a_i;

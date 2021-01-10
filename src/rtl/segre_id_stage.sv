@@ -91,7 +91,7 @@ logic valid_id_q;
 always_comb begin : decoupling_register_F_ID_1
     if (!rsn_i) begin
         instr_d = NOP_INSTR;
-        pc_d    = 0;
+        pc_d    = 32'hfffffffc;
         valid_id_d = 0;
     end
     else begin
@@ -103,7 +103,7 @@ always_comb begin : decoupling_register_F_ID_1
         else if (block_id_i) begin
             instr_d = instr_q;
             pc_d = pc_q;
-            valid_id_d = 0;
+            valid_id_d = valid_id_q;
         end
         else begin
             instr_d = instr_i;
@@ -116,7 +116,7 @@ end
 always_ff @(posedge clk_i) begin : decoupling_register_F_ID_2
     if (!rsn_i) begin
         instr_q <= NOP_INSTR;
-        pc_q    <= 0;
+        pc_q    <= 32'hfffffffc;
         valid_id_q <= 0;
     end
     else begin

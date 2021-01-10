@@ -55,6 +55,7 @@ module top_tb;
 
     initial begin
         repeat(2) @(posedge clk);
+        #5;
         rsn <= 1;
         fork
             begin
