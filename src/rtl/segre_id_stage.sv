@@ -99,15 +99,15 @@ always_comb begin : decoupling_register_F_ID_1
         valid_id_d = 0;
     end
     else begin
-        if (inject_nops_i) begin
-            instr_d = NOP_INSTR;
-            pc_d    = pc_q;
-            valid_id_d = 0;
-        end
-        else if (block_id_i) begin
+        if (block_id_i) begin
             instr_d = instr_q;
             pc_d = pc_q;
             valid_id_d = valid_id_q;
+        end
+        else if (inject_nops_i) begin
+            instr_d = NOP_INSTR;
+            pc_d    = pc_q;
+            valid_id_d = 0;
         end
         else begin
             instr_d = instr_i;

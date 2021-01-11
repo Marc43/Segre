@@ -83,6 +83,9 @@ logic [ADDR_SIZE-1:0] mem_addr;
 logic mem_rd;
 logic mem_wr;
 memop_data_type_e mem_data_type;
+logic mem_dc_rd;
+logic mem_dc_wr;
+
 
 //// WB STAGE Use _q instead.
 logic [WORD_SIZE-1:0] wb_res_d;
@@ -175,10 +178,12 @@ segre_controller controller (
     .dst_reg_identifier_mem_i (mem_rf_waddr),
     .we_mem_i (mem_rf_we),
     .dc_mem_hit_i (mem_data_cache_is_hit),
+    .dc_rd_i (mem_dc_rd),
+    .dc_wr_i (mem_dc_wr),
 
     // Outputs
     .block_mem_o (ctrl_block_mem),
-    .inject_nops_mem_o (ctrl_inject_nops_mem_o),
+    .inject_nops_mem_o (ctrl_inject_nops_mem),
 
     ////////////////////
 
@@ -381,7 +386,7 @@ segre_mem_stage mem_stage (
     .memop_rd_o       (mem_rd),
     .memop_wr_o       (mem_wr),
     .memop_type_o     (mem_data_type),
-    .cache_line_i     (ex_rd_data_i),
+    .cache_line_i     (mem_rd_data_i),
     .mem_ready_i      (mem_ready_to_mem_stage),
     .to_mem_cache_line_o (mem_wr_data),
 
@@ -414,7 +419,10 @@ segre_mem_stage mem_stage (
 
     .block_mem_i (ctrl_block_mem),
     .inject_nops_i (ctrl_inject_nops_mem),
-    .valid_mem_o (valid_mem)
+    .valid_mem_o (valid_mem),
+
+    .dc_rd_o (mem_dc_rd),
+    .dc_wr_o (mem_dc_wr)
 );
 
 always_comb begin : decoupling_register_MEM_WB_1
@@ -424,18 +432,19 @@ always_comb begin : decoupling_register_MEM_WB_1
         valid_wb_d = 0;
     end
     else begin
-        if (ctrl_inject_nops_wb) begin
-            wb_rf_we_d = 0;
-            tkbr_d = 0;
-            valid_wb_d = 0;
-        end
-        else if (ctrl_block_wb) begin
+        if (ctrl_block_wb) begin
             wb_res_d = wb_res_q;
             wb_rf_we_d = wb_rf_we_q;
             wb_rf_waddr_d = wb_rf_waddr_q;
             tkbr_d = tkbr_q;
             wb_new_pc_d = wb_new_pc_q;
         end
+        else if (ctrl_inject_nops_wb) begin
+            wb_rf_we_d = 0;
+            tkbr_d = 0;
+            valid_wb_d = 0;
+        end
+
         else begin
             wb_res_d = mem_res;
             wb_rf_we_d = mem_rf_we;

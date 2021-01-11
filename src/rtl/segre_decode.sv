@@ -60,6 +60,9 @@ assign raddr_b_o = instr_i[`REG_RS2];
 // Destination registers
 assign waddr_o = instr_i[`REG_RD];
 
+logic memop_rd;
+logic memop_wr;
+
 /*****************
 *    DECODER     *
 *****************/
@@ -67,13 +70,18 @@ always_comb begin
     if (!rsn_i) begin
         rf_we_o          = 1'b0;
         illegal_ins      = 1'b0;
-        memop_rd_o       = 1'b0;
-        memop_wr_o       = 1'b0;
+        memop_rd = 1'b0;
+        memop_wr       = 1'b0;
         memop_sign_ext_o = 1'b0;
         memop_type_o     = WORD;
         instr_opcode     = opcode_e'(instr_i[6:0]);
     end
     else begin
+
+        memop_rd = 1'b0;
+        memop_wr = 1'b0;
+
+        instr_opcode     = opcode_e'(instr_i[6:0]);
 
         unique case(instr_opcode)
 
@@ -91,7 +99,7 @@ always_comb begin
             end
             OPCODE_LOAD: begin
                 rf_we_o = 1'b1;
-                memop_rd_o = 1'b1;
+                memop_rd = 1'b1;
                 memop_sign_ext_o = ~instr_i[14];
                 unique case(instr_i[`FUNC_3])
                     3'b000, 3'b100: memop_type_o = BYTE;
@@ -101,7 +109,7 @@ always_comb begin
                 endcase
             end
             OPCODE_STORE: begin
-                memop_wr_o = 1'b1;
+                memop_wr = 1'b1;
                 unique case(instr_i[`FUNC_3])
                     3'b000: memop_type_o = BYTE;
                     3'b001: memop_type_o = HALF;
@@ -243,5 +251,8 @@ always_comb begin
         default: ;
     endcase
 end
+
+assign memop_rd_o = memop_rd;
+assign memop_wr_o = memop_wr;
 
 endmodule

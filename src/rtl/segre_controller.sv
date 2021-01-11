@@ -48,6 +48,8 @@ module segre_controller (
 
     // MEM STAGE
 
+    input logic dc_rd_i,
+    input logic dc_wr_i,
     input logic dc_mem_hit_i, // data cache hit @ mem stage
 
     input logic valid_mem_i,
@@ -83,10 +85,11 @@ logic finish_test_q_2;
 logic finish_test_q_3;
 logic finish_test_q_4;
 
-logic or_block_if_id;
-logic or_block_id_ex;
-logic or_block_ex_mem;
-logic or_block_mem_wb;
+logic or_block_if;
+logic or_block_id;
+logic or_block_ex;
+logic or_block_mem;
+logic or_block_wb;
 
 // INSTRUCTION FETCH CONTROL
 
@@ -102,7 +105,7 @@ always_comb begin : miss_when_fetching_instruction
     else begin
         if (!ic_if_hit_i) begin
             block_if = 1;
-            inject_nops_id = !or_block_id_ex;
+            inject_nops_id = !or_block_id;
         end
         else if (((decode_instr_i == 32'hfff01073) && valid_id_i) || finish_test_q_1) begin
             block_if = 1;
@@ -161,7 +164,7 @@ always_comb begin : cache_miss_in_mem
         inject_nops_wb = 0;
     end
     else begin
-        if (!dc_mem_hit_i) begin
+        if (!dc_mem_hit_i && valid_mem_i && (dc_rd_i || dc_wr_i)) begin
             block_mem = 1;
             inject_nops_wb = 1;
         end
@@ -176,15 +179,16 @@ end
  * Recorda que d'alguna manera has de fer que es bloquejin les etapes anteriors tambe, si no, no funcionara res... TODO
  */
 
-assign or_block_if_id = block_if || block_id;
-assign or_block_id_ex = block_id; //|| block_ex_o;
-assign or_block_ex_mem = block_mem; //|| block_mem_o;
-assign or_block_mem_wb = 0; // || block_wb_o;
+assign or_block_if = block_if || or_block_id;
+assign or_block_id = block_id || or_block_ex; //|| block_ex_o;
+assign or_block_ex = 0 || or_block_mem; //|| block_mem_o;
+assign or_block_mem = block_mem || or_block_wb; // || block_wb_o;
+assign or_block_wb = 0;
 
-assign block_if_o = or_block_if_id;
-assign block_id_o = or_block_id_ex;
-assign block_ex_o = or_block_ex_mem;
-assign block_mem_o = or_block_mem_wb;
+assign block_if_o = or_block_if;
+assign block_id_o = or_block_id;
+assign block_ex_o = or_block_ex;
+assign block_mem_o = or_block_mem;
 assign block_wb_o = 0;
 
 assign inject_nops_id_o = inject_nops_id;
@@ -294,14 +298,17 @@ always_comb begin
         sel_mem_req = 0;
     end
     else begin
-        if (ic_if_hit_i && dc_mem_hit_i) begin
+        if (!ic_if_hit_i && !dc_mem_hit_i && (dc_rd_i || dc_wr_i) && valid_mem_i) begin
             sel_mem_req = 0; // Select IC addr and data
         end
-        else if (ic_if_hit_i) begin
+        else if (!ic_if_hit_i) begin
             sel_mem_req = 0;
         end
+        else if (!dc_mem_hit_i && (dc_rd_i || dc_wr_i) && valid_mem_i) begin
+            sel_mem_req = 1;
+        end
         else begin
-            sel_mem_req = 1; // Select DC addr and data
+            sel_mem_req = 0; // Select IC addr and data
         end
     end
 end

@@ -88,7 +88,7 @@ instruction_cache
 
     .rcvd_mem_request_i(mem_ready_i),
     .data_type_i(data_type),
-    .addr_i(pc_i),
+    .addr_i(pc),
     .data_i(data),
     .from_mem_cache_line_i(cache_instr_line_i),
 

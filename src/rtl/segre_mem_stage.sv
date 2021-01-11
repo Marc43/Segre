@@ -55,7 +55,10 @@ module segre_mem_stage (
 
     input logic block_mem_i, // Block this stage (flip-flops)
     input logic inject_nops_i, // Inject NOPs to the following stages
-    output logic valid_mem_o // Indicate the next stage if it's processing valid data
+    output logic valid_mem_o, // Indicate the next stage if it's processing valid data
+
+    output logic dc_rd_o,
+    output logic dc_wr_o
 
 );
 
@@ -113,14 +116,7 @@ always_comb begin : decoupling_registers_EX_MEM_1
         valid_mem_d = 0;
     end
     else begin
-        if (inject_nops_i) begin
-            rf_we_d    = 0;
-            memop_rd_d = 0;
-            memop_wr_d = 0;
-            tkbr_d = 0;
-            valid_mem_d = 0;
-        end
-        else if (block_mem_i) begin
+        if (block_mem_i) begin
             alu_res_d   = alu_res_q;
             rf_we_d     = rf_we_q;
             rf_waddr_d  = rf_waddr_q;
@@ -134,6 +130,13 @@ always_comb begin : decoupling_registers_EX_MEM_1
             is_jaljalr_d = is_jaljalr_q;
             tkbr_d = tkbr_q;
             valid_mem_d = valid_mem_q;
+        end
+        else if (inject_nops_i) begin
+            rf_we_d    = 0;
+            memop_rd_d = 0;
+            memop_wr_d = 0;
+            tkbr_d = 0;
+            valid_mem_d = 0;
         end
         else begin
             alu_res_d        = alu_res_i;
@@ -180,6 +183,9 @@ always_ff @(posedge clk_i) begin : decoupling_registers_EX_MEM_2
         valid_mem_q <= valid_mem_d;
     end
 end
+
+assign dc_rd_o = memop_rd_q;
+assign dc_wr_o = memop_wr_q;
 
 always_comb begin
     if (!check_if_hit) begin
@@ -306,7 +312,6 @@ logic tkbr_ff;
 logic [WORD_SIZE-1:0] new_pc_ff;
 
 always_ff @(posedge clk_i) begin
-
     if (!rsn_i) begin
         output_data <= 0;
         output_address <= 0;
@@ -351,7 +356,8 @@ end
 // Si hem d'anar a memoria a llegir, vull la de output_address, si no, writeback_addr
 assign addr_o = writeback ? writeback_addr : (is_busy ? output_address : alu_res_q);
 assign memop_type_o = output_memop_type;
-assign check_if_hit = memop_rd_q || memop_wr_q || memop_rd_ff || memop_wr_ff;
+//assign check_if_hit = memop_rd_q || memop_wr_q || memop_rd_ff || memop_wr_ff;
+assign check_if_hit = memop_rd_q || memop_wr_q;
 
 assign seq_new_pc_o = seq_new_pc_q;
 assign is_jaljalr_o = is_jaljalr_q;

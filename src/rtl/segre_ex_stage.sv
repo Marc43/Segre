@@ -103,14 +103,7 @@ always_comb begin : decoupling_register_ID_EX_1
         valid_ex_d = 0;
     end
     else begin
-        if (inject_nops_i) begin
-            rf_we_d          = 0;
-            memop_rd_d       = 0;
-            memop_wr_d       = 0;
-            is_jaljalr_d = 0;
-            valid_ex_d = 0;
-        end
-        else if (block_ex_i) begin
+        if (block_ex_i) begin
             alu_src_a_d      = alu_src_a_q;
             alu_src_b_d      = alu_src_b_q;
             rf_we_d          = rf_we_q;
@@ -127,6 +120,13 @@ always_comb begin : decoupling_register_ID_EX_1
             is_jaljalr_d = is_jaljalr_q;
             rf_st_data_d = rf_st_data_q;
             valid_ex_d = valid_ex_q;
+        end
+        else if (inject_nops_i) begin
+            rf_we_d          = 0;
+            memop_rd_d       = 0;
+            memop_wr_d       = 0;
+            is_jaljalr_d = 0;
+            valid_ex_d = 0;
         end
         else begin
             alu_src_a_d      = alu_src_a_i;
