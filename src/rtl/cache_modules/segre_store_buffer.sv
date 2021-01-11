@@ -233,6 +233,6 @@ assign data_o = (is_hit && (sb_state == NOT_DRAINING) && is_load_i) ? data_from_
 assign addr_o = (is_hit && (sb_state == NOT_DRAINING) && is_load_i) ? addr_from_pos : addr_from_rd_ptr;
 assign data_type_o = (is_hit && (sb_state == NOT_DRAINING) && is_load_i) ? data_type_from_pos : data_type_from_rd_ptr;
 assign reading_valid_entry_o = (is_alu_i || sb_state == DRAINING) && !empty;
-assign is_draining_o = (sb_state == DRAINING) || full;
+assign is_draining_o = (sb_state == DRAINING) || full && is_store_i;
 
 endmodule : segre_store_buffer

@@ -85,6 +85,7 @@ logic mem_wr;
 memop_data_type_e mem_data_type;
 logic mem_dc_rd;
 logic mem_dc_wr;
+logic mem_sb_draining;
 
 
 //// WB STAGE Use _q instead.
@@ -180,6 +181,7 @@ segre_controller controller (
     .dc_mem_hit_i (mem_data_cache_is_hit),
     .dc_rd_i (mem_dc_rd),
     .dc_wr_i (mem_dc_wr),
+    .store_buffer_draining_i (mem_sb_draining),
 
     // Outputs
     .block_mem_o (ctrl_block_mem),
@@ -422,7 +424,8 @@ segre_mem_stage mem_stage (
     .valid_mem_o (valid_mem),
 
     .dc_rd_o (mem_dc_rd),
-    .dc_wr_o (mem_dc_wr)
+    .dc_wr_o (mem_dc_wr),
+    .sb_draining_o (mem_sb_draining)
 );
 
 always_comb begin : decoupling_register_MEM_WB_1

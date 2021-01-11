@@ -58,7 +58,9 @@ module segre_mem_stage (
     output logic valid_mem_o, // Indicate the next stage if it's processing valid data
 
     output logic dc_rd_o,
-    output logic dc_wr_o
+    output logic dc_wr_o,
+
+    output logic sb_draining_o
 
 );
 
@@ -70,14 +72,6 @@ logic is_busy;
 logic writeback;
 logic store_buffer_draining;
 logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] to_mem_cache_line;
-logic memop_sign_ext_ff;
-logic check_if_hit;
-
-logic [WORD_SIZE-1:0] output_address;
-memop_data_type_e output_memop_type;
-logic [WORD_SIZE-1:0] output_data;
-
-memop_data_type_e muxed_memop_type;
 
 logic [WORD_SIZE-1:0] alu_res_d;
 logic rf_we_d;
@@ -188,35 +182,8 @@ assign dc_rd_o = memop_rd_q;
 assign dc_wr_o = memop_wr_q;
 
 always_comb begin
-    if (!check_if_hit) begin
-        muxed_memop_type = memop_type_q;
-    end
-    else if (check_if_hit) begin
-        if (is_busy) begin
-            muxed_memop_type = output_memop_type;
-        end
-        else begin
-            muxed_memop_type = memop_type_q;
-        end
-    end
-    else begin
-        muxed_memop_type = memop_type_q;
-    end
-end
-
-// Ay!! Señor llevame pronto por que este codigo me va a matar, que mal esta que mal esta
-// TODO CHANGE THIS WHENEVER WE HAVE PIPELINE
-always_comb begin
-    if ((!check_if_hit && memop_sign_ext_i) || (check_if_hit && is_hit && memop_sign_ext_q)) begin
+    if (memop_sign_ext_q) begin
         unique case(memop_type_q)
-            BYTE: processed_read_cache_data = { {24{read_cache_data[7]}}, read_cache_data[7:0] };
-            HALF: processed_read_cache_data = { {16{read_cache_data[15]}}, read_cache_data[15:0] };
-            WORD: processed_read_cache_data = read_cache_data[WORD_SIZE-1:0];
-            default: processed_read_cache_data = read_cache_data[WORD_SIZE-1:0];
-        endcase
-    end
-    else if ((check_if_hit && is_busy && memop_sign_ext_ff)) begin
-        unique case(output_memop_type)
             BYTE: processed_read_cache_data = { {24{read_cache_data[7]}}, read_cache_data[7:0] };
             HALF: processed_read_cache_data = { {16{read_cache_data[15]}}, read_cache_data[15:0] };
             WORD: processed_read_cache_data = read_cache_data[WORD_SIZE-1:0];
@@ -246,9 +213,15 @@ logic [WORD_SIZE-1:0] writeback_addr;
 logic rd;
 logic wr;
 
-assign aux_data = is_busy ? output_data : rf_st_data_q;
-assign aux_addr = is_busy ? output_address : alu_res_q;
-assign aux_memop = is_busy ? output_memop_type : memop_type_q;
+assign aux_data = rf_st_data_q;
+assign aux_addr = alu_res_q;
+assign aux_memop = memop_type_q;
+
+// Do not write when we are blocked.
+// Note that this doesn't create any trouble
+// with the writes of the storebuffer while draining.
+logic wr_when_blocking;
+assign wr_when_blocking = memop_wr_q && !block_mem_i;
 
 segre_cache
 #(
@@ -299,77 +272,22 @@ assign memop_wr_o   = wr; //writeback;
 
 // ------
 
-
-// Need this always_ff because when the cache is busy,
-// we go to the memory expecting a cache line back.
-// when the arbiter is set, this won't be needed anymore...
-
-logic memop_rd_ff;
-logic memop_wr_ff;
-logic rf_we_ff;
-logic [REG_SIZE-1:0] rf_waddr_ff;
-logic tkbr_ff;
-logic [WORD_SIZE-1:0] new_pc_ff;
-
-always_ff @(posedge clk_i) begin
-    if (!rsn_i) begin
-        output_data <= 0;
-        output_address <= 0;
-        output_memop_type <= BYTE;
-        memop_rd_ff <= 0;
-        memop_wr_ff <= 0;
-        rf_we_ff <= 0;
-        rf_waddr_ff <= 0;
-        tkbr_ff <= 0;
-        new_pc_ff <= 0;
-        memop_sign_ext_ff <= 0;
-    end
-    else begin
-        if (is_busy) begin
-            output_data <= output_data;
-            output_address <= output_address;
-            output_memop_type <= output_memop_type;
-            memop_rd_ff <= memop_rd_ff;
-            memop_wr_ff <= memop_wr_ff;
-            rf_we_ff <= rf_we_ff;
-            rf_waddr_ff <= rf_waddr_ff;
-            tkbr_ff <= tkbr_ff;
-            new_pc_ff <= new_pc_ff;
-            memop_sign_ext_ff <= memop_sign_ext_ff;
-        end
-        else begin
-            output_data <= rf_st_data_q;
-            output_address <= alu_res_q;
-            output_memop_type <= memop_type_q;
-            memop_rd_ff <= memop_rd_q;
-            memop_wr_ff <= memop_wr_q;
-            rf_we_ff <= rf_we_q;
-            rf_waddr_ff <= rf_waddr_q;
-            tkbr_ff <= tkbr_q;
-            new_pc_ff <= new_pc_q;
-            memop_sign_ext_ff <= memop_sign_ext_q;
-        end
-    end
-
-end
-
-// Si hem d'anar a memoria a llegir, vull la de output_address, si no, writeback_addr
-assign addr_o = writeback ? writeback_addr : (is_busy ? output_address : alu_res_q);
-assign memop_type_o = output_memop_type;
-//assign check_if_hit = memop_rd_q || memop_wr_q || memop_rd_ff || memop_wr_ff;
-assign check_if_hit = memop_rd_q || memop_wr_q;
+assign addr_o = writeback ? writeback_addr : alu_res_q;
+assign memop_type_o = memop_type_q;
 
 assign seq_new_pc_o = seq_new_pc_q;
 assign is_jaljalr_o = is_jaljalr_q;
 
-assign op_res_o   = (is_busy ? memop_rd_ff : memop_rd_q) ? processed_read_cache_data : (is_jaljalr_q ? seq_new_pc_q : alu_res_q); // Load case : Bypassing ALU result case
+assign op_res_o   = memop_rd_q ? processed_read_cache_data : (is_jaljalr_q ? seq_new_pc_q : alu_res_q); // Load case : Bypassing ALU result case
 
 // Ganas de llorar
 // Ojo con estos memes, lo normal seria asignar normal los *_q no estas cosas raras. Pero bueno.
-assign rf_we_o    = check_if_hit ? (is_hit ? (is_busy ? rf_we_ff : rf_we_q) : 0) : rf_we_q;
-assign rf_waddr_o = is_busy ? rf_waddr_ff : rf_waddr_q;
-assign tkbr_o     = check_if_hit ? (is_hit ? (is_busy ? tkbr_ff : tkbr_q) : 0) : tkbr_q;
-assign new_pc_o   = is_busy ? new_pc_ff : new_pc_q;
+assign rf_we_o    = rf_we_q;
+assign rf_waddr_o = rf_waddr_q;
+assign tkbr_o     = tkbr_q;
+assign new_pc_o   = new_pc_q;
 assign valid_mem_o = valid_mem_q;
 
-endmodule
+assign sb_draining_o = store_buffer_draining;
+
+endmodule : segre_mem_stage

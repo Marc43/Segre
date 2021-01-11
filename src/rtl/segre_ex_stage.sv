@@ -173,6 +173,7 @@ always_ff @(posedge clk_i) begin : decoupling_register_ID_EX_2
         seq_new_pc_q <= seq_new_pc_d;
         is_jaljalr_q <= is_jaljalr_d;
         valid_ex_q <= valid_ex_d;
+        rf_st_data_q <= rf_st_data_d;
     end
 end
 
@@ -196,7 +197,7 @@ segre_tkbr trbr (
 );
 
 
-assign alu_res_o   = (alu_opcode_i == ALU_JAL) ? br_src_a_i : alu_res;
+assign alu_res_o   = (alu_opcode_i == ALU_JAL) ? br_src_a_q : alu_res;
 assign rf_we_o     = rf_we_q;
 assign rf_waddr_o  = rf_waddr_q;
 assign rf_st_data_o = rf_st_data_q;

@@ -79,7 +79,7 @@ assign write_line_from_mem = ((cache_rd_act_state == REQ_MEM_DATA_RD) && rcvd_me
 // If is ICACHE, value is 0, then we must use only the state, if it's 1 is DCACHE, we must take into account SB writes.
 assign write_into_word = ICACHE_DCACHE ? reading_valid_entry_sb_o
                                        : (cache_wr_act_state == WRITING_DATA);
-assign is_writeback = cache_rd_act_state == WRITEBACK_RD || cache_wr_act_state == WRITEBACK_WR;
+assign is_writeback = (cache_rd_act_state == WRITEBACK_RD) || (cache_wr_act_state == WRITEBACK_WR);
 assign is_hit = valid_bits[addr_index] && is_hit_from_tags; // Doesn't take into account the state of the cache
 
 // lmao quan hem escrit aquesta brossa jajajaj
@@ -157,7 +157,7 @@ always_comb begin
             if (!is_hit) begin
                 if (dirty_bits[addr_index]) begin
                     cache_rd_next_state = WRITEBACK_RD;
-                    cache_wr_next_state = REQ_MEM_DATA_WR;
+                    //cache_wr_next_state = REQ_MEM_DATA_WR;
                 end
                 else begin
                     cache_rd_next_state = REQ_MEM_DATA_RD;
@@ -171,7 +171,8 @@ always_comb begin
         else if (cache_rd_act_state == REQ_MEM_DATA_RD && rcvd_mem_request_i) begin
             cache_rd_next_state = READING_DATA;
         end
-        else if (cache_rd_act_state == WRITEBACK_RD && cache_wr_next_state == REQ_MEM_DATA_WR && rcvd_mem_request_i) begin
+//        else if (cache_rd_act_state == WRITEBACK_RD && cache_wr_next_state == REQ_MEM_DATA_WR && rcvd_mem_request_i) begin
+        else if (cache_rd_act_state == WRITEBACK_RD && rcvd_mem_request_i) begin
             cache_rd_next_state = REQ_MEM_DATA_RD;
         end
 

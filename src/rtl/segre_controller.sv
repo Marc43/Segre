@@ -51,6 +51,7 @@ module segre_controller (
     input logic dc_rd_i,
     input logic dc_wr_i,
     input logic dc_mem_hit_i, // data cache hit @ mem stage
+    input logic store_buffer_draining_i,
 
     input logic valid_mem_i,
 
@@ -165,6 +166,10 @@ always_comb begin : cache_miss_in_mem
     end
     else begin
         if (!dc_mem_hit_i && valid_mem_i && (dc_rd_i || dc_wr_i)) begin
+            block_mem = 1;
+            inject_nops_wb = 1;
+        end
+        else if (store_buffer_draining_i) begin
             block_mem = 1;
             inject_nops_wb = 1;
         end
