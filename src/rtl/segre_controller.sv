@@ -5,6 +5,7 @@ module segre_controller (
     input logic clk_i,
     input logic rsn_i,
 
+    input logic finish_test_i,
     output logic finish_test_o,
 
     output logic sel_mem_req_o,
@@ -17,6 +18,7 @@ module segre_controller (
 
     output logic block_if_o,
     output logic inject_nops_if_o, // Not used
+    output logic blocked_1cycle_ago_if_o,
 
     ///////////////////////////////////
 
@@ -40,9 +42,11 @@ module segre_controller (
 
     input logic [REG_SIZE-1:0] dst_reg_identifier_ex_i,
     input logic we_ex_i,
+    input logic tkbr_i,
 
     output logic block_ex_o,
     output logic inject_nops_ex_o,
+    output logic tkbr_o,
 
     //////////////////////////////////
 
@@ -76,15 +80,15 @@ module segre_controller (
 
 );
 
+assign tkbr_o = tkbr_i;
+
 logic finish_test_d_1;
 logic finish_test_d_2;
 logic finish_test_d_3;
-logic finish_test_d_4;
 
 logic finish_test_q_1;
 logic finish_test_q_2;
 logic finish_test_q_3;
-logic finish_test_q_4;
 
 logic or_block_if;
 logic or_block_id;
@@ -108,7 +112,11 @@ always_comb begin : miss_when_fetching_instruction
             block_if = 1;
             inject_nops_id = !or_block_id;
         end
-        else if (((decode_instr_i == 32'hfff01073) && valid_id_i) || finish_test_q_1) begin
+//        else if (tkbr_i) begin
+//            block_if = 1;
+//            inject_nops_id = 0;
+//        end
+        else if (finish_test_q_1) begin
             block_if = 1;
             inject_nops_id = 1;
         end
@@ -119,6 +127,28 @@ always_comb begin : miss_when_fetching_instruction
     end
 end
 
+logic blocked1cycleago_if_d;
+logic blocked1cycleago_if_q;
+
+always_comb begin
+    if (!rsn_i) begin
+        blocked1cycleago_if_d = 0;
+    end
+    else begin
+        blocked1cycleago_if_d = block_if;
+    end
+end
+
+always_ff @(posedge clk_i) begin
+    if (!rsn_i) begin
+        blocked1cycleago_if_q <= 0;
+    end
+    else begin
+        blocked1cycleago_if_q <= blocked1cycleago_if_d;
+    end
+end
+
+assign blocked_1cycle_ago_if_o = blocked1cycleago_if_q;
 
 //////////////////////////////
 
@@ -135,7 +165,7 @@ assign depEX = ((src_a_identifier_id_i == dst_reg_identifier_ex_i) || (src_b_ide
 assign depMEM = ((src_a_identifier_id_i == dst_reg_identifier_mem_i) || (src_b_identifier_id_i == dst_reg_identifier_mem_i)) && we_mem_i && valid_mem_i;
 assign depWB = ((src_a_identifier_id_i == dst_reg_identifier_wb_i) || (src_b_identifier_id_i == dst_reg_identifier_wb_i)) && we_wb_i && valid_wb_i;
 
-always_comb begin : data_dependences_detection
+always_comb begin : data_dependences_detection_or_tkbr
     if (!rsn_i) begin
         block_id = 0;
         inject_nops_ex = 0;
@@ -143,6 +173,13 @@ always_comb begin : data_dependences_detection
     else begin
         if ((depEX || depMEM || depWB) && valid_id_i) begin
             block_id = 1;
+            inject_nops_ex = 1;
+        end
+        else if (tkbr_i) begin
+            // Not blocking ID and injecting nops in EX
+            // results in discarding instructions, that's
+            // exactly what we need.
+            block_id = 0;
             inject_nops_ex = 1;
         end
         else begin
@@ -180,10 +217,6 @@ always_comb begin : cache_miss_in_mem
     end
 end
 
-/*
- * Recorda que d'alguna manera has de fer que es bloquejin les etapes anteriors tambe, si no, no funcionara res... TODO
- */
-
 assign or_block_if = block_if || or_block_id;
 assign or_block_id = block_id || or_block_ex; //|| block_ex_o;
 assign or_block_ex = 0 || or_block_mem; //|| block_mem_o;
@@ -210,7 +243,7 @@ always_comb begin
     end
     else begin
         if (!finish_test_q_1) begin
-            finish_test_d_1 = ((decode_instr_i == 32'hfff01073) && valid_id_i);
+            finish_test_d_1 = finish_test_i;
         end
     end
 end
@@ -260,25 +293,7 @@ always_ff @(posedge clk_i) begin
     end
 end
 
-always_comb begin
-    if (!rsn_i) begin
-        finish_test_d_4 = 0;
-    end
-    else begin
-        finish_test_d_4 = finish_test_q_3;
-    end
-end
-
-always_ff @(posedge clk_i) begin
-    if (!rsn_i) begin
-        finish_test_q_4 <= 0;
-    end
-    else begin
-        finish_test_q_4 <= finish_test_q_3;
-    end
-end
-
-assign finish_test_o = finish_test_q_4;
+assign finish_test_o = finish_test_q_3;
 
 // Arbiter part
 
@@ -319,5 +334,6 @@ always_comb begin
 end
 
 assign sel_mem_req_o = sel_mem_req;
+
 
 endmodule : segre_controller

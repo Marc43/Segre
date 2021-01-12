@@ -15,6 +15,7 @@ module segre_if_stage (
 
     // To/From controller signals
     input logic block_if_i, // Block this stage (flip-flops)
+    input logic blocked_1cycle_ago_i,
     input logic inject_nops_i, // Inject NOPs to the following stages
     output logic valid_if_o, // Indicate the next stage if it's processing valid data
     output logic instruction_hit_o,
@@ -61,7 +62,10 @@ always_comb begin : pc_mux
         pc = 0;
     end
     else begin
-        if (block_if_i) begin
+        if (tkbr_i) begin
+            pc = new_pc_i;
+        end
+        else if (block_if_i || blocked_1cycle_ago_i) begin
             pc = pc;
         end
         else begin

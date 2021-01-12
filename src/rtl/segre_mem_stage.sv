@@ -36,7 +36,6 @@ module segre_mem_stage (
     input logic memop_wr_i,
 
     // Branch | Jal
-    input logic tkbr_i,
     input logic [WORD_SIZE-1:0] new_pc_i,
 
     // MEM WB interface
@@ -47,7 +46,6 @@ module segre_mem_stage (
     output logic [REG_SIZE-1:0] rf_waddr_o,
 
     // Branch | Jal
-    output logic tkbr_o,
     output logic [ADDR_SIZE-1:0] new_pc_o,
 
     input logic is_jaljalr_i,
@@ -84,7 +82,6 @@ logic memop_sign_ext_d;
 logic [ADDR_SIZE-1:0] new_pc_d;
 logic is_jaljalr_d;
 logic [ADDR_SIZE-1:0] seq_new_pc_d;
-logic tkbr_d;
 logic valid_mem_d;
 
 logic [WORD_SIZE-1:0] alu_res_q;
@@ -98,7 +95,6 @@ logic memop_sign_ext_q;
 logic [ADDR_SIZE-1:0] new_pc_q;
 logic is_jaljalr_q;
 logic [ADDR_SIZE-1:0] seq_new_pc_q;
-logic tkbr_q;
 logic valid_mem_q;
 
 always_comb begin : decoupling_registers_EX_MEM_1
@@ -106,7 +102,6 @@ always_comb begin : decoupling_registers_EX_MEM_1
         rf_we_d    = 0;
         memop_rd_d = 0;
         memop_wr_d = 0;
-        tkbr_d = 0;
         valid_mem_d = 0;
     end
     else begin
@@ -122,14 +117,12 @@ always_comb begin : decoupling_registers_EX_MEM_1
             new_pc_d     = new_pc_q;
             seq_new_pc_d = seq_new_pc_q;
             is_jaljalr_d = is_jaljalr_q;
-            tkbr_d = tkbr_q;
             valid_mem_d = valid_mem_q;
         end
         else if (inject_nops_i) begin
             rf_we_d    = 0;
             memop_rd_d = 0;
             memop_wr_d = 0;
-            tkbr_d = 0;
             valid_mem_d = 0;
         end
         else begin
@@ -144,7 +137,6 @@ always_comb begin : decoupling_registers_EX_MEM_1
             new_pc_d         = new_pc_i;
             seq_new_pc_d     = seq_new_pc_i;
             is_jaljalr_d     = is_jaljalr_i;
-            tkbr_d           = tkbr_i;
             valid_mem_d = valid_ex_i;
         end
     end
@@ -155,13 +147,9 @@ always_ff @(posedge clk_i) begin : decoupling_registers_EX_MEM_2
         rf_we_q <= 0;
         memop_rd_q <= 0;
         memop_wr_q <= 0;
-        tkbr_q <= 0;
         valid_mem_q <= 0;
     end
     else begin
-//        ////// This must be routed to IF stage at some point and to the logic...
-//        tkbr_o <= tkbr;
-//        ///////
         alu_res_q   <= alu_res_d;
         rf_we_q     <= rf_we_d;
         rf_waddr_q  <= rf_waddr_d;
@@ -173,7 +161,6 @@ always_ff @(posedge clk_i) begin : decoupling_registers_EX_MEM_2
         new_pc_q     <= new_pc_d;
         seq_new_pc_q <= seq_new_pc_d;
         is_jaljalr_q <= is_jaljalr_d;
-        tkbr_q <= tkbr_d;
         valid_mem_q <= valid_mem_d;
     end
 end
@@ -284,7 +271,6 @@ assign op_res_o   = memop_rd_q ? processed_read_cache_data : (is_jaljalr_q ? seq
 // Ojo con estos memes, lo normal seria asignar normal los *_q no estas cosas raras. Pero bueno.
 assign rf_we_o    = rf_we_q;
 assign rf_waddr_o = rf_waddr_q;
-assign tkbr_o     = tkbr_q;
 assign new_pc_o   = new_pc_q;
 assign valid_mem_o = valid_mem_q;
 

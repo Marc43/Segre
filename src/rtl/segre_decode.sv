@@ -80,6 +80,7 @@ always_comb begin
 
         memop_rd = 1'b0;
         memop_wr = 1'b0;
+        rf_we_o = 1'b0;
 
         instr_opcode     = opcode_e'(instr_i[6:0]);
 

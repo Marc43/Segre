@@ -5,6 +5,8 @@ module segre_id_stage (
     input logic clk_i,
     input logic rsn_i,
 
+    input logic finish_test_i,
+
     // IF and ID stage
     input logic [WORD_SIZE-1:0] instr_i,
     input logic [WORD_SIZE-1:0] pc_i,
@@ -15,7 +17,6 @@ module segre_id_stage (
     output logic [REG_SIZE-1:0]  rf_raddr_b_o,
     input  logic [WORD_SIZE-1:0] rf_data_a_i,
     input  logic [WORD_SIZE-1:0] rf_data_b_i,
-    output logic [WORD_SIZE-1:0] rf_data_b_o,
 
     // ID EX interface
     // ALU
@@ -53,7 +54,9 @@ module segre_id_stage (
 
     // To detect the end of the test
 
-    output logic [WORD_SIZE-1:0] instr_id_o
+    output logic [WORD_SIZE-1:0] instr_id_o,
+
+    output logic finish_test_o
 );
 
 logic [WORD_SIZE-1:0] imm_u_type;
@@ -106,7 +109,7 @@ always_comb begin : decoupling_register_F_ID_1
         end
         else if (inject_nops_i) begin
             instr_d = NOP_INSTR;
-            pc_d    = pc_q;
+            pc_d    = pc_i;
             valid_id_d = 0;
         end
         else begin
@@ -237,5 +240,7 @@ assign pc_o = pc_q;
 assign valid_id_o = valid_id_q;
 
 assign instr_id_o = instr_q;
+
+assign finish_test_o = (instr_q == 32'hfff01073) && valid_id_q;
 
 endmodule : segre_id_stage

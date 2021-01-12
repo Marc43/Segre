@@ -27,6 +27,7 @@ logic [REG_SIZE-1:0] src_a_identifier_id;
 logic [REG_SIZE-1:0] src_b_identifier_id;
 logic [WORD_SIZE-1:0] instr_id;
 logic valid_id;
+logic finish_test_id;
 
 // REGISTER FILE
 logic [REG_SIZE-1:0] rf_raddr_a;
@@ -70,12 +71,12 @@ logic ex_data_cache_is_hit;
 logic ex_is_jaljalr;
 logic [ADDR_SIZE-1:0] ex_seq_new_pc;
 logic valid_ex;
+logic finish_test_ex;
 
 // MEM STAGE
 logic [WORD_SIZE-1:0] mem_res;
 logic mem_rf_we;
 logic [REG_SIZE-1:0] mem_rf_waddr;
-logic mem_tkbr;
 logic [ADDR_SIZE-1:0] mem_new_pc;
 logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] mem_wr_data;
 logic valid_mem;
@@ -99,7 +100,6 @@ logic valid_wb_d;
 logic [WORD_SIZE-1:0] wb_res_q;
 logic wb_rf_we_q;
 logic [REG_SIZE-1:0] wb_rf_waddr_q;
-logic tkbr_q;
 logic [ADDR_SIZE-1:0] wb_new_pc_q;
 logic valid_wb_q;
 
@@ -107,6 +107,7 @@ logic valid_wb_q;
 logic ic_if_hit;
 logic ctrl_block_if;
 logic ctrl_inject_nops_if;
+logic ctrl_blocked_if;
 
 logic ctrl_block_id;
 logic ctrl_inject_nops_id;
@@ -114,6 +115,7 @@ logic ctrl_inject_nops_id;
 // Not used right now
 logic ctrl_block_ex;
 logic ctrl_inject_nops_ex;
+logic ctrl_tkbr;
 
 logic ctrl_block_mem;
 logic ctrl_inject_nops_mem;
@@ -140,6 +142,7 @@ segre_controller controller (
     // Outputs
     .block_if_o (ctrl_block_if),
     .inject_nops_if_o (ctrl_inject_nops_if),
+    .blocked_1cycle_ago_if_o (ctrl_blocked_if),
 
     ////////////////////
 
@@ -165,10 +168,13 @@ segre_controller controller (
     .valid_ex_i (valid_ex),
     .dst_reg_identifier_ex_i (ex_rf_waddr),
     .we_ex_i (ex_rf_we),
+    .tkbr_i (ex_tkbr),
+    .finish_test_i (finish_test_ex),
 
     // Outputs
     .block_ex_o (ctrl_block_ex),
     .inject_nops_ex_o (ctrl_inject_nops_ex),
+    .tkbr_o (ctrl_tkbr),
 
     ////////////////////
 
@@ -260,13 +266,14 @@ segre_if_stage if_stage (
     .valid_if_o  (valid_if),
 
     // WB interface
-    .tkbr_i      (tkbr_q),
-    .new_pc_i    (wb_new_pc_q),
+    .tkbr_i      (ctrl_tkbr),
+    .new_pc_i    (ex_new_pc),
 
     // To controller signals
     .instruction_hit_o (ic_if_hit),
 
     .block_if_i (ctrl_block_if),
+    .blocked_1cycle_ago_i (ctrl_blocked_if),
     .inject_nops_i (ctrl_inject_nops_if)
 
 );
@@ -315,7 +322,9 @@ segre_id_stage id_stage (
     .inject_nops_i (ctrl_inject_nops_id),
     .valid_id_o (valid_id),
 
-    .instr_id_o (instr_id)
+    .instr_id_o (instr_id),
+
+    .finish_test_o (finish_test_id)
 );
 
 segre_ex_stage ex_stage (
@@ -324,6 +333,8 @@ segre_ex_stage ex_stage (
     .rsn_i            (rsn_i),
 
     .valid_id_i       (valid_id),
+
+    .finish_test_i    (finish_test_id),
 
     // ID EX interface
     // ALU
@@ -360,14 +371,16 @@ segre_ex_stage ex_stage (
     .new_pc_o         (ex_new_pc),
 
     // pc + 4
-    .pc_i (id_pc_i),
+    .pc_i (id_pc),
     .seq_new_pc_o (ex_seq_new_pc),
     .is_jaljalr_i (id_is_jaljalr),
     .is_jaljalr_o (ex_is_jaljalr),
 
     .block_ex_i (ctrl_block_ex),
     .inject_nops_i (ctrl_inject_nops_ex),
-    .valid_ex_o (valid_ex)
+    .valid_ex_o (valid_ex),
+
+    .finish_test_o (finish_test_ex)
 );
 
 segre_mem_stage mem_stage (
@@ -405,14 +418,12 @@ segre_mem_stage mem_stage (
     .memop_wr_i       (ex_memop_wr),
     .memop_sign_ext_i (ex_memop_sign_ext),
     // Branch | Jal
-    .tkbr_i           (ex_tkbr),
     .new_pc_i         (ex_new_pc),
 
     // MEM WB intereface
     .op_res_o         (mem_res),
     .rf_we_o          (mem_rf_we),
     .rf_waddr_o       (mem_rf_waddr),
-    .tkbr_o           (mem_tkbr),
     .new_pc_o         (mem_new_pc),
 
     // pc + 4
@@ -431,7 +442,6 @@ segre_mem_stage mem_stage (
 always_comb begin : decoupling_register_MEM_WB_1
     if (!rsn_i) begin
         wb_rf_we_d = 0;
-        tkbr_d = 0;
         valid_wb_d = 0;
     end
     else begin
@@ -439,12 +449,10 @@ always_comb begin : decoupling_register_MEM_WB_1
             wb_res_d = wb_res_q;
             wb_rf_we_d = wb_rf_we_q;
             wb_rf_waddr_d = wb_rf_waddr_q;
-            tkbr_d = tkbr_q;
             wb_new_pc_d = wb_new_pc_q;
         end
         else if (ctrl_inject_nops_wb) begin
             wb_rf_we_d = 0;
-            tkbr_d = 0;
             valid_wb_d = 0;
         end
 
@@ -452,7 +460,6 @@ always_comb begin : decoupling_register_MEM_WB_1
             wb_res_d = mem_res;
             wb_rf_we_d = mem_rf_we;
             wb_rf_waddr_d = mem_rf_waddr;
-            tkbr_d = mem_tkbr;
             wb_new_pc_d = mem_new_pc;
             valid_wb_d = valid_mem;
         end
@@ -462,14 +469,12 @@ end
 always_ff @(posedge clk_i) begin : decoupling_register_MEM_WB_2
     if (!rsn_i) begin
         wb_rf_we_q <= 0;
-        tkbr_q <= 0;
         valid_wb_q <= 0;
     end
     else begin
         wb_res_q <= wb_res_d;
         wb_rf_we_q <= wb_rf_we_d;
         wb_rf_waddr_q <= wb_rf_waddr_d;
-        tkbr_q <= tkbr_d;
         wb_new_pc_q <= wb_new_pc_d;
         valid_wb_q <= valid_wb_d;
     end
