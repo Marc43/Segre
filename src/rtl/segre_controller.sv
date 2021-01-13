@@ -64,6 +64,7 @@ module segre_controller (
 
     output logic block_mem_o,
     output logic inject_nops_mem_o,
+    output logic blocked_1cycle_ago_mem_o,
 
     //////////////////////////////////
 
@@ -135,7 +136,7 @@ always_comb begin
         blocked1cycleago_if_d = 0;
     end
     else begin
-        blocked1cycleago_if_d = block_if;
+        blocked1cycleago_if_d = or_block_if;
     end
 end
 
@@ -216,6 +217,29 @@ always_comb begin : cache_miss_in_mem
         end
     end
 end
+
+logic blocked1cycleago_mem_d;
+logic blocked1cycleago_mem_q;
+
+always_comb begin
+    if (!rsn_i) begin
+        blocked1cycleago_mem_d = 0;
+    end
+    else begin
+        blocked1cycleago_mem_d = or_block_mem;
+    end
+end
+
+always @(posedge clk_i) begin
+    if (!rsn_i) begin
+        blocked1cycleago_mem_q <= 0;
+    end
+    else begin
+        blocked1cycleago_mem_q <= blocked1cycleago_mem_d;
+    end
+end
+
+assign blocked_1cycle_ago_mem_o = blocked1cycleago_mem_q;
 
 assign or_block_if = block_if || or_block_id;
 assign or_block_id = block_id || or_block_ex; //|| block_ex_o;

@@ -119,6 +119,7 @@ logic ctrl_tkbr;
 
 logic ctrl_block_mem;
 logic ctrl_inject_nops_mem;
+logic ctrl_blocked_mem;
 
 logic ctrl_block_wb;
 logic ctrl_inject_nops_wb;
@@ -192,6 +193,7 @@ segre_controller controller (
     // Outputs
     .block_mem_o (ctrl_block_mem),
     .inject_nops_mem_o (ctrl_inject_nops_mem),
+    .blocked_1cycle_ago_mem_o (ctrl_blocked_mem),
 
     ////////////////////
 
@@ -389,6 +391,7 @@ segre_mem_stage mem_stage (
     .rsn_i            (rsn_i),
 
     .valid_ex_i       (valid_ex),
+    .blocked_1cycle_ago_i (ctrl_blocked_mem),
 
     // To Logic
     .cache_is_busy_o (mem_data_cache_is_busy),

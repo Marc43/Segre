@@ -6,7 +6,6 @@ lw.S
 lui.S
 jal.S
 jalr.S
-jaljalr.S
 beq.S
 bne.S
 blt.S

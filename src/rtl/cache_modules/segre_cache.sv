@@ -122,7 +122,7 @@ assign is_busy_o = is_busy;
 assign do_not_block_state_update = ICACHE_DCACHE ? draining_buffer || (!is_hit && is_hit_sb_o) : 0;
 
 assign rd_o = (cache_rd_act_state == REQ_MEM_DATA_RD);
-assign wr_o = (cache_wr_act_state == WRITEBACK_WR) || (cache_rd_act_state == WRITEBACK_RD);
+assign wr_o = (cache_wr_act_state == WRITEBACK_WR) || (cache_rd_act_state == WRITEBACK_RD) || (cache_wr_act_state == REQ_MEM_DATA_WR);
 
 always_ff @(posedge clk_i, negedge rsn_i) begin
     if(!rsn_i) begin

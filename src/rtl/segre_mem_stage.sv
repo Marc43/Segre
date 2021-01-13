@@ -6,6 +6,7 @@ module segre_mem_stage (
     input logic rsn_i,
 
     input logic valid_ex_i,
+    input logic blocked_1cycle_ago_i,
 
     // To logic
     output logic cache_is_busy_o,
@@ -165,9 +166,6 @@ always_ff @(posedge clk_i) begin : decoupling_registers_EX_MEM_2
     end
 end
 
-assign dc_rd_o = memop_rd_q;
-assign dc_wr_o = memop_wr_q;
-
 always_comb begin
     if (memop_sign_ext_q) begin
         unique case(memop_type_q)
@@ -200,6 +198,12 @@ logic [WORD_SIZE-1:0] writeback_addr;
 logic rd;
 logic wr;
 
+assign dc_rd_o = memop_rd_q;
+assign dc_wr_o = memop_wr_q;
+
+//assign dc_rd_o = rd;
+//assign dc_wr_o = wr;
+
 assign aux_data = rf_st_data_q;
 assign aux_addr = alu_res_q;
 assign aux_memop = memop_type_q;
@@ -208,7 +212,24 @@ assign aux_memop = memop_type_q;
 // Note that this doesn't create any trouble
 // with the writes of the storebuffer while draining.
 logic wr_when_blocking;
-assign wr_when_blocking = memop_wr_q && !block_mem_i;
+
+always_comb begin
+    if (!rsn_i) begin
+        wr_when_blocking = 0;
+    end
+    else begin
+        if (block_mem_i) begin
+            wr_when_blocking = 0;
+        end
+        else if (blocked_1cycle_ago_i && !block_mem_i) begin
+            wr_when_blocking = memop_wr_q;
+        end
+        else begin
+            wr_when_blocking = memop_wr_q;
+        end
+
+    end
+end
 
 segre_cache
 #(
@@ -221,7 +242,7 @@ data_cache
     .rsn_i (rsn_i),
 
     .rd_i (memop_rd_q),
-    .wr_i (memop_wr_q),
+    .wr_i (wr_when_blocking),
     .is_alu_i (is_alu),
 
     .rcvd_mem_request_i (mem_ready_i),
