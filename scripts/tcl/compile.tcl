@@ -27,6 +27,9 @@ vlog -sv -work $work_dir $rtl_dir/cache_modules/segre_cache.sv
 
 # Compile TLB and fail miserably
 vlog -sv -work $work_dir $rtl_dir/segre_dtlb.sv
+#Compile CSR reg file
+vlog -sv -work $work_dir $rtl_dir/segre_csr_register_file.sv
+
 
 vlog -sv -work $work_dir $rtl_dir/cache_modules/segre_store_buffer.sv
 
@@ -49,6 +52,7 @@ vlog -sv -work $work_dir $tb_dir/interface.sv
 if { $use_modelsim } {
     vlog -sv -work $work_dir +define+USE_MODELSIM=1 $tb_dir/memory.sv
     vlog -sv -work $work_dir +define+USE_MODELSIM=1 $tb_dir/top_tb.sv
+    vlog -sv -work $work_dir +define+USE_MODELSIM=1 $tb_dir/csr_regfile_tb.sv
 } else {
     vlog -sv -work $work_dir $tb_dir/memory.sv
     vlog -sv -work $work_dir $tb_dir/top_tb.sv
