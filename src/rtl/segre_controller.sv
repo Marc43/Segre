@@ -29,6 +29,9 @@ module segre_controller (
     input logic [REG_SIZE-1:0] src_a_identifier_id_i,
     input logic [REG_SIZE-1:0] src_b_identifier_id_i,
 
+    input logic rd_src_a_id_i,
+    input logic rd_src_b_id_i,
+
     input logic [WORD_SIZE-1:0] decode_instr_i,
 
     output logic block_id_o,
@@ -162,9 +165,9 @@ logic depEX;
 logic depMEM;
 logic depWB;
 
-assign depEX = ((src_a_identifier_id_i == dst_reg_identifier_ex_i) || (src_b_identifier_id_i == dst_reg_identifier_ex_i)) && we_ex_i && valid_ex_i;
-assign depMEM = ((src_a_identifier_id_i == dst_reg_identifier_mem_i) || (src_b_identifier_id_i == dst_reg_identifier_mem_i)) && we_mem_i && valid_mem_i;
-assign depWB = ((src_a_identifier_id_i == dst_reg_identifier_wb_i) || (src_b_identifier_id_i == dst_reg_identifier_wb_i)) && we_wb_i && valid_wb_i;
+assign depEX = (((src_a_identifier_id_i == dst_reg_identifier_ex_i) && rd_src_a_id_i) || ((src_b_identifier_id_i == dst_reg_identifier_ex_i) && rd_src_b_id_i)) && we_ex_i && valid_ex_i;
+assign depMEM = (((src_a_identifier_id_i == dst_reg_identifier_mem_i) && rd_src_a_id_i) || ((src_b_identifier_id_i == dst_reg_identifier_mem_i) && rd_src_b_id_i)) && we_mem_i && valid_mem_i;
+assign depWB = (((src_a_identifier_id_i == dst_reg_identifier_wb_i) && rd_src_a_id_i) || ((src_b_identifier_id_i == dst_reg_identifier_wb_i) && rd_src_b_id_i)) && we_wb_i && valid_wb_i;
 
 always_comb begin : data_dependences_detection_or_tkbr
     if (!rsn_i) begin

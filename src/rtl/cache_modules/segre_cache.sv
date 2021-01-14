@@ -82,7 +82,6 @@ assign write_into_word = ICACHE_DCACHE ? reading_valid_entry_sb_o
 assign is_writeback = (cache_rd_act_state == WRITEBACK_RD) || (cache_wr_act_state == WRITEBACK_WR);
 assign is_hit = valid_bits[addr_index] && is_hit_from_tags; // Doesn't take into account the state of the cache
 
-// lmao quan hem escrit aquesta brossa jajajaj
 assign writeback_mem_o = is_writeback ? 1'b1 : 1'b0;
 
 assign data_o = (cache_rd_act_state == READING_DATA) ? data_from_cache_data : 'b0;
@@ -168,18 +167,22 @@ always_comb begin
             end
 
         end
-        else if (cache_rd_act_state == REQ_MEM_DATA_RD && rcvd_mem_request_i) begin
+        else if ((cache_rd_act_state == REQ_MEM_DATA_RD) && rcvd_mem_request_i) begin
             cache_rd_next_state = READING_DATA;
         end
 //        else if (cache_rd_act_state == WRITEBACK_RD && cache_wr_next_state == REQ_MEM_DATA_WR && rcvd_mem_request_i) begin
-        else if (cache_rd_act_state == WRITEBACK_RD && rcvd_mem_request_i) begin
+        else if ((cache_rd_act_state == WRITEBACK_RD) && rcvd_mem_request_i) begin
             cache_rd_next_state = REQ_MEM_DATA_RD;
+
+        end
+        else begin
+            cache_rd_next_state = cache_rd_act_state;
         end
 
         /*
          * Write next state
          */
-        if (wr_i && cache_wr_act_state == READING_TAGS) begin
+        if (wr_i && (cache_wr_act_state == READING_TAGS)) begin
             if (!is_hit) begin
                 if (dirty_bits[addr_index]) begin
                     cache_wr_next_state = WRITEBACK_WR;
@@ -188,9 +191,6 @@ always_comb begin
                     cache_wr_next_state = WRITING_DATA;
                     cache_rd_next_state = REQ_MEM_DATA_RD;
                 end
-            end
-            else begin
-                cache_wr_next_state = WRITING_DATA;
             end
         end
         else if (cache_wr_act_state == WRITING_DATA) begin
@@ -205,15 +205,24 @@ always_comb begin
                 cache_rd_next_state = REQ_MEM_DATA_RD;
             end
         end
-        else if (cache_wr_act_state == WRITEBACK_WR) begin
-            cache_wr_next_state = REQ_MEM_DATA_WR;
-        end
-        else if (cache_wr_act_state == REQ_MEM_DATA_WR && rcvd_mem_request_i) begin
+        else if (cache_wr_act_state == WRITEBACK_WR && rcvd_mem_request_i) begin
             cache_wr_next_state = WRITING_DATA;
             cache_rd_next_state = REQ_MEM_DATA_RD;
         end
+//        // deadcode TODO
+//        else if (cache_wr_act_state == REQ_MEM_DATA_WR && rcvd_mem_request_i) begin
+//            cache_wr_next_state = WRITING_DATA;
+//            cache_rd_next_state = REQ_MEM_DATA_RD;
+//        end
+        else begin
+            cache_wr_next_state = cache_wr_act_state;
+        end
     end
 end
+
+logic [WORD_SIZE-1:N] sb_addr_tag;
+logic [N-1:M] sb_addr_index;
+logic [M-1:0] sb_addr_byte;
 
 always_ff @(posedge clk_i, negedge rsn_i) begin
     if (!rsn_i) begin
@@ -222,7 +231,7 @@ always_ff @(posedge clk_i, negedge rsn_i) begin
     end
     else begin
         if (write_into_word) begin
-            dirty_bits[addr_index] <= 1'b1;
+            dirty_bits[sb_addr_index] <= 1'b1;
         end
         else if (write_line_from_mem) begin
             valid_bits[addr_index] <= 1'b1;
@@ -301,6 +310,10 @@ always @* begin
     endcase
 end
 
+assign sb_addr_tag   = addr_sb_o[WORD_SIZE-1:N];
+assign sb_addr_index = addr_sb_o[N-1:M];
+assign sb_addr_byte  = addr_sb_o[M-1:0];
+
 /////////////////////////////
 //// MODULE INSTANTATION ////
 /////////////////////////////
@@ -336,6 +349,9 @@ segre_cache_tags tags (
 logic is_alu;
 assign is_alu = is_alu_i && (cache_rd_act_state == READING_DATA) && (cache_wr_act_state == READING_TAGS);
 
+logic wr_when_blocking;
+assign wr_when_blocking = wr_i && (cache_rd_act_state == READING_DATA) && (cache_wr_act_state == READING_TAGS) && is_hit_from_tags;
+
 generate
     if (ICACHE_DCACHE == DCACHE)
         segre_store_buffer ssb (
@@ -347,7 +363,7 @@ generate
             .data_type_i(data_type_i),
 
             .is_load_i(rd_i),
-            .is_store_i(wr_i),
+            .is_store_i(wr_when_blocking),
             .is_alu_i(is_alu),
 
             .is_hit_i(is_hit_o),

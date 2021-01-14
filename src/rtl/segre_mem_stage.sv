@@ -199,10 +199,7 @@ logic rd;
 logic wr;
 
 assign dc_rd_o = memop_rd_q;
-assign dc_wr_o = memop_wr_q;
-
-//assign dc_rd_o = rd;
-//assign dc_wr_o = wr;
+assign dc_wr_o = memop_wr_q || writeback;
 
 assign aux_data = rf_st_data_q;
 assign aux_addr = alu_res_q;
@@ -211,25 +208,22 @@ assign aux_memop = memop_type_q;
 // Do not write when we are blocked.
 // Note that this doesn't create any trouble
 // with the writes of the storebuffer while draining.
-logic wr_when_blocking;
-
-always_comb begin
-    if (!rsn_i) begin
-        wr_when_blocking = 0;
-    end
-    else begin
-        if (block_mem_i) begin
-            wr_when_blocking = 0;
-        end
-        else if (blocked_1cycle_ago_i && !block_mem_i) begin
-            wr_when_blocking = memop_wr_q;
-        end
-        else begin
-            wr_when_blocking = memop_wr_q;
-        end
-
-    end
-end
+//logic wr_when_blocking;
+//
+//always_comb begin
+//    if (!rsn_i) begin
+//        wr_when_blocking = 0;
+//    end
+//    else begin
+//        if (block_mem_i) begin
+//            wr_when_blocking = 0;
+//        end
+//        else begin
+//            wr_when_blocking = memop_wr_q;
+//        end
+//
+//    end
+//end
 
 segre_cache
 #(
@@ -242,7 +236,7 @@ data_cache
     .rsn_i (rsn_i),
 
     .rd_i (memop_rd_q),
-    .wr_i (wr_when_blocking),
+    .wr_i (memop_wr_q),
     .is_alu_i (is_alu),
 
     .rcvd_mem_request_i (mem_ready_i),
@@ -272,11 +266,10 @@ assign cache_is_busy_o = is_busy;
 assign cache_is_hit_o = is_hit;
 
 // It is a load or a missed store, both cases require a read from main memory
-assign memop_rd_o   = rd; //(memop_wr_i || memop_rd_i) && !is_hit;
-// This also requires a stall TODO
-assign memop_wr_o   = wr; //writeback;
-//assign addr_o       = alu_res_i;
-//assign memop_type_o = memop_type_i;
+// Also, if we are doing a writeback or a write (well, a write), we give priority
+// to the first one.
+assign memop_rd_o   = rd && !(wr || writeback);
+assign memop_wr_o   = wr || writeback; //writeback;
 
 // ------
 

@@ -50,6 +50,8 @@ logic id_memop_wr;
 logic id_memop_sign_ext;
 logic [WORD_SIZE-1:0] id_br_src_a;
 logic [WORD_SIZE-1:0] id_br_src_b;
+logic rd_raddr_a_id;
+logic rd_raddr_b_id;
 
 // EX STAGE
 memop_data_type_e ex_memop_type;
@@ -155,6 +157,9 @@ segre_controller controller (
     .src_a_identifier_id_i (src_a_identifier_id),
     .src_b_identifier_id_i (src_b_identifier_id),
     .decode_instr_i (instr_id),
+
+    .rd_src_a_id_i (rd_raddr_a_id),
+    .rd_src_b_id_i (rd_raddr_b_id),
 
     // Outuputs
     .block_id_o (ctrl_block_id),
@@ -319,6 +324,9 @@ segre_id_stage id_stage (
 
     .src_a_identifier_o (src_a_identifier_id),
     .src_b_identifier_o (src_b_identifier_id),
+
+    .rd_raddr_a_o (rd_raddr_a_id),
+    .rd_raddr_b_o (rd_raddr_b_id),
 
     .block_id_i (ctrl_block_id),
     .inject_nops_i (ctrl_inject_nops_id),

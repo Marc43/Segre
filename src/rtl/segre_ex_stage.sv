@@ -135,6 +135,7 @@ always_comb begin : decoupling_register_ID_EX_1
             is_jaljalr_d = 0;
             valid_ex_d = 0;
             finish_test_d = 0;
+            alu_opcode_d = ALU_ADD;
         end
         else begin
             alu_src_a_d      = alu_src_a_i;

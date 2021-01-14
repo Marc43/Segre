@@ -82,6 +82,8 @@ assign addr_tag   = addr_i[WORD_SIZE-1:N];
 assign addr_index = addr_i[N-1:M];
 assign addr_byte  = addr_i[M-1:0];
 
+logic is_draining;
+
 //--------------------SEQUENTIAL LOGIC MANAGEMENT----------------------------------//
 //State switching
 always_ff @ (posedge clk_i, negedge rsn_i) begin : update_state
@@ -140,7 +142,7 @@ always @(posedge clk_i, negedge rsn_i) begin : writing_to_sb
     else begin
         case (sb_state)
             NOT_DRAINING: begin
-                if (is_store_i && !full) begin
+                if (is_store_i && !full && !is_draining) begin
                     //Add new entry
                     sb_entries[wr_ptr].data <= data_i;
                     sb_entries[wr_ptr].address <= addr_i;
@@ -149,7 +151,7 @@ always @(posedge clk_i, negedge rsn_i) begin : writing_to_sb
                     wr_ptr <= wr_ptr + 1;
                 end
 
-                if (is_alu_i && !empty) begin
+                if (is_alu_i && !empty || is_draining) begin
                     sb_valid_entry[rd_ptr] <= 0;
                     rd_ptr <= rd_ptr + 1;
                 end
@@ -164,6 +166,7 @@ always @(posedge clk_i, negedge rsn_i) begin : writing_to_sb
         endcase
     end
 end
+
 
 always_comb begin : reading_from_sb
     if (!rsn_i) begin
@@ -194,7 +197,7 @@ always_comb begin : reading_from_sb
                         data_type_from_pos = sb_entries[hit_position].data_type;
                     end
                 end
-                else if (is_alu_i && !empty) begin
+                else if (is_alu_i && !empty || is_draining) begin
                     data_from_rd_ptr = sb_entries[rd_ptr].data;
                     addr_from_rd_ptr = sb_entries[rd_ptr].address;
                     data_type_from_rd_ptr = sb_entries[rd_ptr].data_type;
@@ -229,10 +232,12 @@ always_comb begin
     end
 end
 
+assign is_draining = (sb_state == DRAINING) || full && is_store_i;
+
 assign data_o = (is_hit && (sb_state == NOT_DRAINING) && is_load_i) ? data_from_pos : data_from_rd_ptr;
 assign addr_o = (is_hit && (sb_state == NOT_DRAINING) && is_load_i) ? addr_from_pos : addr_from_rd_ptr;
 assign data_type_o = (is_hit && (sb_state == NOT_DRAINING) && is_load_i) ? data_type_from_pos : data_type_from_rd_ptr;
-assign reading_valid_entry_o = (is_alu_i || sb_state == DRAINING) && !empty;
-assign is_draining_o = (sb_state == DRAINING) || full && is_store_i;
+assign reading_valid_entry_o = (is_alu_i || (sb_state == DRAINING) || is_draining) && !empty;
+assign is_draining_o = is_draining;
 
 endmodule : segre_store_buffer

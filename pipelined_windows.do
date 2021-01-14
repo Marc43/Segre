@@ -108,11 +108,11 @@ add wave -noupdate -group {Data Cache} /top_tb/soc/dut/mem_stage/data_cache/is_h
 add wave -noupdate -group {Data Cache} /top_tb/soc/dut/mem_stage/data_cache/is_busy_o
 add wave -noupdate -group {Data Cache} /top_tb/soc/dut/mem_stage/data_cache/writeback_mem_o
 add wave -noupdate -group {Data Cache} /top_tb/soc/dut/mem_stage/data_cache/writeback_addr_o
+add wave -noupdate -group {Data Cache} /top_tb/soc/dut/mem_stage/data_cache/rd_o
+add wave -noupdate -group {Data Cache} /top_tb/soc/dut/mem_stage/data_cache/wr_o
 add wave -noupdate -group {Data Cache} /top_tb/soc/dut/mem_stage/data_cache/data_o
 add wave -noupdate -group {Data Cache} /top_tb/soc/dut/mem_stage/data_cache/to_mem_cache_line_o
 add wave -noupdate -group {Data Cache} /top_tb/soc/dut/mem_stage/data_cache/store_buffer_draining_o
-add wave -noupdate -group {Data Cache} /top_tb/soc/dut/mem_stage/data_cache/rd_o
-add wave -noupdate -group {Data Cache} /top_tb/soc/dut/mem_stage/data_cache/wr_o
 add wave -noupdate -group {Data Cache} /top_tb/soc/dut/mem_stage/data_cache/addr_tag
 add wave -noupdate -group {Data Cache} /top_tb/soc/dut/mem_stage/data_cache/addr_index
 add wave -noupdate -group {Data Cache} /top_tb/soc/dut/mem_stage/data_cache/addr_byte
@@ -262,6 +262,26 @@ add wave -noupdate -group Controller /top_tb/soc/dut/controller/block_mem
 add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_wb
 add wave -noupdate -group Controller /top_tb/soc/dut/controller/rcvd_mem_req
 add wave -noupdate -group Controller /top_tb/soc/dut/controller/sel_mem_req
+add wave -noupdate -group Memory /top_tb/soc/tb_mem/clk_i
+add wave -noupdate -group Memory /top_tb/soc/tb_mem/rsn_i
+add wave -noupdate -group Memory /top_tb/soc/tb_mem/rd_i
+add wave -noupdate -group Memory /top_tb/soc/tb_mem/wr_i
+add wave -noupdate -group Memory /top_tb/soc/tb_mem/mem_ready_o
+add wave -noupdate -group Memory /top_tb/soc/tb_mem/data_type_i
+add wave -noupdate -group Memory /top_tb/soc/tb_mem/addr_i
+add wave -noupdate -group Memory /top_tb/soc/tb_mem/data_i
+add wave -noupdate -group Memory /top_tb/soc/tb_mem/cache_line_o
+add wave -noupdate -group Memory /top_tb/soc/tb_mem/rd_data
+add wave -noupdate -group Memory /top_tb/soc/tb_mem/cyc_counter
+add wave -noupdate -group Memory /top_tb/soc/tb_mem/mem_ready
+add wave -noupdate -group Memory /top_tb/soc/tb_mem/aligned_addr_to_cache_lines
+add wave -noupdate -group Memory /top_tb/soc/tb_mem/addr_i_ff
+add wave -noupdate -group Memory /top_tb/soc/tb_mem/mem_request
+add wave -noupdate -group Memory /top_tb/soc/tb_mem/aux_rd
+add wave -noupdate -group Memory /top_tb/soc/tb_mem/aux_wr
+add wave -noupdate -group Memory /top_tb/soc/tb_mem/write_read_data
+add wave -noupdate -group Memory /top_tb/soc/tb_mem/num_of_instructions
+add wave -noupdate -group Memory /top_tb/soc/tb_mem/hex_file_fd
 TreeUpdate [SetDefaultTree]
 quietly WaveActivateNextPane
 add wave -noupdate -group IF /top_tb/soc/dut/if_stage/clk_i
@@ -521,7 +541,7 @@ add wave -noupdate -expand -group {REGISTER FILE} -expand /top_tb/soc/dut/segre_
 add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/rf_reg_aux
 add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/write_enable
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {105448 ps} 0}
+WaveRestoreCursors {{Cursor 1} {10429836 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 191
 configure wave -valuecolwidth 93
@@ -537,4 +557,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {0 ps} {5222088 ps}
+WaveRestoreZoom {7136973 ps} {12359061 ps}

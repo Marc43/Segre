@@ -34,6 +34,8 @@ module segre_decode(
     output logic [REG_SIZE-1:0] raddr_b_o,
     output logic [REG_SIZE-1:0] waddr_o,
     output logic rf_we_o,
+    output logic rd_raddr_a_o,
+    output logic rd_raddr_b_o,
 
     // Memop
     output memop_data_type_e memop_type_o,
@@ -62,6 +64,9 @@ assign waddr_o = instr_i[`REG_RD];
 
 logic memop_rd;
 logic memop_wr;
+
+logic rd_raddr_a;
+logic rd_raddr_b;
 
 /*****************
 *    DECODER     *
@@ -150,12 +155,17 @@ always_comb begin
     br_a_mux_sel_o  = BR_A_REG;
     alu_instr_opcode      = opcode_e'(instr_i[6:0]);
 
+    rd_raddr_a = 0;
+    rd_raddr_b = 0;
+
     unique case(alu_instr_opcode)
 
         /*****************
         *      ALU       *
         *****************/
         OPCODE_LUI: begin // Load Upper Immediate
+            rd_raddr_a = 0;
+            rd_raddr_b = 0;
             src_a_mux_sel_o = ALU_A_IMM;
             src_b_mux_sel_o = ALU_B_IMM;
             a_imm_mux_sel_o = IMM_A_ZERO;
@@ -163,6 +173,7 @@ always_comb begin
             alu_opcode_o    = ALU_ADD;
         end
         OPCODE_OP_IMM: begin
+            rd_raddr_a = 1;
             src_a_mux_sel_o = ALU_A_REG;
             src_b_mux_sel_o = ALU_B_IMM;
             b_imm_mux_sel_o = IMM_B_I;
@@ -185,6 +196,8 @@ always_comb begin
             endcase
         end
         OPCODE_OP: begin
+            rd_raddr_a = 1;
+            rd_raddr_b = 1;
             src_a_mux_sel_o = ALU_A_REG;
             src_b_mux_sel_o = ALU_B_REG;
             unique case ({instr_i[`FUNC_7], instr_i[`FUNC_3]})
@@ -202,12 +215,14 @@ always_comb begin
             endcase
         end
         OPCODE_LOAD: begin
+            rd_raddr_a = 1;
             src_a_mux_sel_o = ALU_A_REG;
             src_b_mux_sel_o = ALU_B_IMM;
             b_imm_mux_sel_o = IMM_B_I;
             alu_opcode_o = ALU_ADD;
         end
         OPCODE_STORE: begin
+            rd_raddr_a = 1;
             src_a_mux_sel_o = ALU_A_REG;
             src_b_mux_sel_o = ALU_B_IMM;
             b_imm_mux_sel_o = IMM_B_S;
@@ -221,6 +236,7 @@ always_comb begin
             alu_opcode_o    = ALU_JAL;
         end
         OPCODE_JALR: begin
+            rd_raddr_a = 1;
             src_a_mux_sel_o = ALU_A_REG;
             src_b_mux_sel_o = ALU_B_IMM;
             b_imm_mux_sel_o = IMM_B_I;
@@ -228,6 +244,8 @@ always_comb begin
             alu_opcode_o    = ALU_JALR;
         end
         OPCODE_BRANCH: begin
+            rd_raddr_a = 1;
+            rd_raddr_b = 1;
             src_a_mux_sel_o = ALU_A_PC;
             src_b_mux_sel_o = ALU_B_IMM;
             b_imm_mux_sel_o = IMM_B_B;
@@ -252,6 +270,9 @@ always_comb begin
         default: ;
     endcase
 end
+
+assign rd_raddr_a_o = rd_raddr_a;
+assign rd_raddr_b_o = rd_raddr_b;
 
 assign memop_rd_o = memop_rd;
 assign memop_wr_o = memop_wr;

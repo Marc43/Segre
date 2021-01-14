@@ -52,6 +52,9 @@ module segre_id_stage (
     output logic [REG_SIZE-1:0] src_a_identifier_o,
     output logic [REG_SIZE-1:0] src_b_identifier_o,
 
+    output logic rd_raddr_a_o,
+    output logic rd_raddr_b_o,
+
     // To detect the end of the test
 
     output logic [WORD_SIZE-1:0] instr_id_o,
@@ -102,15 +105,15 @@ always_comb begin : decoupling_register_F_ID_1
         valid_id_d = 0;
     end
     else begin
-        if (block_id_i) begin
-            instr_d = instr_q;
-            pc_d = pc_q;
-            valid_id_d = valid_id_q;
-        end
-        else if (inject_nops_i) begin
+        if (inject_nops_i) begin
             instr_d = NOP_INSTR;
             pc_d    = pc_i;
             valid_id_d = 0;
+        end
+        else if (block_id_i) begin
+            instr_d = instr_q;
+            pc_d = pc_q;
+            valid_id_d = valid_id_q;
         end
         else begin
             instr_d = instr_i;
@@ -161,6 +164,9 @@ segre_decode decode (
     .raddr_b_o        (rf_raddr_b),
     .waddr_o          (rf_waddr),
     .rf_we_o          (rf_we),
+
+    .rd_raddr_a_o (rd_raddr_a_o),
+    .rd_raddr_b_o (rd_raddr_b_o),
 
     // Memop
     .memop_type_o     (memop_type),
