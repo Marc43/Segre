@@ -3,13 +3,11 @@ import segre_pkg::*;
 //We assume that it only reads/writes one register at a time
 //EXCEPT when dealing with exception, which have their three dedicated inputs for their three CSR
 
-//
-
 //---------------------------------------------------//
 //--------------MODULE DEFINITION--------------------//
 //---------------------------------------------------//
 
-module segre_register_file (
+module segre_csr_register_file (
     // Clock and Reset
     input logic clk_i,
     input logic rsn_i,
@@ -25,7 +23,7 @@ module segre_register_file (
     input logic [CSR_ID_BIT_SIZE:0] w_id_i,
 
     // Write data
-    input logic [WORD_SIZE-1:0] w_data_i;
+    input logic [WORD_SIZE-1:0] w_data_i,
 
     // Write data for exception registers (written if exc_we_i=1)
     input logic [WORD_SIZE-1:0] w_data_mtvec_i, // @ of routine to manage the event
@@ -44,8 +42,11 @@ module segre_register_file (
 
 //Registers can't be organized as an array, they have an identifier
 logic [WORD_SIZE-1:0] mtvec_reg; 
-logic [WORD_SIZE-1:0] mpec_reg; 
+logic [WORD_SIZE-1:0] mepc_reg; 
 logic [WORD_SIZE-1:0] mcause_reg; 
+
+//Debug register for default cases
+logic [WORD_SIZE-1:0] debug_reg;
 
 
 
@@ -56,28 +57,36 @@ logic [WORD_SIZE-1:0] mcause_reg;
 always_ff @(posedge clk_i) begin
     //Initialize regs
     if (!rsn_i) begin
-        mtvec_reg <= 32'b0;
-        mpec_reg <= 32'b0;
-        mcause_reg <= 32'b0;
+        mtvec_reg   <= 32'b0;
+        mepc_reg    <= 32'b0;
+        mcause_reg  <= 32'b0;
+        debug_reg   <= 32'h0;
     end
     //Write into regs using IDs if no exception found
     else if (!exc_we_i && we_i) begin
         case (w_id_i)
-           0 : cache_sb_mux_data <= data_i;
-           1 : cache_sb_mux_data <= data_sb_o;
-           default : cache_sb_mux_data <= data_i;
+           12'h305 : mtvec_reg  <= w_data_i;
+           12'h341 : mepc_reg   <= w_data_i;
+           12'h342 : mcause_reg <= w_data_i;
+           default : debug_reg  <= 32'h00000001; //Value to see that we've fucked up something when writing
         endcase
     end
     //Exception, ignore everything else and update related regs
-    else begin
-        
+    else if (exc_we_i) begin
+        mtvec_reg  <= w_data_mtvec_i;
+        mepc_reg   <= w_data_mepc_i;
+        mcause_reg <= w_data_mcause_i;
     end
 end
 
-assign rf_reg[0] = '0;
-assign rf_reg[31:1] = rf_reg_aux[31:1];
+//Output data pointed by ID
+always_comb begin
+    case (r_id_i)
+        12'h305 : data_o    = mtvec_reg;
+        12'h341 : data_o    = mepc_reg;
+        12'h342 : data_o    = mcause_reg;
+        default: data_o     = 12'hfe0; //Debug value
+    endcase
+end
 
-assign data_a_o = rf_reg[raddr_a_i];
-assign data_b_o = rf_reg[raddr_b_i];
-
-endmodule : segre_register_file
+endmodule : segre_csr_register_file
