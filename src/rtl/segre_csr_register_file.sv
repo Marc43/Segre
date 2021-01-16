@@ -69,11 +69,11 @@ always_ff @(posedge clk_i) begin
     //Write into regs using IDs if no exception found
     else if (!exc_we_i && we_i) begin
         case (w_id_i)
-           12'h300 : mstatus_reg    <= w_data_i;
-           12'h305 : mtvec_reg      <= w_data_i;
-           12'h341 : mepc_reg       <= w_data_i;
-           12'h342 : mcause_reg     <= w_data_i;
-           default : debug_reg      <= 32'h00000001; //Value to see that we've fucked up something when writing
+           MSTATUS_ID   : mstatus_reg    <= w_data_i;
+           MTVEC_ID     : mtvec_reg      <= w_data_i;
+           MEPC_ID      : mepc_reg       <= w_data_i;
+           MCAUSE_ID    : mcause_reg     <= w_data_i;
+           default      : debug_reg      <= 32'h00000001; //Value to see that we've fucked up something when writing
         endcase
     end
     //Exception, ignore everything else and update related regs
@@ -88,11 +88,11 @@ end
 //Output data pointed by ID
 always_comb begin
     case (r_id_i)
-        12'h300 : data_o    = mstatus_reg;
-        12'h305 : data_o    = mtvec_reg;
-        12'h341 : data_o    = mepc_reg;
-        12'h342 : data_o    = mcause_reg;
-        default: data_o     = 12'hfe0; //Debug value
+        MSTATUS_ID  : data_o    = mstatus_reg;
+        MTVEC_ID    : data_o    = mtvec_reg;
+        MEPC_ID     : data_o    = mepc_reg;
+        MCAUSE_ID   : data_o    = mcause_reg;
+        default     : data_o    = 12'hfe0; //Debug value
     endcase
 end
 

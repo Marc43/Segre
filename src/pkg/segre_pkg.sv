@@ -131,6 +131,7 @@ parameter CSR_REG_SIZE = 3;
 parameter CSR_ID_BIT_SIZE = 12; //Num of bits needed for the ids of CSR regs
 
 //IDs of the CSR registers
+parameter MSTATUS_ID = 12'h300;
 parameter MTVEC_ID = 12'h305;
 parameter MEPC_ID = 12'h341;
 parameter MCAUSE_ID = 12'h342;
