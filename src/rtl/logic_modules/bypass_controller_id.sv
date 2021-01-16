@@ -69,13 +69,19 @@ always_comb begin
         if (valid_ex_i && data_produced_ex_i && depEX_src_a_i) begin
             bypass_mux_sel_a  = EXECUTE_BYPASS;
             use_bypass_a_ex_o = 1;
+            use_bypass_a_mem_o = 0;
+            use_bypass_a_wb_o = 0;
         end
         else if (valid_mem_i && data_produced_mem_i && depMEM_src_a_i) begin
             bypass_mux_sel_a = MEMORY_BYPASS;
+            use_bypass_a_ex_o = 0;
             use_bypass_a_mem_o = 1;
+            use_bypass_a_wb_o = 0;
         end
         else if (valid_wb_i && data_produced_ex_i && depEX_src_a_i) begin
             bypass_mux_sel_a = WRITEBACK_BYPASS;
+            use_bypass_a_ex_o = 0;
+            use_bypass_a_mem_o = 0;
             use_bypass_a_wb_o = 1;
         end
         else begin
@@ -89,14 +95,20 @@ always_comb begin
         if (valid_ex_i && data_produced_ex_i && depEX_src_b_i) begin
             bypass_mux_sel_b = EXECUTE_BYPASS;
             use_bypass_b_ex_o = 1;
+            use_bypass_b_mem_o = 0;
+            use_bypass_b_wb_o = 0;
         end
         else if (valid_mem_i && data_produced_mem_i && depMEM_src_b_i) begin
             bypass_mux_sel_b = MEMORY_BYPASS;
             use_bypass_b_mem_o = 1;
+            use_bypass_b_ex_o = 0;
+            use_bypass_b_wb_o = 0;
         end
         else if (valid_wb_i && data_produced_ex_i && depEX_src_b_i) begin
             bypass_mux_sel_b = WRITEBACK_BYPASS;
             use_bypass_b_wb_o = 1;
+            use_bypass_b_ex_o = 0;
+            use_bypass_b_mem_o = 0;
         end
         else begin
             bypass_mux_sel_b = ID_RF;
