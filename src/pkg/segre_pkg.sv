@@ -130,4 +130,12 @@ parameter PHYSICAL_ADDR_SIZE = 20;
 parameter TLB_ENTRIES = 32;
 parameter TLB_ENTRY_BITS = $clog2(TLB_ENTRIES);//Number of bits needed to represent NUM_SB_ENTRIES
 
+// Bypass
+typedef enum logic [1:0] {
+    ID_RF               = 2'b00,
+    EXECUTE_BYPASS      = 2'b01,
+    MEMORY_BYPASS       = 2'b10,
+    WRITEBACK_BYPASS    = 2'b11
+} bypass_id_sel_e;
+
 endpackage : segre_pkg

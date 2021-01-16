@@ -56,6 +56,14 @@ module segre_ex_stage (
     input logic inject_nops_i, // Inject NOPs to the following stages
     output logic valid_ex_o, // Indicate the next stage if it's processing valid data
 
+    input logic prod_data_stage_ex_i,
+    input logic prod_data_stage_mem_i,
+
+    output logic prod_data_stage_ex_o,
+    output logic prod_data_stage_mem_o,
+
+    output logic data_produced_ex_o,
+
     output logic finish_test_o
 
 );
@@ -80,6 +88,8 @@ logic [REG_SIZE-1:0] rf_waddr_d;
 logic [WORD_SIZE-1:0] rf_st_data_d;
 logic valid_ex_d;
 logic finish_test_d;
+logic prod_data_stage_ex_d;
+logic prod_data_stage_mem_d;
 
 logic [WORD_SIZE-1:0] alu_src_a_q;
 logic [WORD_SIZE-1:0] alu_src_b_q;
@@ -98,6 +108,8 @@ logic [REG_SIZE-1:0] rf_waddr_q;
 logic [WORD_SIZE-1:0] rf_st_data_q;
 logic valid_ex_q;
 logic finish_test_q;
+logic prod_data_stage_ex_q;
+logic prod_data_stage_mem_q;
 
 always_comb begin : decoupling_register_ID_EX_1
     if (!rsn_i) begin
@@ -107,6 +119,8 @@ always_comb begin : decoupling_register_ID_EX_1
         is_jaljalr_d = 0;
         valid_ex_d = 0;
         finish_test_d = 0;
+        prod_data_stage_ex_d = 0;
+        prod_data_stage_mem_d = 0;
     end
     else begin
         if (block_ex_i) begin
@@ -127,6 +141,8 @@ always_comb begin : decoupling_register_ID_EX_1
             rf_st_data_d = rf_st_data_q;
             valid_ex_d = valid_ex_q;
             finish_test_d = finish_test_q;
+            prod_data_stage_ex_d = prod_data_stage_ex_q;
+            prod_data_stage_mem_d = prod_data_stage_mem_q;
         end
         else if (inject_nops_i) begin
             rf_we_d          = 0;
@@ -136,6 +152,8 @@ always_comb begin : decoupling_register_ID_EX_1
             valid_ex_d = 0;
             finish_test_d = 0;
             alu_opcode_d = ALU_ADD;
+            prod_data_stage_ex_d = 0;
+            prod_data_stage_mem_d = 0;
         end
         else begin
             alu_src_a_d      = alu_src_a_i;
@@ -155,6 +173,8 @@ always_comb begin : decoupling_register_ID_EX_1
             rf_st_data_d = rf_st_data_i;
             valid_ex_d = valid_id_i;
             finish_test_d = finish_test_i;
+            prod_data_stage_ex_d = prod_data_stage_ex_i;
+            prod_data_stage_mem_d = prod_data_stage_mem_i;
         end
     end
 end
@@ -167,6 +187,8 @@ always_ff @(posedge clk_i) begin : decoupling_register_ID_EX_2
         is_jaljalr_q     <= 0;
         valid_ex_q <= 0;
         finish_test_q <= 0;
+        prod_data_stage_ex_q <= 0;
+        prod_data_stage_mem_q <= 0;
     end
     else begin
         alu_src_a_q      <= alu_src_a_d;
@@ -186,6 +208,8 @@ always_ff @(posedge clk_i) begin : decoupling_register_ID_EX_2
         valid_ex_q <= valid_ex_d;
         rf_st_data_q <= rf_st_data_d;
         finish_test_q <= finish_test_d;
+        prod_data_stage_ex_q <= prod_data_stage_ex_d;
+        prod_data_stage_mem_q <= prod_data_stage_mem_d;
     end
 end
 
@@ -225,5 +249,10 @@ assign tkbr_o = tkbr;
 assign new_pc_o     = alu_res;
 
 assign finish_test_o = finish_test_q;
+
+assign prod_data_stage_ex_o = prod_data_stage_ex_q;
+assign prod_data_stage_mem_o = prod_data_stage_mem_q;
+
+assign data_produced_ex_o = prod_data_stage_ex_q;
 
 endmodule : segre_ex_stage

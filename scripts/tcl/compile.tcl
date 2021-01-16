@@ -28,6 +28,7 @@ vlog -sv -work $work_dir $rtl_dir/cache_modules/segre_cache.sv
 vlog -sv -work $work_dir $rtl_dir/cache_modules/segre_store_buffer.sv
 
 # Compile rtl
+vlog -sv -work $work_dir $rtl_dir/logic_modules/bypass_controller_id.sv
 vlog -sv -work $work_dir $rtl_dir/logic_modules/segre_controller.sv
 vlog -sv -work $work_dir $rtl_dir/segre_if_stage.sv
 vlog -sv -work $work_dir $rtl_dir/segre_decode.sv

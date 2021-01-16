@@ -37,6 +37,9 @@ module segre_controller (
     output logic block_id_o,
     output logic inject_nops_id_o,
 
+    output bypass_id_sel_e mul_sel_a_id_o,
+    output bypass_id_sel_e mul_sel_b_id_o,
+
     //////////////////////////////////
 
     // EXECUTION STAGE
@@ -46,6 +49,8 @@ module segre_controller (
     input logic [REG_SIZE-1:0] dst_reg_identifier_ex_i,
     input logic we_ex_i,
     input logic tkbr_i,
+
+    input logic data_produced_ex_i,
 
     output logic block_ex_o,
     output logic inject_nops_ex_o,
@@ -59,6 +64,8 @@ module segre_controller (
     input logic dc_wr_i,
     input logic dc_mem_hit_i, // data cache hit @ mem stage
     input logic store_buffer_draining_i,
+
+    input logic data_produced_mem_i,
 
     input logic valid_mem_i,
 
@@ -78,6 +85,8 @@ module segre_controller (
     input logic [REG_SIZE-1:0] dst_reg_identifier_wb_i,
     input logic we_wb_i,
 
+    input logic data_produced_wb_i,
+
     output logic block_wb_o,
     output logic inject_nops_wb_o
 
@@ -85,6 +94,16 @@ module segre_controller (
 );
 
 assign tkbr_o = tkbr_i;
+
+logic id_use_bypass_a_ex;
+logic id_use_bypass_b_ex;
+
+logic id_use_bypass_a_mem;
+logic id_use_bypass_b_mem;
+
+logic id_use_bypass_a_wb;
+logic id_use_bypass_b_wb;
+
 
 logic finish_test_d_1;
 logic finish_test_d_2;
@@ -155,7 +174,6 @@ end
 assign blocked_1cycle_ago_if_o = blocked1cycleago_if_q;
 
 //////////////////////////////
-
 // DECODE CONTROL ( a little bit of EX too :) )
 
 logic block_id;
@@ -181,9 +199,9 @@ assign depEX_src_b = ((src_b_identifier_id_i == dst_reg_identifier_ex_i) && rd_s
 assign depMEM_src_b = ((src_b_identifier_id_i == dst_reg_identifier_mem_i) && rd_src_b_id_i) && we_mem_i && valid_mem_i;
 assign depWB_src_b = ((src_b_identifier_id_i == dst_reg_identifier_wb_i) && rd_src_b_id_i) && we_wb_i && valid_wb_i;
 
-assign depEX = depEX_src_a || depEX_src_b;
-assign depMEM = depMEM_src_a || depMEM_src_b;
-assign depWB = depWB_src_a || depWB_src_b;
+assign depEX = (depEX_src_a && !id_use_bypass_a_ex) || (depEX_src_b && !id_use_bypass_b_ex);
+assign depMEM = (depMEM_src_a && !id_use_bypass_a_mem) || (depMEM_src_b && !id_use_bypass_b_mem);
+assign depWB = (depWB_src_a && !id_use_bypass_a_wb) || (depWB_src_b && !id_use_bypass_b_wb);
 
 always_comb begin : data_dependences_detection_or_tkbr
     if (!rsn_i) begin
@@ -378,5 +396,56 @@ end
 
 assign sel_mem_req_o = sel_mem_req;
 
+// Bypasses instruction decode
+
+bypass_controller_id bypass_id (
+
+    .clk_i (clk_i),
+    .rsn_i (rsn_i),
+
+    // Instruction decode
+
+    .valid_id_i (valid_id_i),
+
+    .rd_src_a_id_i (rd_src_a_id_i),
+    .rd_src_b_id_i (rd_src_b_id_i),
+
+    .mux_sel_a_id_o (mul_sel_a_id_o),
+    .mux_sel_b_id_o (mul_sel_b_id_o),
+
+    // Execute decode
+
+    .valid_ex_i (valid_ex_i),
+    .data_produced_ex_i (data_produced_ex_i),
+
+    .depEX_src_a_i (depEX_src_a),
+    .depEX_src_b_i (depEX_src_b),
+
+    .use_bypass_a_ex_o (id_use_bypass_a_ex),
+    .use_bypass_b_ex_o (id_use_bypass_b_ex),
+
+    // Memory stage
+
+    .valid_mem_i (valid_mem_i),
+    .data_produced_mem_i (data_produced_mem_i),
+
+    .depMEM_src_a_i (depMEM_src_a),
+    .depMEM_src_b_i (depMEM_src_b),
+
+    .use_bypass_a_mem_o (id_use_bypass_a_mem),
+    .use_bypass_b_mem_o (id_use_bypass_b_mem),
+
+    // Writeback
+
+    .valid_wb_i (valid_wb_i),
+    .data_produced_wb_i (data_produced_wb_i),
+
+    .depWB_src_a_i (depWB_src_a),
+    .depWB_src_b_i (depWB_src_b),
+
+    .use_bypass_a_wb_o (id_use_bypass_a_wb),
+    .use_bypass_b_wb_o (id_use_bypass_b_wb)
+
+);
 
 endmodule : segre_controller

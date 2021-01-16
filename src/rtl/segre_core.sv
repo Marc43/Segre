@@ -28,6 +28,8 @@ logic [REG_SIZE-1:0] src_b_identifier_id;
 logic [WORD_SIZE-1:0] instr_id;
 logic valid_id;
 logic finish_test_id;
+logic id_prod_data_stage_ex;
+logic id_prod_data_stage_mem;
 
 // REGISTER FILE
 logic [REG_SIZE-1:0] rf_raddr_a;
@@ -74,6 +76,8 @@ logic ex_is_jaljalr;
 logic [ADDR_SIZE-1:0] ex_seq_new_pc;
 logic valid_ex;
 logic finish_test_ex;
+logic ex_prod_data_stage_ex;
+logic ex_prod_data_stage_mem;
 
 // MEM STAGE
 logic [WORD_SIZE-1:0] mem_res;
@@ -98,13 +102,14 @@ logic [REG_SIZE-1:0] wb_rf_waddr_d;
 logic tkbr_d;
 logic [ADDR_SIZE-1:0] wb_new_pc_d;
 logic valid_wb_d;
+logic data_produced_wb_d;
 
 logic [WORD_SIZE-1:0] wb_res_q;
 logic wb_rf_we_q;
 logic [REG_SIZE-1:0] wb_rf_waddr_q;
 logic [ADDR_SIZE-1:0] wb_new_pc_q;
 logic valid_wb_q;
-
+logic data_produced_wb_q;
 
 logic ic_if_hit;
 logic ctrl_block_if;
@@ -113,15 +118,19 @@ logic ctrl_blocked_if;
 
 logic ctrl_block_id;
 logic ctrl_inject_nops_id;
+bypass_id_sel_e ctrl_mul_sel_a_id;
+bypass_id_sel_e ctrl_mul_sel_b_id;
 
 // Not used right now
 logic ctrl_block_ex;
 logic ctrl_inject_nops_ex;
 logic ctrl_tkbr;
+logic ctrl_data_produced_ex;
 
 logic ctrl_block_mem;
 logic ctrl_inject_nops_mem;
 logic ctrl_blocked_mem;
+logic ctrl_data_produced_mem;
 
 logic ctrl_block_wb;
 logic ctrl_inject_nops_wb;
@@ -164,6 +173,8 @@ segre_controller controller (
     // Outuputs
     .block_id_o (ctrl_block_id),
     .inject_nops_id_o (ctrl_inject_nops_id),
+    .mul_sel_a_id_o (ctrl_mul_sel_a_id),
+    .mul_sel_b_id_o (ctrl_mul_sel_b_id),
 
     ////////////////////
 
@@ -175,6 +186,7 @@ segre_controller controller (
     .dst_reg_identifier_ex_i (ex_rf_waddr),
     .we_ex_i (ex_rf_we),
     .tkbr_i (ex_tkbr),
+    .data_produced_ex_i (ctrl_data_produced_ex),
     .finish_test_i (finish_test_ex),
 
     // Outputs
@@ -194,6 +206,7 @@ segre_controller controller (
     .dc_rd_i (mem_dc_rd),
     .dc_wr_i (mem_dc_wr),
     .store_buffer_draining_i (mem_sb_draining),
+    .data_produced_mem_i (ctrl_data_produced_mem),
 
     // Outputs
     .block_mem_o (ctrl_block_mem),
@@ -208,6 +221,7 @@ segre_controller controller (
     .valid_wb_i (valid_wb_q),
     .dst_reg_identifier_wb_i (wb_rf_waddr_q),
     .we_wb_i (wb_rf_we_q),
+    .data_produced_wb_i (data_produced_wb_q),
 
     // Outputs
     .block_wb_o (ctrl_block_wb),
@@ -290,6 +304,17 @@ segre_id_stage id_stage (
     .clk_i            (clk_i),
     .rsn_i            (rsn_i),
 
+    // Bypass data
+
+    .ex_rd_data_i (ex_alu_res),
+    .mem_rd_data_i (mem_res),
+    .wb_rd_data_i (wb_res_q),
+
+    // Bypass control
+
+    .mux_sel_a_id_i (ctrl_mul_sel_a_id),
+    .mux_sel_b_id_i (ctrl_mul_sel_b_id),
+
     // IF ID interface
     .instr_i          (if_instr),
     .pc_i             (if_addr),
@@ -331,10 +356,13 @@ segre_id_stage id_stage (
     .block_id_i (ctrl_block_id),
     .inject_nops_i (ctrl_inject_nops_id),
     .valid_id_o (valid_id),
+    .prod_data_stage_ex_o (id_prod_data_stage_ex),
+    .prod_data_stage_mem_o (id_prod_data_stage_mem),
 
     .instr_id_o (instr_id),
 
     .finish_test_o (finish_test_id)
+
 );
 
 segre_ex_stage ex_stage (
@@ -389,6 +417,14 @@ segre_ex_stage ex_stage (
     .block_ex_i (ctrl_block_ex),
     .inject_nops_i (ctrl_inject_nops_ex),
     .valid_ex_o (valid_ex),
+
+    .prod_data_stage_ex_i (id_prod_data_stage_ex),
+    .prod_data_stage_mem_i (id_prod_data_stage_mem),
+
+    .prod_data_stage_ex_o (ex_prod_data_stage_ex),
+    .prod_data_stage_mem_o (ex_prod_data_stage_mem),
+
+    .data_produced_ex_o (ctrl_data_produced_ex),
 
     .finish_test_o (finish_test_ex)
 );
@@ -445,6 +481,11 @@ segre_mem_stage mem_stage (
     .inject_nops_i (ctrl_inject_nops_mem),
     .valid_mem_o (valid_mem),
 
+    .prod_data_stage_ex_i (ex_prod_data_stage_ex),
+    .prod_data_stage_mem_i (ex_prod_data_stage_mem),
+
+    .data_produced_mem_o (ctrl_data_produced_mem),
+
     .dc_rd_o (mem_dc_rd),
     .dc_wr_o (mem_dc_wr),
     .sb_draining_o (mem_sb_draining)
@@ -454,6 +495,7 @@ always_comb begin : decoupling_register_MEM_WB_1
     if (!rsn_i) begin
         wb_rf_we_d = 0;
         valid_wb_d = 0;
+        data_produced_wb_d = 0;
     end
     else begin
         if (ctrl_block_wb) begin
@@ -461,10 +503,12 @@ always_comb begin : decoupling_register_MEM_WB_1
             wb_rf_we_d = wb_rf_we_q;
             wb_rf_waddr_d = wb_rf_waddr_q;
             wb_new_pc_d = wb_new_pc_q;
+            data_produced_wb_d = data_produced_wb_q;
         end
         else if (ctrl_inject_nops_wb) begin
             wb_rf_we_d = 0;
             valid_wb_d = 0;
+            data_produced_wb_d = 0;
         end
 
         else begin
@@ -473,6 +517,7 @@ always_comb begin : decoupling_register_MEM_WB_1
             wb_rf_waddr_d = mem_rf_waddr;
             wb_new_pc_d = mem_new_pc;
             valid_wb_d = valid_mem;
+            data_produced_wb_d = ctrl_data_produced_mem;
         end
     end
 end
@@ -481,6 +526,7 @@ always_ff @(posedge clk_i) begin : decoupling_register_MEM_WB_2
     if (!rsn_i) begin
         wb_rf_we_q <= 0;
         valid_wb_q <= 0;
+        data_produced_wb_q <= 0;
     end
     else begin
         wb_res_q <= wb_res_d;
@@ -488,6 +534,7 @@ always_ff @(posedge clk_i) begin : decoupling_register_MEM_WB_2
         wb_rf_waddr_q <= wb_rf_waddr_d;
         wb_new_pc_q <= wb_new_pc_d;
         valid_wb_q <= valid_wb_d;
+        data_produced_wb_q <= data_produced_wb_d;
     end
 end
 

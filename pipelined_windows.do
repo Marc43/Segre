@@ -204,64 +204,6 @@ add wave -noupdate -group StoreBuffer /top_tb/soc/dut/mem_stage/data_cache/genbl
 add wave -noupdate -group StoreBuffer /top_tb/soc/dut/mem_stage/data_cache/genblk1/ssb/addr_tag
 add wave -noupdate -group StoreBuffer /top_tb/soc/dut/mem_stage/data_cache/genblk1/ssb/addr_index
 add wave -noupdate -group StoreBuffer /top_tb/soc/dut/mem_stage/data_cache/genblk1/ssb/addr_byte
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/clk_i
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/rsn_i
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/finish_test_o
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/sel_mem_req_o
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/valid_if_i
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/ic_if_hit_i
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/block_if_o
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_if_o
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/valid_id_i
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/src_a_identifier_id_i
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/src_b_identifier_id_i
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/decode_instr_i
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/block_id_o
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_id_o
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/valid_ex_i
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/dst_reg_identifier_ex_i
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/we_ex_i
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/tkbr_i
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/block_ex_o
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_ex_o
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/tkbr_o
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/dc_rd_i
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/dc_wr_i
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/dc_mem_hit_i
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/store_buffer_draining_i
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/valid_mem_i
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/dst_reg_identifier_mem_i
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/we_mem_i
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/block_mem_o
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_mem_o
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/valid_wb_i
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/dst_reg_identifier_wb_i
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/we_wb_i
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/block_wb_o
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_wb_o
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/finish_test_d_1
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/finish_test_d_2
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/finish_test_d_3
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/finish_test_q_1
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/finish_test_q_2
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/finish_test_q_3
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/or_block_if
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/or_block_id
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/or_block_ex
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/or_block_mem
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/or_block_wb
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/block_if
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_if
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_id
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/block_id
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_ex
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/depEX
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/depMEM
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/depWB
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/block_mem
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_wb
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/rcvd_mem_req
-add wave -noupdate -group Controller /top_tb/soc/dut/controller/sel_mem_req
 add wave -noupdate -group Memory /top_tb/soc/tb_mem/clk_i
 add wave -noupdate -group Memory /top_tb/soc/tb_mem/rsn_i
 add wave -noupdate -group Memory /top_tb/soc/tb_mem/rd_i
@@ -282,6 +224,117 @@ add wave -noupdate -group Memory /top_tb/soc/tb_mem/aux_wr
 add wave -noupdate -group Memory /top_tb/soc/tb_mem/write_read_data
 add wave -noupdate -group Memory /top_tb/soc/tb_mem/num_of_instructions
 add wave -noupdate -group Memory /top_tb/soc/tb_mem/hex_file_fd
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/clk_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/rsn_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/finish_test_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/finish_test_o
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/sel_mem_req_o
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/valid_if_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/ic_if_hit_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/block_if_o
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_if_o
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/blocked_1cycle_ago_if_o
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/valid_id_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/src_a_identifier_id_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/src_b_identifier_id_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/rd_src_a_id_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/rd_src_b_id_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/decode_instr_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/block_id_o
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_id_o
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/mul_sel_a_id_o
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/mul_sel_b_id_o
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/valid_ex_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/dst_reg_identifier_ex_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/we_ex_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/tkbr_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/data_produced_ex_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/block_ex_o
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_ex_o
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/tkbr_o
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/dc_rd_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/dc_wr_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/dc_mem_hit_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/store_buffer_draining_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/data_produced_mem_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/valid_mem_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/dst_reg_identifier_mem_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/we_mem_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/block_mem_o
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_mem_o
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/blocked_1cycle_ago_mem_o
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/valid_wb_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/dst_reg_identifier_wb_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/we_wb_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/data_produced_wb_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/block_wb_o
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_wb_o
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/id_use_bypass_a_ex
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/id_use_bypass_b_ex
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/id_use_bypass_a_mem
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/id_use_bypass_b_mem
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/id_use_bypass_a_wb
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/id_use_bypass_b_wb
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/finish_test_d_1
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/finish_test_d_2
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/finish_test_d_3
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/finish_test_q_1
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/finish_test_q_2
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/finish_test_q_3
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/or_block_if
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/or_block_id
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/or_block_ex
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/or_block_mem
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/or_block_wb
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/block_if
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_if
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_id
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/blocked1cycleago_if_d
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/blocked1cycleago_if_q
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/block_id
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_ex
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/depEX_src_a
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/depMEM_src_a
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/depWB_src_a
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/depEX_src_b
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/depMEM_src_b
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/depWB_src_b
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/depEX
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/depMEM
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/depWB
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/block_mem
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_wb
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/blocked1cycleago_mem_d
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/blocked1cycleago_mem_q
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/rcvd_mem_req
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/sel_mem_req
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/clk_i
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/rsn_i
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/valid_id_i
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/rd_src_a_id_i
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/rd_src_b_id_i
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/mux_sel_a_id_o
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/mux_sel_b_id_o
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/valid_ex_i
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/data_produced_ex_i
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/depEX_src_a_i
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/depEX_src_b_i
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/use_bypass_a_ex_o
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/use_bypass_b_ex_o
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/valid_mem_i
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/data_produced_mem_i
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/depMEM_src_a_i
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/depMEM_src_b_i
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/use_bypass_a_mem_o
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/use_bypass_b_mem_o
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/valid_wb_i
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/data_produced_wb_i
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/depWB_src_a_i
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/depWB_src_b_i
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/use_bypass_a_wb_o
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/use_bypass_b_wb_o
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/bypass_mux_sel_a
+add wave -noupdate -group {Bypass ID} /top_tb/soc/dut/controller/bypass_id/bypass_mux_sel_b
 TreeUpdate [SetDefaultTree]
 quietly WaveActivateNextPane
 add wave -noupdate -group IF /top_tb/soc/dut/if_stage/clk_i
@@ -291,6 +344,7 @@ add wave -noupdate -group IF /top_tb/soc/dut/if_stage/mem_ready_i
 add wave -noupdate -group IF /top_tb/soc/dut/if_stage/tkbr_i
 add wave -noupdate -group IF /top_tb/soc/dut/if_stage/new_pc_i
 add wave -noupdate -group IF /top_tb/soc/dut/if_stage/block_if_i
+add wave -noupdate -group IF /top_tb/soc/dut/if_stage/blocked_1cycle_ago_i
 add wave -noupdate -group IF /top_tb/soc/dut/if_stage/inject_nops_i
 add wave -noupdate -group IF /top_tb/soc/dut/if_stage/valid_if_o
 add wave -noupdate -group IF /top_tb/soc/dut/if_stage/instruction_hit_o
@@ -313,6 +367,11 @@ TreeUpdate [SetDefaultTree]
 quietly WaveActivateNextPane
 add wave -noupdate -group ID /top_tb/soc/dut/id_stage/clk_i
 add wave -noupdate -group ID /top_tb/soc/dut/id_stage/rsn_i
+add wave -noupdate -group ID /top_tb/soc/dut/id_stage/ex_rd_data_i
+add wave -noupdate -group ID /top_tb/soc/dut/id_stage/mem_rd_data_i
+add wave -noupdate -group ID /top_tb/soc/dut/id_stage/wb_rd_data_i
+add wave -noupdate -group ID /top_tb/soc/dut/id_stage/mux_sel_a_id_i
+add wave -noupdate -group ID /top_tb/soc/dut/id_stage/mux_sel_b_id_i
 add wave -noupdate -group ID /top_tb/soc/dut/id_stage/instr_i
 add wave -noupdate -group ID /top_tb/soc/dut/id_stage/pc_i
 add wave -noupdate -group ID /top_tb/soc/dut/id_stage/valid_if_i
@@ -339,6 +398,14 @@ add wave -noupdate -group ID /top_tb/soc/dut/id_stage/inject_nops_i
 add wave -noupdate -group ID /top_tb/soc/dut/id_stage/valid_id_o
 add wave -noupdate -group ID /top_tb/soc/dut/id_stage/src_a_identifier_o
 add wave -noupdate -group ID /top_tb/soc/dut/id_stage/src_b_identifier_o
+add wave -noupdate -group ID /top_tb/soc/dut/id_stage/rd_raddr_a_o
+add wave -noupdate -group ID /top_tb/soc/dut/id_stage/rd_raddr_b_o
+add wave -noupdate -group ID /top_tb/soc/dut/id_stage/prod_data_stage_ex_o
+add wave -noupdate -group ID /top_tb/soc/dut/id_stage/prod_data_stage_mem_o
+add wave -noupdate -group ID /top_tb/soc/dut/id_stage/instr_id_o
+add wave -noupdate -group ID /top_tb/soc/dut/id_stage/finish_test_o
+add wave -noupdate -group ID /top_tb/soc/dut/id_stage/prod_data_stage_ex
+add wave -noupdate -group ID /top_tb/soc/dut/id_stage/prod_data_stage_mem
 add wave -noupdate -group ID /top_tb/soc/dut/id_stage/imm_u_type
 add wave -noupdate -group ID /top_tb/soc/dut/id_stage/imm_i_type
 add wave -noupdate -group ID /top_tb/soc/dut/id_stage/imm_s_type
@@ -367,15 +434,22 @@ add wave -noupdate -group ID /top_tb/soc/dut/id_stage/memop_sign_ext
 add wave -noupdate -group ID /top_tb/soc/dut/id_stage/alu_opcode
 add wave -noupdate -group ID /top_tb/soc/dut/id_stage/instr_d
 add wave -noupdate -group ID /top_tb/soc/dut/id_stage/pc_d
+add wave -noupdate -group ID /top_tb/soc/dut/id_stage/prod_data_stage_ex_d
+add wave -noupdate -group ID /top_tb/soc/dut/id_stage/prod_data_stage_mem_d
 add wave -noupdate -group ID /top_tb/soc/dut/id_stage/instr_q
 add wave -noupdate -group ID /top_tb/soc/dut/id_stage/pc_q
+add wave -noupdate -group ID /top_tb/soc/dut/id_stage/prod_data_stage_ex_q
+add wave -noupdate -group ID /top_tb/soc/dut/id_stage/prod_data_stage_mem_q
 add wave -noupdate -group ID /top_tb/soc/dut/id_stage/valid_id_d
 add wave -noupdate -group ID /top_tb/soc/dut/id_stage/valid_id_q
+add wave -noupdate -group ID /top_tb/soc/dut/id_stage/muxed_src_a
+add wave -noupdate -group ID /top_tb/soc/dut/id_stage/muxed_src_b
 TreeUpdate [SetDefaultTree]
 quietly WaveActivateNextPane
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/clk_i
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/rsn_i
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/valid_id_i
+add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/finish_test_i
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/rf_data_b_i
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/alu_opcode_i
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/alu_src_a_i
@@ -406,6 +480,12 @@ add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/is_jaljalr_o
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/block_ex_i
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/inject_nops_i
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/valid_ex_o
+add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/prod_data_stage_ex_i
+add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/prod_data_stage_mem_i
+add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/prod_data_stage_ex_o
+add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/prod_data_stage_mem_o
+add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/data_produced_ex_o
+add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/finish_test_o
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/alu_res
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/tkbr
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/alu_src_a_d
@@ -424,6 +504,9 @@ add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/is_jaljalr_d
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/rf_waddr_d
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/rf_st_data_d
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/valid_ex_d
+add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/finish_test_d
+add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/prod_data_stage_ex_d
+add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/prod_data_stage_mem_d
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/alu_src_a_q
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/alu_src_b_q
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/rf_we_q
@@ -440,11 +523,15 @@ add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/is_jaljalr_q
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/rf_waddr_q
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/rf_st_data_q
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/valid_ex_q
+add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/finish_test_q
+add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/prod_data_stage_ex_q
+add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/prod_data_stage_mem_q
 TreeUpdate [SetDefaultTree]
 quietly WaveActivateNextPane
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/clk_i
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/rsn_i
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/valid_ex_i
+add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/blocked_1cycle_ago_i
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/cache_is_busy_o
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/cache_is_hit_o
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/cache_line_i
@@ -472,6 +559,12 @@ add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/seq_new_pc_i
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/block_mem_i
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/inject_nops_i
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/valid_mem_o
+add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/prod_data_stage_ex_i
+add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/prod_data_stage_mem_i
+add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/data_produced_mem_o
+add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/dc_rd_o
+add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/dc_wr_o
+add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/sb_draining_o
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/read_cache_data
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/processed_read_cache_data
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/is_hit
@@ -491,6 +584,7 @@ add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/new_pc_d
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/is_jaljalr_d
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/seq_new_pc_d
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/valid_mem_d
+add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/data_produced_mem_d
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/alu_res_q
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/rf_we_q
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/rf_waddr_q
@@ -503,6 +597,7 @@ add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/new_pc_q
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/is_jaljalr_q
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/seq_new_pc_q
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/valid_mem_q
+add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/data_produced_mem_q
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/is_alu
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/aux_addr
 add wave -noupdate -group MEM /top_tb/soc/dut/mem_stage/aux_memop
@@ -541,10 +636,10 @@ add wave -noupdate -expand -group {REGISTER FILE} -expand /top_tb/soc/dut/segre_
 add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/rf_reg_aux
 add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/write_enable
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {10429836 ps} 0}
+WaveRestoreCursors {{Cursor 1} {4330000 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 191
-configure wave -valuecolwidth 93
+configure wave -valuecolwidth 163
 configure wave -justifyvalue left
 configure wave -signalnamewidth 1
 configure wave -snapdistance 10
@@ -557,4 +652,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {7136973 ps} {12359061 ps}
+WaveRestoreZoom {0 ps} {1263582 ps}
