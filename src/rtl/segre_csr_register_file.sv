@@ -26,9 +26,11 @@ module segre_csr_register_file (
     input logic [WORD_SIZE-1:0] w_data_i,
 
     // Write data for exception registers (written if exc_we_i=1)
-    input logic [WORD_SIZE-1:0] w_data_mtvec_i, // @ of routine to manage the event
-    input logic [WORD_SIZE-1:0] w_data_mepc_i, // @ of return when finishing the event
-    input logic [WORD_SIZE-1:0] w_data_mcause_i, // ID cause of the event
+    input logic [WORD_SIZE-1:0] w_data_mstatus_i,   // Register that codifies processor status (privilege, etc)
+    input logic [WORD_SIZE-1:0] w_data_mtvec_i,     // @ of routine to manage the event
+    input logic [WORD_SIZE-1:0] w_data_mepc_i,      // @ of return when finishing the event
+    input logic [WORD_SIZE-1:0] w_data_mcause_i,    // ID cause of the event
+    //POTENTIAL TODO: we should include the mscratch register?
 
     // Data outputs
     output logic [WORD_SIZE-1:0] data_o
@@ -41,6 +43,7 @@ module segre_csr_register_file (
 //-----------------------------------------------------//
 
 //Registers can't be organized as an array, they have an identifier
+logic [WORD_SIZE-1:0] mstatus_reg;
 logic [WORD_SIZE-1:0] mtvec_reg; 
 logic [WORD_SIZE-1:0] mepc_reg; 
 logic [WORD_SIZE-1:0] mcause_reg; 
@@ -57,6 +60,7 @@ logic [WORD_SIZE-1:0] debug_reg;
 always_ff @(posedge clk_i) begin
     //Initialize regs
     if (!rsn_i) begin
+        mstatus_reg <= 32'b0;
         mtvec_reg   <= 32'b0;
         mepc_reg    <= 32'b0;
         mcause_reg  <= 32'b0;
@@ -65,23 +69,26 @@ always_ff @(posedge clk_i) begin
     //Write into regs using IDs if no exception found
     else if (!exc_we_i && we_i) begin
         case (w_id_i)
-           12'h305 : mtvec_reg  <= w_data_i;
-           12'h341 : mepc_reg   <= w_data_i;
-           12'h342 : mcause_reg <= w_data_i;
-           default : debug_reg  <= 32'h00000001; //Value to see that we've fucked up something when writing
+           12'h300 : mstatus_reg    <= w_data_i;
+           12'h305 : mtvec_reg      <= w_data_i;
+           12'h341 : mepc_reg       <= w_data_i;
+           12'h342 : mcause_reg     <= w_data_i;
+           default : debug_reg      <= 32'h00000001; //Value to see that we've fucked up something when writing
         endcase
     end
     //Exception, ignore everything else and update related regs
     else if (exc_we_i) begin
-        mtvec_reg  <= w_data_mtvec_i;
-        mepc_reg   <= w_data_mepc_i;
-        mcause_reg <= w_data_mcause_i;
+        mstatus_reg <= w_data_mstatus_i;
+        mtvec_reg   <= w_data_mtvec_i;
+        mepc_reg    <= w_data_mepc_i;
+        mcause_reg  <= w_data_mcause_i;
     end
 end
 
 //Output data pointed by ID
 always_comb begin
     case (r_id_i)
+        12'h300 : data_o    = mstatus_reg;
         12'h305 : data_o    = mtvec_reg;
         12'h341 : data_o    = mepc_reg;
         12'h342 : data_o    = mcause_reg;
