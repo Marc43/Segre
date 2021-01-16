@@ -161,13 +161,29 @@ assign blocked_1cycle_ago_if_o = blocked1cycleago_if_q;
 logic block_id;
 logic inject_nops_ex;
 
+logic depEX_src_a;
+logic depMEM_src_a;
+logic depWB_src_a;
+
+logic depEX_src_b;
+logic depMEM_src_b;
+logic depWB_src_b;
+
 logic depEX;
 logic depMEM;
 logic depWB;
 
-assign depEX = (((src_a_identifier_id_i == dst_reg_identifier_ex_i) && rd_src_a_id_i) || ((src_b_identifier_id_i == dst_reg_identifier_ex_i) && rd_src_b_id_i)) && we_ex_i && valid_ex_i;
-assign depMEM = (((src_a_identifier_id_i == dst_reg_identifier_mem_i) && rd_src_a_id_i) || ((src_b_identifier_id_i == dst_reg_identifier_mem_i) && rd_src_b_id_i)) && we_mem_i && valid_mem_i;
-assign depWB = (((src_a_identifier_id_i == dst_reg_identifier_wb_i) && rd_src_a_id_i) || ((src_b_identifier_id_i == dst_reg_identifier_wb_i) && rd_src_b_id_i)) && we_wb_i && valid_wb_i;
+assign depEX_src_a = ((src_a_identifier_id_i == dst_reg_identifier_ex_i) && rd_src_a_id_i) && we_ex_i && valid_ex_i;
+assign depMEM_src_a = ((src_a_identifier_id_i == dst_reg_identifier_mem_i) && rd_src_a_id_i) && we_mem_i && valid_mem_i;
+assign depWB_src_a = ((src_a_identifier_id_i == dst_reg_identifier_wb_i) && rd_src_a_id_i) && we_wb_i && valid_wb_i;
+
+assign depEX_src_b = ((src_b_identifier_id_i == dst_reg_identifier_ex_i) && rd_src_b_id_i) && we_ex_i && valid_ex_i;
+assign depMEM_src_b = ((src_b_identifier_id_i == dst_reg_identifier_mem_i) && rd_src_b_id_i) && we_mem_i && valid_mem_i;
+assign depWB_src_b = ((src_b_identifier_id_i == dst_reg_identifier_wb_i) && rd_src_b_id_i) && we_wb_i && valid_wb_i;
+
+assign depEX = depEX_src_a || depEX_src_b;
+assign depMEM = depMEM_src_a || depMEM_src_b;
+assign depWB = depWB_src_a || depWB_src_b;
 
 always_comb begin : data_dependences_detection_or_tkbr
     if (!rsn_i) begin
