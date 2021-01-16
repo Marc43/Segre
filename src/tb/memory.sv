@@ -51,7 +51,7 @@ always_ff @(posedge clk_i) begin
         addr_i_ff <= 0;
     end
     else begin
-        if ((cyc_counter == 1) || mem_ready) begin
+        if ((cyc_counter == 1) || mem_ready || rd_i || wr_i) begin
             addr_i_ff <= addr_i;
         end
         else begin

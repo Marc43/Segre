@@ -225,6 +225,7 @@ always_comb begin
     end
     else begin
         for (int i = 0; i < NUM_SB_ENTRIES; i++) begin
+            // Works because we don't have funky tests, buuuuut... Must be revised (take into account sizes)
             is_hit_bits[i] = (addr_index == (sb_entries[i].address[N-1:M])) && sb_valid_entry[i];
             hit_position = is_hit_bits ? i : hit_position;
         end

@@ -209,7 +209,7 @@ segre_tkbr trbr (
 );
 
 
-assign alu_res_o   = (alu_opcode_i == ALU_JAL) ? br_src_a_q : alu_res;
+assign alu_res_o   = (alu_opcode_q == ALU_JAL) ? br_src_a_q : alu_res;
 assign rf_we_o     = rf_we_q;
 assign rf_waddr_o  = rf_waddr_q;
 assign rf_st_data_o = rf_st_data_q;
