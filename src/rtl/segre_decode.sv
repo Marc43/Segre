@@ -34,6 +34,8 @@ module segre_decode(
     output logic [REG_SIZE-1:0] raddr_b_o,
     output logic [REG_SIZE-1:0] waddr_o,
     output logic rf_we_o,
+    output logic rd_raddr_a_o,
+    output logic rd_raddr_b_o,
 
     // Memop
     output memop_data_type_e memop_type_o,
@@ -60,68 +62,85 @@ assign raddr_b_o = instr_i[`REG_RS2];
 // Destination registers
 assign waddr_o = instr_i[`REG_RD];
 
+logic memop_rd;
+logic memop_wr;
+
+logic rd_raddr_a;
+logic rd_raddr_b;
+
 /*****************
 *    DECODER     *
 *****************/
 always_comb begin
-    rf_we_o          = 1'b0;
-    illegal_ins      = 1'b0;
-    memop_rd_o       = 1'b0;
-    memop_wr_o       = 1'b0;
-    memop_sign_ext_o = 1'b0;
-    memop_type_o     = WORD;
-    instr_opcode     = opcode_e'(instr_i[6:0]);
+    if (!rsn_i) begin
+        rf_we_o          = 1'b0;
+        illegal_ins      = 1'b0;
+        memop_rd = 1'b0;
+        memop_wr       = 1'b0;
+        memop_sign_ext_o = 1'b0;
+        memop_type_o     = WORD;
+        instr_opcode     = opcode_e'(instr_i[6:0]);
+    end
+    else begin
 
-    unique case(instr_opcode)
+        memop_rd = 1'b0;
+        memop_wr = 1'b0;
+        rf_we_o = 1'b0;
 
-        /*****************
-        *      ALU       *
-        *****************/
-        OPCODE_LUI: begin // Load Upper Immediate
-            rf_we_o = 1'b1;
-        end
-        OPCODE_OP_IMM: begin
-            rf_we_o = 1'b1;
-        end
-        OPCODE_OP: begin
-            rf_we_o = 1'b1;
-        end
-        OPCODE_LOAD: begin
-            rf_we_o = 1'b1;
-            memop_rd_o = 1'b1;
-            memop_sign_ext_o = ~instr_i[14];
-            unique case(instr_i[`FUNC_3])
-                3'b000, 3'b100: memop_type_o = BYTE;
-                3'b001, 3'b101: memop_type_o = HALF;
-                3'b010:         memop_type_o = WORD;
-                default: ;
-            endcase
-        end
-        OPCODE_STORE: begin
-            memop_wr_o = 1'b1;
-            unique case(instr_i[`FUNC_3])
-                3'b000: memop_type_o = BYTE;
-                3'b001: memop_type_o = HALF;
-                3'b010: memop_type_o = WORD;
-                default: ;
-            endcase
-        end
-        OPCODE_JAL: begin
-            rf_we_o = 1'b1;
-        end
-        OPCODE_JALR: begin
-            rf_we_o = 1'b1;
-        end
-        OPCODE_AUIPC: begin
-            rf_we_o = 1'b1;
-        end
-        default: begin
-            if (rsn_i) begin
-                illegal_ins = 1'b1;
-                assert (0) else $display("OPCODE: %h not implemented", instr_opcode);
+        instr_opcode     = opcode_e'(instr_i[6:0]);
+
+        unique case(instr_opcode)
+
+            /*****************
+            *      ALU       *
+            *****************/
+            OPCODE_LUI: begin // Load Upper Immediate
+                rf_we_o = 1'b1;
             end
-        end
-    endcase
+            OPCODE_OP_IMM: begin
+                rf_we_o = 1'b1;
+            end
+            OPCODE_OP: begin
+                rf_we_o = 1'b1;
+            end
+            OPCODE_LOAD: begin
+                rf_we_o = 1'b1;
+                memop_rd = 1'b1;
+                memop_sign_ext_o = ~instr_i[14];
+                unique case(instr_i[`FUNC_3])
+                    3'b000, 3'b100: memop_type_o = BYTE;
+                    3'b001, 3'b101: memop_type_o = HALF;
+                    3'b010:         memop_type_o = WORD;
+                    default: ;
+                endcase
+            end
+            OPCODE_STORE: begin
+                memop_wr = 1'b1;
+                unique case(instr_i[`FUNC_3])
+                    3'b000: memop_type_o = BYTE;
+                    3'b001: memop_type_o = HALF;
+                    3'b010: memop_type_o = WORD;
+                    default: ;
+                endcase
+                rf_we_o = 1'b0;
+            end
+            OPCODE_JAL: begin
+                rf_we_o = 1'b1;
+            end
+            OPCODE_JALR: begin
+                rf_we_o = 1'b1;
+            end
+            OPCODE_AUIPC: begin
+                rf_we_o = 1'b1;
+            end
+            default: begin
+                if (rsn_i) begin
+                    illegal_ins = 1'b1;
+                    assert (0) else $display("OPCODE: %h not implemented", instr_opcode);
+                end
+            end
+        endcase
+    end
 end
 
 /********************
@@ -136,12 +155,17 @@ always_comb begin
     br_a_mux_sel_o  = BR_A_REG;
     alu_instr_opcode      = opcode_e'(instr_i[6:0]);
 
+    rd_raddr_a = 0;
+    rd_raddr_b = 0;
+
     unique case(alu_instr_opcode)
 
         /*****************
         *      ALU       *
         *****************/
         OPCODE_LUI: begin // Load Upper Immediate
+            rd_raddr_a = 0;
+            rd_raddr_b = 0;
             src_a_mux_sel_o = ALU_A_IMM;
             src_b_mux_sel_o = ALU_B_IMM;
             a_imm_mux_sel_o = IMM_A_ZERO;
@@ -149,6 +173,7 @@ always_comb begin
             alu_opcode_o    = ALU_ADD;
         end
         OPCODE_OP_IMM: begin
+            rd_raddr_a = 1;
             src_a_mux_sel_o = ALU_A_REG;
             src_b_mux_sel_o = ALU_B_IMM;
             b_imm_mux_sel_o = IMM_B_I;
@@ -171,6 +196,8 @@ always_comb begin
             endcase
         end
         OPCODE_OP: begin
+            rd_raddr_a = 1;
+            rd_raddr_b = 1;
             src_a_mux_sel_o = ALU_A_REG;
             src_b_mux_sel_o = ALU_B_REG;
             unique case ({instr_i[`FUNC_7], instr_i[`FUNC_3]})
@@ -188,12 +215,14 @@ always_comb begin
             endcase
         end
         OPCODE_LOAD: begin
+            rd_raddr_a = 1;
             src_a_mux_sel_o = ALU_A_REG;
             src_b_mux_sel_o = ALU_B_IMM;
             b_imm_mux_sel_o = IMM_B_I;
             alu_opcode_o = ALU_ADD;
         end
         OPCODE_STORE: begin
+            rd_raddr_a = 1;
             src_a_mux_sel_o = ALU_A_REG;
             src_b_mux_sel_o = ALU_B_IMM;
             b_imm_mux_sel_o = IMM_B_S;
@@ -207,6 +236,7 @@ always_comb begin
             alu_opcode_o    = ALU_JAL;
         end
         OPCODE_JALR: begin
+            rd_raddr_a = 1;
             src_a_mux_sel_o = ALU_A_REG;
             src_b_mux_sel_o = ALU_B_IMM;
             b_imm_mux_sel_o = IMM_B_I;
@@ -214,6 +244,8 @@ always_comb begin
             alu_opcode_o    = ALU_JALR;
         end
         OPCODE_BRANCH: begin
+            rd_raddr_a = 1;
+            rd_raddr_b = 1;
             src_a_mux_sel_o = ALU_A_PC;
             src_b_mux_sel_o = ALU_B_IMM;
             b_imm_mux_sel_o = IMM_B_B;
@@ -238,5 +270,11 @@ always_comb begin
         default: ;
     endcase
 end
+
+assign rd_raddr_a_o = rd_raddr_a;
+assign rd_raddr_b_o = rd_raddr_b;
+
+assign memop_rd_o = memop_rd;
+assign memop_wr_o = memop_wr;
 
 endmodule

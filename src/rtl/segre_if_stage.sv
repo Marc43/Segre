@@ -8,21 +8,27 @@ module segre_if_stage (
     // Memory
     input  logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] cache_instr_line_i,
     input  logic mem_ready_i,
-    output logic [ADDR_SIZE-1:0] pc_o,
-    output logic mem_rd_o,
-
-    // FSM state
-    input fsm_state_e fsm_state_i,
-
-    // IF ID interface
-    output logic [WORD_SIZE-1:0] instr_o,
 
     // WB interface
     input logic tkbr_i,
     input logic [WORD_SIZE-1:0] new_pc_i,
 
-    // To controller signals
-    output logic instruction_hit_o
+    // To/From controller signals
+    input logic block_if_i, // Block this stage (flip-flops)
+    input logic blocked_1cycle_ago_i,
+    input logic inject_nops_i, // Inject NOPs to the following stages
+    output logic valid_if_o, // Indicate the next stage if it's processing valid data
+    output logic instruction_hit_o,
+    output logic mem_rd_o,
+
+    // IF ID interface
+    // To flip-flops
+    output logic [WORD_SIZE-1:0] instr_o,
+    output logic [ADDR_SIZE-1:0] pc_o,
+
+    // From ID
+    input logic [ADDR_SIZE-1:0] pc_i
+
 );
 
 // Cache inputs
@@ -40,14 +46,36 @@ logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] to_mem_cache_line;
 logic [WORD_SIZE-1:0] instr_to_feed_decode;
 
 assign data_type = WORD;
-assign rd = (fsm_state_i == IF_STATE) ? 1'b1 : 1'b0;
+assign rd = 1'b1;
 assign wr = 0;
 assign is_alu = 0;
 assign data = 0;
 assign instruction_hit_o = is_hit;
 
-logic [ADDR_SIZE-1:0] nxt_pc;
-logic [ADDR_SIZE-1:0] nxt_pc_ff;
+logic [ADDR_SIZE-1:0] pc;
+
+// This was creating a loop
+//assign pc = !rsn_i ? 0 : (is_hit ? pc_i + 4 : pc_i);
+
+always_comb begin : pc_mux
+    if (!rsn_i) begin
+        pc = 0;
+    end
+    else begin
+        if (tkbr_i) begin
+            pc = new_pc_i;
+        end
+        else if (block_if_i || blocked_1cycle_ago_i) begin
+            pc = pc;
+        end
+        else begin
+            pc = pc_i + 4;
+        end
+    end
+
+end
+
+assign valid_if_o = (block_if_i || !rsn_i) ? 1'b0 : 1'b1;
 
 segre_cache
 #(
@@ -64,7 +92,7 @@ instruction_cache
 
     .rcvd_mem_request_i(mem_ready_i),
     .data_type_i(data_type),
-    .addr_i(nxt_pc_ff),
+    .addr_i(pc),
     .data_i(data),
     .from_mem_cache_line_i(cache_instr_line_i),
 
@@ -78,40 +106,32 @@ instruction_cache
 
 );
 
-always_comb begin
-    if (!rsn_i) begin
-        nxt_pc = 0;
-    end
-    else if (!instruction_hit_o && fsm_state_i == IF_STATE) begin
-        nxt_pc = nxt_pc;
-    end
-    else if (instruction_hit_o && fsm_state_i == IF_STATE) begin
-        nxt_pc = nxt_pc + 4;
-    end
-    else begin
-        if (tkbr_i && fsm_state_i == WB_STATE) begin
-            nxt_pc = new_pc_i;
-        end
-        else begin
-            nxt_pc = nxt_pc;
-        end
-    end
-end
+// TODO Rediscover this when we put tkbr
+//always_comb begin
+//    if (!rsn_i) begin
+//        nxt_pc = 0;
+//    end
+//    //else if (!instruction_hit_o && fsm_state_i == IF_STATE) begin
+//    else if (!instruction_hit_o) begin
+//        nxt_pc = nxt_pc;
+//    end
+//    //else if (instruction_hit_o && fsm_state_i == IF_STATE) begin
+//    else if (instruction_hit_o) begin
+//        nxt_pc = nxt_pc + 4;
+//    end
+//    else begin
+//        //if (tkbr_i && fsm_state_i == WB_STATE) begin
+//        if (tkbr_i) begin
+//            nxt_pc = new_pc_i;
+//        end
+//        else begin
+//            nxt_pc = nxt_pc;
+//        end
+//    end
+//end
 
 assign mem_rd_o = rd && !is_hit && rsn_i;
-
-always_ff @(posedge clk_i) begin
-    if (!rsn_i) begin
-        nxt_pc_ff <= 0;
-    end
-    else begin
-        nxt_pc_ff <= nxt_pc;
-    end
-end
-
-always_ff @(posedge clk_i) begin
-    instr_o <= (is_hit && (fsm_state_i == IF_STATE)) ? instr_to_feed_decode : NOP_INSTR;
-    pc_o    <= (tkbr_i && fsm_state_i == WB_STATE) ? new_pc_i : nxt_pc_ff;
-end
+assign instr_o = instr_to_feed_decode;
+assign pc_o = pc;
 
 endmodule : segre_if_stage

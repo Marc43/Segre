@@ -55,6 +55,7 @@ module top_tb;
 
     initial begin
         repeat(2) @(posedge clk);
+        #5;
         rsn <= 1;
         fork
             begin
@@ -76,7 +77,8 @@ module top_tb;
     endtask
 
     function bit keep_running_tb();
-        if (soc.dut.id_instr == 32'hfff01073 && soc.dut.fsm_state == ID_STATE) begin
+        //if (soc.dut.id_instr == 32'hfff01073 && soc.dut.fsm_state == ID_STATE) begin
+        if (soc.dut.controller.finish_test_o) begin
             return 0;
         end
 
@@ -131,12 +133,12 @@ module top_tb;
         forever begin
             static string instr_decoded;
             @(posedge clk);
-            if (soc.dut.fsm_state == IF_STATE) begin
-                    $display("DATA TO SEND LIBDECODER: %0d", soc.dut.id_instr);
+            if (!(soc.dut.ctrl_block_if || soc.dut.ctrl_inject_nops_if)) begin
+                    $display("DATA TO SEND LIBDECODER: %0d", soc.dut.if_instr);
 `ifndef USE_MODELSIM
-                    instr_decoded = decode_instruction(int'(soc.dut.id_instr));
+                    instr_decoded = decode_instruction(int'(soc.dut.if_instr));
 `endif
-                    `uvm_info("top_tb", $sformatf("PC: 0x%0h: %s (0x%0h) ", soc.dut.if_addr, instr_decoded, soc.dut.id_instr), UVM_LOW)
+                    `uvm_info("top_tb", $sformatf("PC: 0x%0h: %s (0x%0h) ", soc.dut.if_addr, instr_decoded, soc.dut.if_instr), UVM_LOW)
             end
         end
         `uvm_fatal("top_tb", "Shouldn't have reach this part of the monitor_tb")
