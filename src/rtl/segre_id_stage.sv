@@ -5,12 +5,19 @@ module segre_id_stage (
     input logic clk_i,
     input logic rsn_i,
 
-    // FSM State
-    input fsm_state_e fsm_state_i,
+    // Bypass data
+    input logic [WORD_SIZE-1:0] ex_rd_data_i,
+    input logic [WORD_SIZE-1:0] mem_rd_data_i,
+    input logic [WORD_SIZE-1:0] wb_rd_data_i,
+
+    // Bypass sel
+    input bypass_id_sel_e mux_sel_a_id_i,
+    input bypass_id_sel_e mux_sel_b_id_i,
 
     // IF and ID stage
     input logic [WORD_SIZE-1:0] instr_i,
     input logic [WORD_SIZE-1:0] pc_i,
+    input logic valid_if_i,
 
     // Register file read operands
     output logic [REG_SIZE-1:0]  rf_raddr_a_o,
@@ -34,8 +41,40 @@ module segre_id_stage (
     output logic [WORD_SIZE-1:0] memop_rf_data_o,
     // Branch | Jump
     output logic [WORD_SIZE-1:0] br_src_a_o,
-    output logic [WORD_SIZE-1:0] br_src_b_o
+    output logic [WORD_SIZE-1:0] br_src_b_o,
+
+    output logic [ADDR_SIZE-1:0] pc_o,
+
+    // pc + 4
+    output logic is_jaljalr_o,
+
+    // To controller
+
+    input logic block_id_i, // Block this stage (flip-flops)
+    input logic inject_nops_i, // Inject NOPs to the following stages
+    output logic valid_id_o, // Indicate the next stage if it's processing valid data
+
+    // Signals needed to detect hazards
+
+    output logic [REG_SIZE-1:0] src_a_identifier_o,
+    output logic [REG_SIZE-1:0] src_b_identifier_o,
+
+    output logic rd_raddr_a_o,
+    output logic rd_raddr_b_o,
+
+    // Bypasses
+    // Basically, this means that it produces the data in stage EX or stage MEM
+    output logic prod_data_stage_ex_o,
+    output logic prod_data_stage_mem_o,
+
+    // To detect the end of the test
+
+    output logic [WORD_SIZE-1:0] instr_id_o,
+    output logic finish_test_o
 );
+
+logic prod_data_stage_ex;
+logic prod_data_stage_mem;
 
 logic [WORD_SIZE-1:0] imm_u_type;
 logic [WORD_SIZE-1:0] imm_i_type;
@@ -64,16 +103,77 @@ logic memop_wr;
 logic memop_sign_ext;
 alu_opcode_e alu_opcode;
 
-assign rf_raddr_a_o = rf_raddr_a;
-assign rf_raddr_b_o = rf_raddr_b;
-assign memop_rf_data_o = rf_data_b_i;
+logic [WORD_SIZE-1:0] instr_d;
+logic [ADDR_SIZE-1:0] pc_d;
+logic prod_data_stage_ex_d;
+logic prod_data_stage_mem_d;
+
+logic [WORD_SIZE-1:0] instr_q;
+logic [ADDR_SIZE-1:0] pc_q;
+logic prod_data_stage_ex_q;
+logic prod_data_stage_mem_q;
+
+// TODO FINISH CONNECTING PROD_DATA SIGNALS TO REGISTERS AND SO
+
+logic valid_id_d;
+logic valid_id_q;
+
+always_comb begin : decoupling_register_F_ID_1
+    if (!rsn_i) begin
+        instr_d = NOP_INSTR;
+        pc_d    = 32'hfffffffc;
+        valid_id_d = 0;
+        prod_data_stage_ex_d = 0;
+        prod_data_stage_mem_d = 0;
+    end
+    else begin
+        if (inject_nops_i) begin
+            instr_d = NOP_INSTR;
+            pc_d    = pc_i;
+            valid_id_d = 0;
+            prod_data_stage_ex_d = 0;
+            prod_data_stage_mem_d = 0;
+        end
+        else if (block_id_i) begin
+            instr_d = instr_q;
+            pc_d = pc_q;
+            valid_id_d = valid_id_q;
+            prod_data_stage_ex_d = prod_data_stage_ex_q;
+            prod_data_stage_mem_d = prod_data_stage_mem_q;
+        end
+        else begin
+            instr_d = instr_i;
+            pc_d = pc_i;
+            valid_id_d = valid_if_i;
+            prod_data_stage_ex_d = prod_data_stage_ex;
+            prod_data_stage_mem_d = prod_data_stage_mem;
+        end
+    end
+end
+
+always_ff @(posedge clk_i) begin : decoupling_register_F_ID_2
+    if (!rsn_i) begin
+        instr_q <= NOP_INSTR;
+        pc_q    <= 32'hfffffffc;
+        valid_id_q <= 0;
+        prod_data_stage_ex_q <= 0;
+        prod_data_stage_mem_q <= 0;
+    end
+    else begin
+        instr_q <= instr_d;
+        pc_q <= pc_d;
+        valid_id_q <= valid_id_d;
+        prod_data_stage_ex_q <= prod_data_stage_ex_d;
+        prod_data_stage_mem_q <= prod_data_stage_mem_d;
+    end
+end
 
 segre_decode decode (
     // Clock and Reset
     .clk_i            (clk_i),
     .rsn_i            (rsn_i),
 
-    .instr_i          (instr_i),
+    .instr_i          (instr_q),
 
     // Immediates
     .imm_u_type_o     (imm_u_type),
@@ -97,15 +197,25 @@ segre_decode decode (
     .waddr_o          (rf_waddr),
     .rf_we_o          (rf_we),
 
+    .rd_raddr_a_o (rd_raddr_a_o),
+    .rd_raddr_b_o (rd_raddr_b_o),
+
     // Memop
     .memop_type_o     (memop_type),
     .memop_rd_o       (memop_rd),
     .memop_wr_o       (memop_wr),
-    .memop_sign_ext_o (memop_sign_ext)
+    .memop_sign_ext_o (memop_sign_ext),
+
+    // When they produce the data
+    .prod_data_stage_ex_o (prod_data_stage_ex),
+    .prod_data_stage_mem_o (prod_data_stage_mem)
 );
 
 // For the moment imm_a will always be 0
 assign imm_a = '0;
+
+logic [WORD_SIZE-1:0] muxed_src_a;
+logic [WORD_SIZE-1:0] muxed_src_b;
 
 always_comb begin : alu_imm_b_mux
     unique case(b_imm_mux_sel)
@@ -120,16 +230,16 @@ end
 
 always_comb begin : alu_src_a_mux
     unique case(src_a_mux_sel)
-        ALU_A_REG: alu_src_a = rf_data_a_i;
+        ALU_A_REG: alu_src_a = muxed_src_a;
         ALU_A_IMM: alu_src_a = imm_a;
-        ALU_A_PC : alu_src_a = pc_i;
+        ALU_A_PC : alu_src_a = pc_q;
         default: ;
     endcase
 end
 
 always_comb begin : alu_src_b_mux
     unique case(src_b_mux_sel)
-        ALU_B_REG: alu_src_b = rf_data_b_i;
+        ALU_B_REG: alu_src_b = muxed_src_b;
         ALU_B_IMM: alu_src_b = imm_b;
         default: ;
     endcase
@@ -137,7 +247,7 @@ end
 
 always_comb begin : br_src_a_mux
     unique case (br_a_mux_sel)
-        BR_A_REG: br_src_a = rf_data_a_i;
+        BR_A_REG: br_src_a = muxed_src_a;
         BR_A_PC : br_src_a = pc_i;
         default : ;
     endcase
@@ -145,23 +255,76 @@ end
 
 always_comb begin : br_src_b_mux
     unique case (br_b_mux_sel)
-        BR_B_REG: br_src_b = rf_data_b_i;
+        BR_B_REG: br_src_b = muxed_src_b;
         default: ;
     endcase
 end
 
-always_ff @(posedge clk_i) begin
-    alu_src_a_o      = alu_src_a;
-    alu_src_b_o      = alu_src_b;
-    rf_we_o          = (fsm_state_i == ID_STATE) ? rf_we : 1'b0;
-    rf_waddr_o       = rf_waddr;
-    memop_sign_ext_o = memop_sign_ext;
-    memop_type_o     = memop_type;
-    memop_rd_o       = (fsm_state_i == ID_STATE) ? memop_rd : 1'b0;
-    memop_wr_o       = (fsm_state_i == ID_STATE) ? memop_wr : 1'b0;
-    br_src_a_o       = br_src_a;
-    br_src_b_o       = br_src_b;
-    alu_opcode_o     = alu_opcode;
+assign alu_src_a_o = alu_src_a;
+assign alu_src_b_o = alu_src_b;
+assign rf_we_o = rf_we;
+assign rf_waddr_o = rf_waddr;
+assign memop_sign_ext_o = memop_sign_ext;
+assign memop_type_o = memop_type;
+assign memop_rd_o = memop_rd;
+assign memop_wr_o = memop_wr;
+assign br_src_a_o = br_src_a;
+assign br_src_b_o = br_src_b;
+assign alu_opcode_o = alu_opcode;
+assign memop_rf_data_o = muxed_src_b;
+assign is_jaljalr_o = (alu_opcode == ALU_JAL) || (alu_opcode == ALU_JALR);
+
+// Not in the flip-flop because this comes from the register file.
+assign rf_raddr_a_o = rf_raddr_a;
+assign rf_raddr_b_o = rf_raddr_b;
+
+assign src_a_identifier_o = rf_raddr_a;
+assign src_b_identifier_o = rf_raddr_b;
+
+assign pc_o = pc_q;
+assign valid_id_o = valid_id_q;
+
+assign instr_id_o = instr_q;
+
+assign finish_test_o = (instr_q == 32'hfff01073) && valid_id_q;
+
+assign prod_data_stage_ex_o = prod_data_stage_ex_q;
+assign prod_data_stage_mem_o = prod_data_stage_mem_q;
+
+// Bypass data
+
+always_comb begin : BYPASS_SRC_A
+    case (mux_sel_a_id_i)
+        ID_RF: begin
+            muxed_src_a = rf_data_a_i;
+        end
+        EXECUTE_BYPASS: begin
+            muxed_src_a = ex_rd_data_i;
+        end
+        MEMORY_BYPASS: begin
+            muxed_src_a = mem_rd_data_i;
+        end
+        WRITEBACK_BYPASS: begin
+            muxed_src_a = wb_rd_data_i;
+        end
+    endcase
 end
 
-endmodule
+always_comb begin : BYPASS_SRC_B
+    case (mux_sel_b_id_i)
+        ID_RF: begin
+            muxed_src_b = rf_data_b_i;
+        end
+        EXECUTE_BYPASS: begin
+            muxed_src_b = ex_rd_data_i;
+        end
+        MEMORY_BYPASS: begin
+            muxed_src_b = mem_rd_data_i;
+        end
+        WRITEBACK_BYPASS: begin
+            muxed_src_b = wb_rd_data_i;
+        end
+    endcase
+end
+
+endmodule : segre_id_stage

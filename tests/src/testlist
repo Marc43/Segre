@@ -6,6 +6,7 @@ lw.S
 lui.S
 jal.S
 jalr.S
+jaljalr.S
 beq.S
 bne.S
 blt.S
@@ -31,3 +32,8 @@ srl.S
 sra.S
 or.S
 and.S
+sb.S
+sh.S
+sw.S
+D_bypasses.S
+EX_bypasses.S

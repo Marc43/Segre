@@ -17,9 +17,12 @@ module segre_cache #(parameter ICACHE_DCACHE = ICACHE)
     output logic is_hit_o, // If 1 hit, 0 miss (es un temazo!) (fer servir com rd de memoria ~is_hit)
     output logic is_busy_o,
     output logic writeback_mem_o,
+    output logic [WORD_SIZE-1:0] writeback_addr_o,
     output logic [WORD_SIZE-1:0] data_o,
     output logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] to_mem_cache_line_o,
-    output logic store_buffer_draining_o
+    output logic store_buffer_draining_o,
+    output logic rd_o,
+    output logic wr_o
 );
 
 /*
@@ -71,26 +74,54 @@ logic draining_buffer;
 logic is_hit_sb_o;
 logic do_not_block_state_update;
 
-assign write_line_from_mem = ((cache_rd_act_state == REQ_MEM_DATA_RD || cache_wr_act_state == REQ_MEM_DATA_WR) && rcvd_mem_request_i);
+assign write_line_from_mem = ((cache_rd_act_state == REQ_MEM_DATA_RD) && rcvd_mem_request_i);
 
 // If is ICACHE, value is 0, then we must use only the state, if it's 1 is DCACHE, we must take into account SB writes.
-assign write_into_word = ICACHE_DCACHE ? (cache_wr_act_state == WRITING_DATA) || reading_valid_entry_sb_o
+assign write_into_word = ICACHE_DCACHE ? reading_valid_entry_sb_o
                                        : (cache_wr_act_state == WRITING_DATA);
-assign is_writeback = cache_rd_act_state == WRITEBACK_RD || cache_wr_act_state == WRITEBACK_WR;
-assign is_hit = valid_bits[addr_index] && is_hit_from_tags;
+assign is_writeback = (cache_rd_act_state == WRITEBACK_RD) || (cache_wr_act_state == WRITEBACK_WR);
+assign is_hit = valid_bits[addr_index] && is_hit_from_tags; // Doesn't take into account the state of the cache
 
 assign writeback_mem_o = is_writeback ? 1'b1 : 1'b0;
 
 assign data_o = (cache_rd_act_state == READING_DATA) ? data_from_cache_data : 'b0;
 
-assign is_hit_o = is_hit && (cache_rd_act_state == REQ_MEM_DATA_RD || cache_rd_act_state == READING_DATA || cache_wr_act_state == READING_TAGS);
+// This signal takes into account whether the states are the correct ones.
+// Becoming uglier change by change...
+logic is_hit_in_tags_state;
+assign is_hit_in_tags_state = is_hit && ((cache_rd_act_state == READING_DATA) && (cache_wr_act_state == READING_TAGS));
+
+assign is_hit_o = is_hit_in_tags_state;
 
 assign draining_buffer = ICACHE_DCACHE ? draining_buffer_sb_o : 0;
 assign store_buffer_draining_o = ICACHE_DCACHE ? draining_buffer : 0;
 
-assign is_busy_o = draining_buffer ;
+// Draining buffer or the operation is a miss. Then we consider the cache to be busy, this may be changed when pipelined TODO
+
+// This is kind of "complicated" for what it is, but I need to have it as a register. May be changed...
+//
+logic is_busy;
+
+always_ff @(posedge clk_i) begin
+    if (!rsn_i) begin
+        is_busy <= 0;
+    end
+    else begin
+        if ((cache_rd_act_state == READING_DATA) && rd_i || (cache_wr_act_state == READING_TAGS) && wr_i) begin
+            is_busy <= draining_buffer || !is_hit_in_tags_state;
+        end
+        else if (is_hit_in_tags_state) begin
+            is_busy <= draining_buffer;
+        end
+    end
+end
+
+assign is_busy_o = is_busy;
 
 assign do_not_block_state_update = ICACHE_DCACHE ? draining_buffer || (!is_hit && is_hit_sb_o) : 0;
+
+assign rd_o = (cache_rd_act_state == REQ_MEM_DATA_RD);
+assign wr_o = (cache_wr_act_state == WRITEBACK_WR) || (cache_rd_act_state == WRITEBACK_RD) || (cache_wr_act_state == REQ_MEM_DATA_WR);
 
 always_ff @(posedge clk_i, negedge rsn_i) begin
     if(!rsn_i) begin
@@ -125,6 +156,7 @@ always_comb begin
             if (!is_hit) begin
                 if (dirty_bits[addr_index]) begin
                     cache_rd_next_state = WRITEBACK_RD;
+                    //cache_wr_next_state = REQ_MEM_DATA_WR;
                 end
                 else begin
                     cache_rd_next_state = REQ_MEM_DATA_RD;
@@ -135,37 +167,62 @@ always_comb begin
             end
 
         end
-        else if (cache_rd_act_state == REQ_MEM_DATA_RD && rcvd_mem_request_i) begin
+        else if ((cache_rd_act_state == REQ_MEM_DATA_RD) && rcvd_mem_request_i) begin
             cache_rd_next_state = READING_DATA;
         end
-        else if (cache_rd_act_state == WRITEBACK_RD) begin
+//        else if (cache_rd_act_state == WRITEBACK_RD && cache_wr_next_state == REQ_MEM_DATA_WR && rcvd_mem_request_i) begin
+        else if ((cache_rd_act_state == WRITEBACK_RD) && rcvd_mem_request_i) begin
             cache_rd_next_state = REQ_MEM_DATA_RD;
+
+        end
+        else begin
+            cache_rd_next_state = cache_rd_act_state;
         end
 
         /*
          * Write next state
          */
-        if (wr_i && cache_wr_act_state == READING_TAGS) begin
+        if (wr_i && (cache_wr_act_state == READING_TAGS)) begin
             if (!is_hit) begin
                 if (dirty_bits[addr_index]) begin
                     cache_wr_next_state = WRITEBACK_WR;
                 end
                 else begin
-                    cache_wr_next_state = REQ_MEM_DATA_WR;
+                    cache_wr_next_state = WRITING_DATA;
+                    cache_rd_next_state = REQ_MEM_DATA_RD;
                 end
             end
         end
         else if (cache_wr_act_state == WRITING_DATA) begin
-            cache_wr_next_state = READING_TAGS;
+            if (cache_rd_act_state != READING_TAGS) begin
+                cache_wr_next_state = WRITING_DATA;
+            end
+            else if (valid_bits[addr_index]) begin
+                cache_wr_next_state = READING_TAGS;
+            end
+            else begin
+                cache_wr_next_state = READING_TAGS;
+                cache_rd_next_state = REQ_MEM_DATA_RD;
+            end
         end
-        else if (cache_wr_act_state == WRITEBACK_WR) begin
-            cache_wr_next_state = REQ_MEM_DATA_WR;
+        else if (cache_wr_act_state == WRITEBACK_WR && rcvd_mem_request_i) begin
+            cache_wr_next_state = WRITING_DATA;
+            cache_rd_next_state = REQ_MEM_DATA_RD;
         end
-        else if (cache_wr_act_state == REQ_MEM_DATA_WR && rcvd_mem_request_i) begin
-            cache_wr_next_state = READING_TAGS;
+//        // deadcode TODO
+//        else if (cache_wr_act_state == REQ_MEM_DATA_WR && rcvd_mem_request_i) begin
+//            cache_wr_next_state = WRITING_DATA;
+//            cache_rd_next_state = REQ_MEM_DATA_RD;
+//        end
+        else begin
+            cache_wr_next_state = cache_wr_act_state;
         end
     end
 end
+
+logic [WORD_SIZE-1:N] sb_addr_tag;
+logic [N-1:M] sb_addr_index;
+logic [M-1:0] sb_addr_byte;
 
 always_ff @(posedge clk_i, negedge rsn_i) begin
     if (!rsn_i) begin
@@ -174,12 +231,37 @@ always_ff @(posedge clk_i, negedge rsn_i) begin
     end
     else begin
         if (write_into_word) begin
-            dirty_bits[addr_index] <= 1'b1;
+            dirty_bits[sb_addr_index] <= 1'b1;
         end
         else if (write_line_from_mem) begin
             valid_bits[addr_index] <= 1'b1;
             dirty_bits[addr_index] <= 1'b0;
         end
+        else if (is_writeback) begin
+            valid_bits[addr_index] <= 1'b0;
+            dirty_bits[addr_index] <= 1'b0;
+        end
+    end
+end
+
+logic [WORD_SIZE-N-1:0] tag_in_cacheline;
+logic [WORD_SIZE-1:0] writeback_addr;
+
+// Pick the stable one when there is no writeback.
+assign writeback_addr_o = !is_writeback ? writeback_addr : {tag_in_cacheline, addr_index, 4'b0000};
+
+always_ff @(posedge clk_i, negedge rsn_i) begin
+    if (!rsn_i) begin
+        writeback_addr <= 0;
+    end
+    else begin
+        if (is_writeback) begin
+            writeback_addr <= {tag_in_cacheline, addr_index, 4'b0000};
+        end
+        else begin
+            writeback_addr <= writeback_addr;
+        end
+
     end
 end
 
@@ -228,6 +310,10 @@ always @* begin
     endcase
 end
 
+assign sb_addr_tag   = addr_sb_o[WORD_SIZE-1:N];
+assign sb_addr_index = addr_sb_o[N-1:M];
+assign sb_addr_byte  = addr_sb_o[M-1:0];
+
 /////////////////////////////
 //// MODULE INSTANTATION ////
 /////////////////////////////
@@ -254,8 +340,17 @@ segre_cache_tags tags (
     .addr_i(addr_i),
     .wr_en_i(write_line_from_mem),
 
-    .is_hit_o(is_hit_from_tags)
+    .is_hit_o(is_hit_from_tags),
+
+    // Tag in the index of addr_i
+    .tag_in_index_o(tag_in_cacheline)
 );
+
+logic is_alu;
+assign is_alu = is_alu_i && (cache_rd_act_state == READING_DATA) && (cache_wr_act_state == READING_TAGS);
+
+logic wr_when_blocking;
+assign wr_when_blocking = wr_i && (cache_rd_act_state == READING_DATA) && (cache_wr_act_state == READING_TAGS) && is_hit_from_tags;
 
 generate
     if (ICACHE_DCACHE == DCACHE)
@@ -268,8 +363,8 @@ generate
             .data_type_i(data_type_i),
 
             .is_load_i(rd_i),
-            .is_store_i(wr_i),
-            .is_alu_i(is_alu_i),
+            .is_store_i(wr_when_blocking),
+            .is_alu_i(is_alu),
 
             .is_hit_i(is_hit_o),
 

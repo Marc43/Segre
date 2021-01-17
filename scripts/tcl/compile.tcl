@@ -34,7 +34,8 @@ vlog -sv -work $work_dir $rtl_dir/segre_csr_register_file.sv
 vlog -sv -work $work_dir $rtl_dir/cache_modules/segre_store_buffer.sv
 
 # Compile rtl
-vlog -sv -work $work_dir $rtl_dir/segre_controller.sv
+vlog -sv -work $work_dir $rtl_dir/logic_modules/bypass_controller.sv
+vlog -sv -work $work_dir $rtl_dir/logic_modules/segre_controller.sv
 vlog -sv -work $work_dir $rtl_dir/segre_if_stage.sv
 vlog -sv -work $work_dir $rtl_dir/segre_decode.sv
 vlog -sv -work $work_dir $rtl_dir/segre_id_stage.sv
@@ -62,4 +63,6 @@ if { $use_modelsim } {
 vsim -debugDB -dpicpppath /usr/bin/gcc -l build/sim_transcript +TEST_NAME=$test_name -voptargs=+acc -sv_lib lib/libdecoder $work_dir.top_tb
 
 # Add the wave to the simulation
-do scripts/wave.do
+do pipelined_windows.do
+
+run -all

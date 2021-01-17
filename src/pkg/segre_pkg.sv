@@ -150,4 +150,18 @@ parameter TLB_ENTRIES = 32;
 parameter TLB_ENTRY_BITS = $clog2(TLB_ENTRIES); //Should be 5 (to have 32 TLB entries)
 parameter TLB_TAG_BITS = VIRT_PAGE_BITS - TLB_ENTRY_BITS; //Should be 15
 
+// Bypass
+typedef enum logic [1:0] {
+    ID_RF               = 2'b00,
+    EXECUTE_BYPASS      = 2'b01,
+    MEMORY_BYPASS       = 2'b10,
+    WRITEBACK_BYPASS    = 2'b11
+} bypass_id_sel_e;
+
+typedef enum logic [1:0] {
+    NO_BYPASS    = 2'b00,
+    MEM_BYPASS   = 2'b01,
+    WB_BYPASS    = 2'b10
+} bypass_ex_sel_e;
+
 endpackage : segre_pkg
