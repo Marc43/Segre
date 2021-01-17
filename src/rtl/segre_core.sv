@@ -21,6 +21,7 @@ logic if_mem_rd;
 logic instruction_hit_if;
 logic valid_if;
 logic [WORD_SIZE-1:0] if_instr;
+logic [ADDR_SIZE-1:0] if_mem_addr;
 
 // ID STAGE
 logic [REG_SIZE-1:0] src_a_identifier_id;
@@ -247,7 +248,7 @@ segre_controller controller (
 // TODO This is DONE THIS WAY BECASUE I AM ONLY TESTING ARITHMETIC/LOGIC INSTRUCTIONS
 // OF COURSE AT SOME POINT WE HAVE TO ARBITRATE BETWEEN MEMORY ACCESSES OF STAGES
 // INSTRUCTION FETCH AND MEMORY.
-assign addr_o          = sel_mem_req ? mem_addr : if_addr;
+assign addr_o          = sel_mem_req ? mem_addr : if_mem_addr;
 assign mem_rd_o        = sel_mem_req ? mem_rd : if_mem_rd;
 assign mem_wr_o        = sel_mem_req ? mem_wr : 1'b0;
 assign mem_data_type_o = sel_mem_req ? mem_data_type : WORD;
@@ -292,6 +293,7 @@ segre_if_stage if_stage (
     .mem_ready_i (mem_ready_to_if_stage),
     .pc_o        (if_addr),
     .mem_rd_o    (if_mem_rd),
+    .mem_addr_o  (if_mem_addr),
 
     // IF ID interface
     .instr_o     (if_instr),

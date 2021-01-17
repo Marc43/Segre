@@ -257,9 +257,6 @@ segre_alu alu (
 logic [WORD_SIZE-1:0] muxed_br_src_a;
 logic [WORD_SIZE-1:0] muxed_br_src_b;
 
-assign muxed_br_src_a = muxed_src_a;
-assign muxed_br_src_b = muxed_src_b;
-
 segre_tkbr trbr (
     .br_src_a_i   (muxed_br_src_a),
     .br_src_b_i   (muxed_br_src_b),
@@ -291,7 +288,6 @@ always_comb begin : LOAD_BYPASS
     end
 end
 
-// TODO What happens with branch cases? Use br_src_a_q and br_src_b_q...
 always_comb begin : SRC_A_BYPASS
     if (!rsn_i) begin
         muxed_src_a = alu_src_a_q;
@@ -331,6 +327,50 @@ always_comb begin : SRC_B_BYPASS
             end
             default: begin
                 muxed_src_b = alu_src_b_q;
+            end
+        endcase
+    end
+end
+
+always_comb begin : BR_SRC_A_BYPASS
+    if (!rsn_i) begin
+        muxed_br_src_a = br_src_a_q;
+    end
+    else begin
+        case (mux_sel_a_q)
+            NO_BYPASS: begin
+                muxed_br_src_a = br_src_a_q;
+            end
+            MEM_BYPASS: begin
+                muxed_br_src_a = op_res_stage_mem_i;
+            end
+            WB_BYPASS: begin
+                muxed_br_src_a = op_res_stage_wb_i;
+            end
+            default: begin
+                muxed_br_src_a = br_src_a_q;
+            end
+        endcase
+    end
+end
+
+always_comb begin : BR_SRC_B_BYPASS
+    if (!rsn_i) begin
+        muxed_br_src_b = br_src_b_q;
+    end
+    else begin
+        case (mux_sel_b_q)
+            NO_BYPASS: begin
+                muxed_br_src_b = br_src_b_q;
+            end
+            MEM_BYPASS: begin
+                muxed_br_src_b = op_res_stage_mem_i;
+            end
+            WB_BYPASS: begin
+                muxed_br_src_b = op_res_stage_wb_i;
+            end
+            default: begin
+                muxed_br_src_b = br_src_b_q;
             end
         endcase
     end

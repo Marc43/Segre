@@ -9,6 +9,8 @@ module segre_if_stage (
     input  logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] cache_instr_line_i,
     input  logic mem_ready_i,
 
+    output logic [ADDR_SIZE-1:0] mem_addr_o,
+
     // WB interface
     input logic tkbr_i,
     input logic [WORD_SIZE-1:0] new_pc_i,
@@ -65,8 +67,8 @@ always_comb begin : pc_mux
         if (tkbr_i) begin
             pc = new_pc_i;
         end
-        else if (block_if_i || blocked_1cycle_ago_i) begin
-            pc = pc;
+        else if (block_if_i) begin
+            pc = pc_i;
         end
         else begin
             pc = pc_i + 4;
@@ -76,6 +78,10 @@ always_comb begin : pc_mux
 end
 
 assign valid_if_o = (block_if_i || !rsn_i) ? 1'b0 : 1'b1;
+
+logic [ADDR_SIZE-1:0] pc_cache;
+
+assign pc_cache = tkbr_i ? new_pc_i : (blocked_1cycle_ago_i ? pc_i : pc_i + 4);
 
 segre_cache
 #(
@@ -92,7 +98,7 @@ instruction_cache
 
     .rcvd_mem_request_i(mem_ready_i),
     .data_type_i(data_type),
-    .addr_i(pc),
+    .addr_i(pc_cache),
     .data_i(data),
     .from_mem_cache_line_i(cache_instr_line_i),
 
@@ -132,6 +138,7 @@ instruction_cache
 
 assign mem_rd_o = rd && !is_hit && rsn_i;
 assign instr_o = instr_to_feed_decode;
-assign pc_o = pc;
+assign pc_o = pc_cache;
+assign mem_addr_o = pc_cache;
 
 endmodule : segre_if_stage
