@@ -144,4 +144,15 @@ typedef enum logic [1:0] {
     WB_BYPASS    = 2'b10
 } bypass_ex_sel_e;
 
+typedef enum logic [2:0] {
+    MUL = 3'b000,
+    MULH,
+    MULHU,
+    MULHSU,
+    DIV,
+    DIVU,
+    REM,
+    REMU
+} m_ext_opcode_e;
+
 endpackage : segre_pkg
