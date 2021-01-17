@@ -37,3 +37,4 @@ sh.S
 sw.S
 D_bypasses.S
 EX_bypasses.S
+mul.S
