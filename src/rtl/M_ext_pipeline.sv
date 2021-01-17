@@ -12,8 +12,8 @@ module M_ext_pipeline (
 
     input logic rf_we_i,
 
-    input logic [WORD_SIZE-1:0] src_a,
-    input logic [WORD_SIZE-1:0] src_b,
+    input logic [WORD_SIZE-1:0] src_a_i,
+    input logic [WORD_SIZE-1:0] src_b_i,
 
     input logic [REG_SIZE-1:0] rf_waddr_i,
 
@@ -29,6 +29,7 @@ module M_ext_pipeline (
 
     output logic [REG_SIZE-1:0] rf_waddr_o,
     output logic [WORD_SIZE-1:0] rf_wdata_o,
+    output logic valid_m5_o,
     output logic rf_we_o
 
     // TODO Add DIV/0 exceptions, and... exceptions at all
@@ -59,8 +60,8 @@ always_comb begin
     end
     else begin
         m1_valid_d = valid_m1_i;
-        m1_src_a_d = src_a;
-        m1_src_b_d = src_b;
+        m1_src_a_d = src_a_i;
+        m1_src_b_d = src_b_i;
         m1_rf_waddr_d = rf_waddr_i;
         m1_opcode_d = opcode_i;
         m1_we_d = rf_we_i;
@@ -316,5 +317,6 @@ end
 assign rf_waddr_o = m5_rf_waddr_q;
 assign rf_wdata_o = rf_wdata;
 assign rf_we_o = rf_we;
+assign valid_m5_o = m5_valid_q;
 
 endmodule : M_ext_pipeline

@@ -96,8 +96,11 @@ module segre_controller (
     input logic data_produced_wb_i,
 
     output logic block_wb_o,
-    output logic inject_nops_wb_o
+    output logic inject_nops_wb_o,
 
+    // M_ext_pipeline
+
+    input logic valid_m3_i
 
 );
 
@@ -226,6 +229,10 @@ always_comb begin : data_dependences_detection_or_tkbr
             // results in discarding instructions, that's
             // exactly what we need.
             block_id = 0;
+            inject_nops_ex = 1;
+        end
+        else if (valid_m3_i) begin // Could check also if it's going to write, but it's the only possible possibility right now
+            block_id = 1;
             inject_nops_ex = 1;
         end
         else begin

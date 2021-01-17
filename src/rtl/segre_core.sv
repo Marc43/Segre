@@ -97,7 +97,6 @@ logic mem_dc_wr;
 logic mem_sb_draining;
 logic mem_is_load;
 
-
 //// WB STAGE Use _q instead.
 logic [WORD_SIZE-1:0] wb_res_d;
 logic wb_rf_we_d;
@@ -142,6 +141,20 @@ logic ctrl_block_wb;
 logic ctrl_inject_nops_wb;
 
 logic sel_mem_req;
+
+// M_ext_pipeline
+logic valid_m1;
+m_ext_opcode_e m1_opcode;
+logic m1_rf_we;
+logic [REG_SIZE-1:0] m1_rf_waddr;
+logic [WORD_SIZE-1:0] m1_rf_src_a;
+logic [WORD_SIZE-1:0] m1_rf_src_b;
+
+// End of pipeline (EOP)
+logic [REG_SIZE-1:0] m5_waddr;
+logic [WORD_SIZE-1:0] m5_wdata;
+logic m5_valid;
+logic m5_we;
 
 segre_controller controller (
     // Clock and Reset
@@ -374,7 +387,14 @@ segre_id_stage id_stage (
 
     .instr_id_o (instr_id),
 
-    .finish_test_o (finish_test_id)
+    .finish_test_o (finish_test_id),
+
+    .valid_m1_o (valid_m1),
+    .m1_opcode_o (m1_opcode),
+    .m1_rf_we_o (m1_rf_we),
+    .m1_rf_waddr_o (m1_rf_waddr),
+    .m1_rf_src_a_o (m1_rf_src_a),
+    .m1_rf_src_b_o (m1_rf_src_b)
 
 );
 
@@ -564,18 +584,60 @@ always_ff @(posedge clk_i) begin : decoupling_register_MEM_WB_2
     end
 end
 
+M_ext_pipeline M_ext (
+
+    .clk_i (clk_i),
+    .rsn_i (rsn_i),
+
+    .valid_m1_i (valid_m1),
+
+    .opcode_i (m1_opcode),
+
+    .rf_we_i (m1_rf_we),
+    .rf_waddr_i (m1_rf_waddr),
+
+    .src_a_i (m1_rf_src_a),
+    .src_b_i (m1_rf_src_b),
+
+    .valid_m3_o (ctrl_valid_m3),
+
+    .rf_waddr_o (m5_waddr),
+    .rf_wdata_o (m5_wdata),
+    .valid_m5_o (m5_valid),
+    .rf_we_o (m5_we)
+
+);
+
+logic muxed_we;
+logic [REG_SIZE-1:0] muxed_rf_waddr;
+logic [WORD_SIZE-1:0] muxed_rf_w_data;
+
+always_comb begin
+    if (m5_valid && valid_wb_q) begin
+        muxed_we = m5_we;
+        muxed_rf_waddr = m5_waddr;
+        muxed_rf_w_data = m5_wdata;
+    end
+    else begin
+        muxed_we = wb_rf_we_q;
+        muxed_rf_waddr = wb_rf_waddr_q;
+        muxed_rf_w_data = wb_res_q;
+    end
+end
+
 segre_register_file segre_rf (
-    // Clock and Reset
+
     .clk_i       (clk_i),
     .rsn_i       (rsn_i),
 
-    .we_i        (wb_rf_we_q),
+    .we_i        (muxed_we),
     .raddr_a_i   (rf_raddr_a),
     .data_a_o    (rf_data_a),
     .raddr_b_i   (rf_raddr_b),
     .data_b_o    (rf_data_b),
-    .waddr_i     (wb_rf_waddr_q),
-    .data_w_i    (wb_res_q)
+    .waddr_i     (muxed_rf_waddr),
+    .data_w_i    (muxed_rf_w_data)
+
 );
 
 endmodule : segre_core

@@ -45,7 +45,10 @@ module segre_decode(
 
     // Kind
     output logic prod_data_stage_ex_o,
-    output logic prod_data_stage_mem_o
+    output logic prod_data_stage_mem_o,
+
+    output logic is_M_ext_instr_o,
+    output m_ext_opcode_e m1_opcode_o
 
 );
 
@@ -97,6 +100,8 @@ always_comb begin
         prod_data_stage_ex_o = 0;
         prod_data_stage_mem_o = 0;
 
+        is_M_ext_instr_o = 0;
+
         unique case(instr_opcode)
 
             /*****************
@@ -113,6 +118,7 @@ always_comb begin
             OPCODE_OP: begin
                 rf_we_o = 1'b1;
                 prod_data_stage_ex_o = 1;
+                is_M_ext_instr_o = (instr_i[`FUNC_7] == 7'h01);
             end
             OPCODE_LOAD: begin
                 rf_we_o = 1'b1;
@@ -229,6 +235,18 @@ always_comb begin
                 {7'b000_0000, 3'b111}: alu_opcode_o = ALU_AND;  // AND
                 default: ;
             endcase
+
+            unique case ({instr_i[`FUNC_7], instr_i[`FUNC_3]})
+                {7'b0000001, 3'b000}: m1_opcode_o = MUL;
+                {7'b0000001, 3'b001}: m1_opcode_o = MULH;
+                {7'b0000001, 3'b010}: m1_opcode_o = MULHSU;
+                {7'b0000001, 3'b011}: m1_opcode_o = MULHU;
+                {7'b0000001, 3'b100}: m1_opcode_o = DIV;
+                {7'b0000001, 3'b101}: m1_opcode_o = DIVU;
+                {7'b0000001, 3'b110}: m1_opcode_o = REM;
+                {7'b0000001, 3'b111}: m1_opcode_o = REMU;
+                default: ;
+            endcase
         end
         OPCODE_LOAD: begin
             rd_raddr_a = 1;
@@ -284,7 +302,6 @@ always_comb begin
             b_imm_mux_sel_o = IMM_B_U;
             alu_opcode_o    = ALU_ADD;
         end
-        default: ;
     endcase
 end
 
