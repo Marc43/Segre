@@ -52,6 +52,12 @@ module segre_controller (
 
     input logic data_produced_ex_i,
 
+    input logic is_load_ex_i,
+
+    output bypass_ex_sel_e mul_sel_load_ex_o,
+    output bypass_ex_sel_e mul_sel_a_ex_o,
+    output bypass_ex_sel_e mul_sel_b_ex_o,
+
     output logic block_ex_o,
     output logic inject_nops_ex_o,
     output logic tkbr_o,
@@ -71,6 +77,8 @@ module segre_controller (
 
     input logic [REG_SIZE-1:0] dst_reg_identifier_mem_i,
     input logic we_mem_i,
+
+    input logic is_load_mem_i,
 
     output logic block_mem_o,
     output logic inject_nops_mem_o,
@@ -209,11 +217,11 @@ always_comb begin : data_dependences_detection_or_tkbr
         inject_nops_ex = 0;
     end
     else begin
-        if ((depEX || depMEM || depWB) && valid_id_i) begin
-            block_id = 1;
-            inject_nops_ex = 1;
-        end
-        else if (tkbr_i) begin
+        //if ((depEX || depMEM || depWB) && valid_id_i) begin
+        //    block_id = 1;
+        //    inject_nops_ex = 1;
+        //end
+        if (tkbr_i) begin
             // Not blocking ID and injecting nops in EX
             // results in discarding instructions, that's
             // exactly what we need.
@@ -398,7 +406,7 @@ assign sel_mem_req_o = sel_mem_req;
 
 // Bypasses instruction decode
 
-bypass_controller_id bypass_id (
+bypass_controller bypass (
 
     .clk_i (clk_i),
     .rsn_i (rsn_i),
@@ -418,16 +426,24 @@ bypass_controller_id bypass_id (
     .valid_ex_i (valid_ex_i),
     .data_produced_ex_i (data_produced_ex_i),
 
+    .is_load_ex_i (is_load_ex_i),
+
     .depEX_src_a_i (depEX_src_a),
     .depEX_src_b_i (depEX_src_b),
 
     .use_bypass_a_ex_o (id_use_bypass_a_ex),
     .use_bypass_b_ex_o (id_use_bypass_b_ex),
 
+    .mux_sel_load_ex_o (mul_sel_load_ex_o),
+    .mux_sel_a_ex_o (mul_sel_a_ex_o),
+    .mux_sel_b_ex_o (mul_sel_b_ex_o),
+
     // Memory stage
 
     .valid_mem_i (valid_mem_i),
     .data_produced_mem_i (data_produced_mem_i),
+
+    .is_load_mem_i (is_load_mem_i),
 
     .depMEM_src_a_i (depMEM_src_a),
     .depMEM_src_b_i (depMEM_src_b),

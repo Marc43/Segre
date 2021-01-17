@@ -61,6 +61,8 @@ module segre_mem_stage (
 
     output logic data_produced_mem_o,
 
+    output logic is_load_o,
+
     output logic dc_rd_o,
     output logic dc_wr_o,
 
@@ -305,5 +307,7 @@ assign valid_mem_o = valid_mem_q;
 assign sb_draining_o = store_buffer_draining;
 
 assign data_produced_mem_o = data_produced_mem_q;
+
+assign is_load_o = memop_rd_q;
 
 endmodule : segre_mem_stage

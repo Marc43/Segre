@@ -78,6 +78,7 @@ logic valid_ex;
 logic finish_test_ex;
 logic ex_prod_data_stage_ex;
 logic ex_prod_data_stage_mem;
+logic is_load_ex;
 
 // MEM STAGE
 logic [WORD_SIZE-1:0] mem_res;
@@ -93,6 +94,7 @@ memop_data_type_e mem_data_type;
 logic mem_dc_rd;
 logic mem_dc_wr;
 logic mem_sb_draining;
+logic mem_is_load;
 
 
 //// WB STAGE Use _q instead.
@@ -126,6 +128,9 @@ logic ctrl_block_ex;
 logic ctrl_inject_nops_ex;
 logic ctrl_tkbr;
 logic ctrl_data_produced_ex;
+bypass_ex_sel_e ctrl_mul_sel_load_ex;
+bypass_ex_sel_e ctrl_mul_sel_a_ex;
+bypass_ex_sel_e ctrl_mul_sel_b_ex;
 
 logic ctrl_block_mem;
 logic ctrl_inject_nops_mem;
@@ -187,12 +192,17 @@ segre_controller controller (
     .we_ex_i (ex_rf_we),
     .tkbr_i (ex_tkbr),
     .data_produced_ex_i (ctrl_data_produced_ex),
+    .is_load_ex_i (is_load_ex),
     .finish_test_i (finish_test_ex),
 
     // Outputs
     .block_ex_o (ctrl_block_ex),
     .inject_nops_ex_o (ctrl_inject_nops_ex),
     .tkbr_o (ctrl_tkbr),
+
+    .mul_sel_load_ex_o (ctrl_mul_sel_load_ex),
+    .mul_sel_a_ex_o (ctrl_mul_sel_a_ex),
+    .mul_sel_b_ex_o (ctrl_mul_sel_b_ex),
 
     ////////////////////
 
@@ -207,6 +217,7 @@ segre_controller controller (
     .dc_wr_i (mem_dc_wr),
     .store_buffer_draining_i (mem_sb_draining),
     .data_produced_mem_i (ctrl_data_produced_mem),
+    .is_load_mem_i (mem_is_load),
 
     // Outputs
     .block_mem_o (ctrl_block_mem),
@@ -374,6 +385,15 @@ segre_ex_stage ex_stage (
 
     .finish_test_i    (finish_test_id),
 
+    // Bypass
+
+    .mux_sel_load_i   (ctrl_mul_sel_load_ex),
+    .mux_sel_a_i      (ctrl_mul_sel_a_ex),
+    .mux_sel_b_i      (ctrl_mul_sel_b_ex),
+
+    .op_res_stage_mem_i (mem_res),
+    .op_res_stage_wb_i  (wb_res_q),
+
     // ID EX interface
     // ALU
     .alu_opcode_i     (id_alu_opcode),
@@ -417,6 +437,8 @@ segre_ex_stage ex_stage (
     .block_ex_i (ctrl_block_ex),
     .inject_nops_i (ctrl_inject_nops_ex),
     .valid_ex_o (valid_ex),
+
+    .is_load_o (is_load_ex),
 
     .prod_data_stage_ex_i (id_prod_data_stage_ex),
     .prod_data_stage_mem_i (id_prod_data_stage_mem),
@@ -485,6 +507,8 @@ segre_mem_stage mem_stage (
     .prod_data_stage_mem_i (ex_prod_data_stage_mem),
 
     .data_produced_mem_o (ctrl_data_produced_mem),
+
+    .is_load_o (mem_is_load),
 
     .dc_rd_o (mem_dc_rd),
     .dc_wr_o (mem_dc_wr),

@@ -138,4 +138,10 @@ typedef enum logic [1:0] {
     WRITEBACK_BYPASS    = 2'b11
 } bypass_id_sel_e;
 
+typedef enum logic [1:0] {
+    NO_BYPASS    = 2'b00,
+    MEM_BYPASS   = 2'b01,
+    WB_BYPASS    = 2'b10
+} bypass_ex_sel_e;
+
 endpackage : segre_pkg

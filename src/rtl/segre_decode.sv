@@ -239,17 +239,21 @@ always_comb begin
         end
         OPCODE_STORE: begin
             rd_raddr_a = 1;
+            rd_raddr_b = 1;
             src_a_mux_sel_o = ALU_A_REG;
             src_b_mux_sel_o = ALU_B_IMM;
             b_imm_mux_sel_o = IMM_B_S;
             alu_opcode_o = ALU_ADD;
         end
         OPCODE_JAL: begin
+            // TODO CHECK THAT rd_raddr_a/b is set to 0 in these cases...
             src_a_mux_sel_o = ALU_A_PC;
             src_b_mux_sel_o = ALU_B_IMM;
             br_a_mux_sel_o  = BR_A_PC;
-            b_imm_mux_sel_o = IMM_B_J;
-            alu_opcode_o    = ALU_JAL;
+            src_a_mux_sel_o = ALU_A_REG;
+            src_b_mux_sel_o = ALU_B_IMM;
+            b_imm_mux_sel_o = IMM_B_S;
+            alu_opcode_o = ALU_ADD;
         end
         OPCODE_JALR: begin
             rd_raddr_a = 1;
