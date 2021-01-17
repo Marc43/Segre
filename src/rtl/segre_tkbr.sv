@@ -13,8 +13,8 @@ always_comb begin
         ALU_BNE : tkbr_o = ($signed(br_src_a_i) != $signed(br_src_b_i)) ? 1'b1 : 1'b0;
         ALU_BLT : tkbr_o = ($signed(br_src_a_i) < $signed(br_src_b_i))  ? 1'b1 : 1'b0;
         ALU_BGE : tkbr_o = ($signed(br_src_a_i) >= $signed(br_src_b_i)) ? 1'b1 : 1'b0;
-        ALU_BLTU: tkbr_o = ($unsigned(br_src_a_i) < $unsigned(br_src_b_i)) ? 1'b1 : 1'b0;
-        ALU_BGEU: tkbr_o = ($unsigned(br_src_a_i) >= $unsigned(br_src_b_i)) ? 1'b1 : 1'b0;
+        ALU_BLTU: tkbr_o = (br_src_a_i < br_src_b_i) ? 1'b1 : 1'b0;
+        ALU_BGEU: tkbr_o = (br_src_a_i >= br_src_b_i) ? 1'b1 : 1'b0;
         ALU_JAL, ALU_JALR : tkbr_o = 1'b1;
         default: tkbr_o = 0;
     endcase

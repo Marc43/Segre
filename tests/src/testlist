@@ -35,3 +35,5 @@ and.S
 sb.S
 sh.S
 sw.S
+D_bypasses.S
+EX_bypasses.S

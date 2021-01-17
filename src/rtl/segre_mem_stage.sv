@@ -56,6 +56,13 @@ module segre_mem_stage (
     input logic inject_nops_i, // Inject NOPs to the following stages
     output logic valid_mem_o, // Indicate the next stage if it's processing valid data
 
+    input logic prod_data_stage_ex_i,
+    input logic prod_data_stage_mem_i,
+
+    output logic data_produced_mem_o,
+
+    output logic is_load_o,
+
     output logic dc_rd_o,
     output logic dc_wr_o,
 
@@ -84,6 +91,7 @@ logic [ADDR_SIZE-1:0] new_pc_d;
 logic is_jaljalr_d;
 logic [ADDR_SIZE-1:0] seq_new_pc_d;
 logic valid_mem_d;
+logic data_produced_mem_d;
 
 logic [WORD_SIZE-1:0] alu_res_q;
 logic rf_we_q;
@@ -97,6 +105,7 @@ logic [ADDR_SIZE-1:0] new_pc_q;
 logic is_jaljalr_q;
 logic [ADDR_SIZE-1:0] seq_new_pc_q;
 logic valid_mem_q;
+logic data_produced_mem_q;
 
 always_comb begin : decoupling_registers_EX_MEM_1
     if (!rsn_i) begin
@@ -104,6 +113,7 @@ always_comb begin : decoupling_registers_EX_MEM_1
         memop_rd_d = 0;
         memop_wr_d = 0;
         valid_mem_d = 0;
+        data_produced_mem_d = 0;
     end
     else begin
         if (block_mem_i) begin
@@ -119,12 +129,14 @@ always_comb begin : decoupling_registers_EX_MEM_1
             seq_new_pc_d = seq_new_pc_q;
             is_jaljalr_d = is_jaljalr_q;
             valid_mem_d = valid_mem_q;
+            data_produced_mem_d = data_produced_mem_q;
         end
         else if (inject_nops_i) begin
             rf_we_d    = 0;
             memop_rd_d = 0;
             memop_wr_d = 0;
             valid_mem_d = 0;
+            data_produced_mem_d = 0;
         end
         else begin
             alu_res_d        = alu_res_i;
@@ -139,6 +151,8 @@ always_comb begin : decoupling_registers_EX_MEM_1
             seq_new_pc_d     = seq_new_pc_i;
             is_jaljalr_d     = is_jaljalr_i;
             valid_mem_d = valid_ex_i;
+            data_produced_mem_d = prod_data_stage_ex_i ||
+                                  prod_data_stage_mem_i;
         end
     end
 end
@@ -149,6 +163,7 @@ always_ff @(posedge clk_i) begin : decoupling_registers_EX_MEM_2
         memop_rd_q <= 0;
         memop_wr_q <= 0;
         valid_mem_q <= 0;
+        data_produced_mem_q <= 0;
     end
     else begin
         alu_res_q   <= alu_res_d;
@@ -163,6 +178,7 @@ always_ff @(posedge clk_i) begin : decoupling_registers_EX_MEM_2
         seq_new_pc_q <= seq_new_pc_d;
         is_jaljalr_q <= is_jaljalr_d;
         valid_mem_q <= valid_mem_d;
+        data_produced_mem_q <= data_produced_mem_d;
     end
 end
 
@@ -289,5 +305,9 @@ assign new_pc_o   = new_pc_q;
 assign valid_mem_o = valid_mem_q;
 
 assign sb_draining_o = store_buffer_draining;
+
+assign data_produced_mem_o = data_produced_mem_q;
+
+assign is_load_o = memop_rd_q;
 
 endmodule : segre_mem_stage

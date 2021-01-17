@@ -41,7 +41,12 @@ module segre_decode(
     output memop_data_type_e memop_type_o,
     output logic memop_sign_ext_o,
     output logic memop_rd_o,
-    output logic memop_wr_o
+    output logic memop_wr_o,
+
+    // Kind
+    output logic prod_data_stage_ex_o,
+    output logic prod_data_stage_mem_o
+
 );
 
 opcode_e instr_opcode;
@@ -89,6 +94,9 @@ always_comb begin
 
         instr_opcode     = opcode_e'(instr_i[6:0]);
 
+        prod_data_stage_ex_o = 0;
+        prod_data_stage_mem_o = 0;
+
         unique case(instr_opcode)
 
             /*****************
@@ -96,12 +104,15 @@ always_comb begin
             *****************/
             OPCODE_LUI: begin // Load Upper Immediate
                 rf_we_o = 1'b1;
+                prod_data_stage_ex_o = 1;
             end
             OPCODE_OP_IMM: begin
                 rf_we_o = 1'b1;
+                prod_data_stage_ex_o = 1;
             end
             OPCODE_OP: begin
                 rf_we_o = 1'b1;
+                prod_data_stage_ex_o = 1;
             end
             OPCODE_LOAD: begin
                 rf_we_o = 1'b1;
@@ -113,6 +124,7 @@ always_comb begin
                     3'b010:         memop_type_o = WORD;
                     default: ;
                 endcase
+                prod_data_stage_mem_o = 1;
             end
             OPCODE_STORE: begin
                 memop_wr = 1'b1;
@@ -123,15 +135,19 @@ always_comb begin
                     default: ;
                 endcase
                 rf_we_o = 1'b0;
+                prod_data_stage_mem_o = 1;
             end
             OPCODE_JAL: begin
                 rf_we_o = 1'b1;
+                prod_data_stage_ex_o = 1;
             end
             OPCODE_JALR: begin
                 rf_we_o = 1'b1;
+                prod_data_stage_ex_o = 1;
             end
             OPCODE_AUIPC: begin
                 rf_we_o = 1'b1;
+                prod_data_stage_ex_o = 1; // TODO NOT REALLY SURE
             end
             default: begin
                 if (rsn_i) begin
@@ -223,6 +239,7 @@ always_comb begin
         end
         OPCODE_STORE: begin
             rd_raddr_a = 1;
+            rd_raddr_b = 1;
             src_a_mux_sel_o = ALU_A_REG;
             src_b_mux_sel_o = ALU_B_IMM;
             b_imm_mux_sel_o = IMM_B_S;
@@ -233,7 +250,7 @@ always_comb begin
             src_b_mux_sel_o = ALU_B_IMM;
             br_a_mux_sel_o  = BR_A_PC;
             b_imm_mux_sel_o = IMM_B_J;
-            alu_opcode_o    = ALU_JAL;
+            alu_opcode_o = ALU_JAL;
         end
         OPCODE_JALR: begin
             rd_raddr_a = 1;
