@@ -293,6 +293,7 @@ segre_controller controller (
 
     .valid_m5_i (m5_valid),
     .dst_reg_identifier_m5_i (m5_waddr)
+
 );
 
 //assign addr_o          = (fsm_state == MEM_STATE) ? mem_addr       : if_addr;
@@ -377,6 +378,7 @@ segre_id_stage id_stage (
     .ex_rd_data_i (ex_alu_res),
     .mem_rd_data_i (mem_res),
     .wb_rd_data_i (wb_res_q),
+    .m5_rd_data_i (m5_wdata),
 
     // Bypass control
 
@@ -457,6 +459,7 @@ segre_ex_stage ex_stage (
 
     .op_res_stage_mem_i (mem_res),
     .op_res_stage_wb_i  (wb_res_q),
+    .op_res_stage_m5_i  (m5_wdata),
 
     // ID EX interface
     // ALU

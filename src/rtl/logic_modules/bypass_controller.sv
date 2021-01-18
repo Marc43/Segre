@@ -57,7 +57,19 @@ module bypass_controller (
     input logic depWB_src_b_i,
 
     output logic use_bypass_a_wb_o,
-    output logic use_bypass_b_wb_o
+    output logic use_bypass_b_wb_o,
+
+    // M4 stage
+
+    input logic valid_m4_i,
+    input logic depM4_src_a_i,
+    input logic depM4_src_b_i,
+
+    // M5 stage
+
+    input logic valid_m5_i,
+    input logic depM5_src_a_i,
+    input logic depM5_src_b_i
 
 );
 
@@ -107,6 +119,9 @@ always_comb begin : SRC_MUXES_LOGIC_ID
             use_bypass_a_mem = 0;
             use_bypass_a_wb = 1;
         end
+        else if (valid_m5_i && depM5_src_a_i) begin
+            bypass_mux_sel_a = M5_BYPASS;
+        end
         else begin
             bypass_mux_sel_a = ID_RF;
             use_bypass_a_ex = 0;
@@ -132,6 +147,9 @@ always_comb begin : SRC_MUXES_LOGIC_ID
             use_bypass_b_wb = 1;
             use_bypass_b_ex = 0;
             use_bypass_b_mem = 0;
+        end
+        else if (valid_m5_i && depM5_src_b_i) begin
+            bypass_mux_sel_b = M5_BYPASS;
         end
         else begin
             bypass_mux_sel_b = ID_RF;
@@ -185,12 +203,23 @@ always_comb begin : SRC_ALU_MUX_EX
     end
     else begin
 
+        /*
+         * Strong doubts with what I did
+         * to check if I previously used a bypass
+         * too busy now to check but, keep it in mind
+         * if some error or redundancy pops up
+         * TODO
+         */
+
         // Select for source operand A
         if (valid_ex_i && depEX_src_a_i && !use_bypass_a_ex) begin
             mux_sel_a_ex = MEM_BYPASS;
         end
         else if (valid_mem_i && depMEM_src_a_i && !use_bypass_a_mem && !use_bypass_a_ex) begin
             mux_sel_a_ex = WB_BYPASS;
+        end
+        else if (valid_m4_i && depM4_src_a_i && !use_bypass_a_mem && !use_bypass_a_ex) begin
+            mux_sel_a_ex = MUL_M5_BYPASS;
         end
         else begin
             mux_sel_a_ex = NO_BYPASS;
@@ -202,6 +231,9 @@ always_comb begin : SRC_ALU_MUX_EX
         end
         else if (valid_mem_i && depMEM_src_b_i && !use_bypass_b_mem && !use_bypass_b_ex) begin
             mux_sel_b_ex = WB_BYPASS;
+        end
+        else if (valid_m4_i && depM4_src_a_i && !use_bypass_b_ex && !use_bypass_b_mem) begin
+            mux_sel_b_ex = MUL_M5_BYPASS;
         end
         else begin
             mux_sel_b_ex = NO_BYPASS;

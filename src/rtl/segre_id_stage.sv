@@ -9,6 +9,7 @@ module segre_id_stage (
     input logic [WORD_SIZE-1:0] ex_rd_data_i,
     input logic [WORD_SIZE-1:0] mem_rd_data_i,
     input logic [WORD_SIZE-1:0] wb_rd_data_i,
+    input logic [WORD_SIZE-1:0] m5_rd_data_i,
 
     // Bypass sel
     input bypass_id_sel_e mux_sel_a_id_i,
@@ -335,6 +336,9 @@ always_comb begin : BYPASS_SRC_A
         WRITEBACK_BYPASS: begin
             muxed_src_a = wb_rd_data_i;
         end
+        M5_BYPASS: begin
+            muxed_src_a = m5_rd_data_i;
+        end
     endcase
 end
 
@@ -351,6 +355,9 @@ always_comb begin : BYPASS_SRC_B
         end
         WRITEBACK_BYPASS: begin
             muxed_src_b = wb_rd_data_i;
+        end
+        M5_BYPASS: begin
+            muxed_src_b = m5_rd_data_i;
         end
     endcase
 end

@@ -244,6 +244,7 @@ logic dstzero_m5;
 assign dstzero_ex = dst_reg_identifier_ex_i != 0;
 assign dstzero_mem = dst_reg_identifier_mem_i != 0;
 assign dstzero_wb = dst_reg_identifier_wb_i != 0;
+
 assign dstzero_m1 = dst_reg_identifier_m1_i != 0;
 assign dstzero_m2 = dst_reg_identifier_m2_i != 0;
 assign dstzero_m3 = dst_reg_identifier_m3_i != 0;
@@ -307,7 +308,8 @@ always_comb begin : data_dependences_detection_or_tkbr
             block_id = 1;
             inject_nops_ex = 1;
         end
-        else if (depM1 || depM2 || depM3 || depM4 || depM5) begin
+        //else if (depM1 || depM2 || depM3 || depM4 || depM5) begin
+        else if (depM1 || depM2 || depM3 || depM4) begin
             block_id = 1;
             inject_nops_ex = 1;
         end
@@ -560,7 +562,21 @@ bypass_controller bypass (
     .depWB_src_b_i (depWB_src_b),
 
     .use_bypass_a_wb_o (id_use_bypass_a_wb),
-    .use_bypass_b_wb_o (id_use_bypass_b_wb)
+    .use_bypass_b_wb_o (id_use_bypass_b_wb),
+
+    // M4 stage
+
+    .valid_m4_i (valid_m4_i),
+
+    .depM4_src_a_i (depM4_src_a),
+    .depM4_src_b_i (depM4_src_b),
+
+    // M5 stage
+
+    .valid_m5_i (valid_m5_i),
+
+    .depM5_src_a_i (depM5_src_a),
+    .depM5_src_b_i (depM5_src_b)
 
 );
 
