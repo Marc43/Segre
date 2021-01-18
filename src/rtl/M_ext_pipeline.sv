@@ -277,46 +277,61 @@ always_ff @(posedge clk_i) begin
     end
 end
 
-logic rf_we;
+logic [(2*WORD_SIZE)-1:0] mul_op;
 logic [WORD_SIZE-1:0] rf_wdata;
 
+logic [(2*WORD_SIZE)-1:0] signed_src_a;
+logic [(2*WORD_SIZE)-1:0] signed_src_b;
+
+assign signed_src_a = $signed(m5_src_a_q);
+assign signed_src_b = $signed(m5_src_b_q);
+
+logic [(2*WORD_SIZE)-1:0] unsigned_src_a;
+logic [(2*WORD_SIZE)-1:0] unsigned_src_b;
+
+assign unsigned_src_a = $unsigned(m5_src_a_q);
+assign unsigned_src_b = $unsigned(m5_src_b_q);
+
 always_comb begin
-    if (!rsn_i) begin
-        rf_we = 0;
-    end
-    else begin
-        case (m5_opcode_q)
-            MUL: begin
-                rf_wdata = $signed(m5_src_a_q) * $signed(m5_src_b_q);
-            end
-            MULH: begin
-                rf_wdata = (($signed(m5_src_a_q) * $signed(m5_src_b_q)) && 32'b0) >> 32; // TODO Lmao, no se si va aixo
-            end
-            MULHU: begin
-                rf_wdata = ((m5_src_a_q * m5_src_b_q) && 32'b0) >> 32; // TODO Lmao, no se si va aixo
-            end
-            MULHSU: begin
-                rf_wdata = (($signed(m5_src_a_q) * $unsigned(m5_src_b_q)) && 32'b0) >> 32; // TODO Lmao, no se si va aixo
-            end
-            DIV: begin
-                rf_wdata = (m5_src_b_q != 0) ? ($signed(m5_src_a_q)/$signed(m5_src_b_q)) : {32{1}}; // If div by 0, infinity, but I think it's useless tho
-            end
-            DIVU: begin
-                rf_wdata = (m5_src_b_q != 0) ? (m5_src_a_q/m5_src_b_q) : {32{1}};
-            end
-            REM: begin
-                rf_wdata = $signed(m5_src_a_q)%$signed(m5_src_b_q);
-            end
-            REMU: begin
-                rf_wdata = m5_src_a_q%m5_src_b_q;
-            end
-        endcase
-    end
+    case (m5_opcode_q)
+        MUL: begin
+            mul_op = signed_src_a * signed_src_b;
+            rf_wdata = mul_op[31:0];
+        end
+        MULH: begin
+            mul_op = signed_src_a * signed_src_b;
+            rf_wdata = mul_op[63:32];
+        end
+        MULHU: begin
+            mul_op = unsigned_src_a * unsigned_src_b;
+            rf_wdata = mul_op[63:32];
+        end
+        MULHSU: begin
+            mul_op = signed_src_a * unsigned_src_b;
+            rf_wdata = mul_op[63:32];
+        end
+        DIV: begin
+            mul_op = (m5_src_b_q != 0) ? signed_src_a/signed_src_b : {32{1}};
+            rf_wdata = mul_op[31:0];
+        end
+        DIVU: begin
+            mul_op = (m5_src_b_q != 0) ? unsigned_src_a/unsigned_src_b : {32{1}};
+            rf_wdata = mul_op[31:0];
+        end
+        REM: begin
+            mul_op = signed_src_a%signed_src_b;
+            rf_wdata = mul_op[31:0];
+        end
+        REMU: begin
+            mul_op = signed_src_a%signed_src_b;
+            rf_wdata = mul_op[63:32];
+        end
+    endcase
 end
 
 assign rf_waddr_o = m5_rf_waddr_q;
 assign rf_wdata_o = rf_wdata;
-assign rf_we_o = rf_we;
+assign rf_we_o = m5_we_q;
 assign valid_m5_o = m5_valid_q;
 
 endmodule : M_ext_pipeline

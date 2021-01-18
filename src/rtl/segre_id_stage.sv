@@ -313,8 +313,9 @@ assign prod_data_stage_ex_o = !is_M_ext_instr ? prod_data_stage_ex_q : 0;
 assign prod_data_stage_mem_o = !is_M_ext_instr ? prod_data_stage_mem_q : 0;
 
 assign valid_m1_o = is_M_ext_instr;
+assign m1_rf_we_o = is_M_ext_instr;
 assign m1_opcode_o = m1_opcode;
-assign m1_rf_waddr_o = is_M_ext_instr;
+assign m1_rf_waddr_o = rf_waddr;
 assign m1_rf_src_a_o = alu_src_a;
 assign m1_rf_src_b_o = alu_src_b;
 

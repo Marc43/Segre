@@ -459,6 +459,87 @@ add wave -noupdate -group ID /top_tb/soc/dut/id_stage/muxed_src_a
 add wave -noupdate -group ID /top_tb/soc/dut/id_stage/muxed_src_b
 TreeUpdate [SetDefaultTree]
 quietly WaveActivateNextPane
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/clk_i
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/rsn_i
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/valid_m1_i
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/opcode_i
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/rf_we_i
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/src_a_i
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/src_b_i
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/rf_waddr_i
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/valid_m3_o
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/rf_waddr_o
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/rf_wdata_o
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/valid_m5_o
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/rf_we_o
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m1_valid_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m1_src_a_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m1_src_b_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m1_rf_waddr_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m1_opcode_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m1_we_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m1_valid_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m1_src_a_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m1_src_b_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m1_rf_waddr_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m1_opcode_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m1_we_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m2_valid_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m2_src_a_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m2_src_b_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m2_rf_waddr_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m2_opcode_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m2_we_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m2_valid_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m2_src_a_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m2_src_b_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m2_rf_waddr_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m2_opcode_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m2_we_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m3_valid_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m3_src_a_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m3_src_b_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m3_rf_waddr_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m3_opcode_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m3_we_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m3_valid_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m3_src_a_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m3_src_b_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m3_rf_waddr_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m3_opcode_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m3_we_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m4_valid_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m4_src_a_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m4_src_b_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m4_rf_waddr_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m4_opcode_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m4_we_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m4_valid_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m4_src_a_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m4_src_b_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m4_rf_waddr_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m4_opcode_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m4_we_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m5_valid_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m5_src_a_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m5_src_b_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m5_rf_waddr_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m5_opcode_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m5_we_d
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m5_valid_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m5_src_a_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m5_src_b_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m5_rf_waddr_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m5_opcode_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/m5_we_q
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/mul_op
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/rf_wdata
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/signed_src_a
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/signed_src_b
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/unsigned_src_a
+add wave -noupdate -expand -group M_ext_pipeline /top_tb/soc/dut/M_ext/unsigned_src_b
+TreeUpdate [SetDefaultTree]
+quietly WaveActivateNextPane
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/clk_i
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/rsn_i
 add wave -noupdate -group EX /top_tb/soc/dut/ex_stage/valid_id_i
@@ -651,20 +732,28 @@ add wave -noupdate /top_tb/soc/dut/wb_new_pc_q
 add wave -noupdate /top_tb/soc/dut/valid_wb_q
 add wave -noupdate /top_tb/soc/dut/ctrl_block_wb
 add wave -noupdate /top_tb/soc/dut/ctrl_inject_nops_wb
-add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/clk_i
-add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/rsn_i
-add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/we_i
-add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/raddr_a_i
-add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/data_a_o
-add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/raddr_b_i
-add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/data_b_o
-add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/waddr_i
-add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/data_w_i
-add wave -noupdate -expand -group {REGISTER FILE} -expand /top_tb/soc/dut/segre_rf/rf_reg
-add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/rf_reg_aux
-add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/write_enable
+add wave -noupdate /top_tb/soc/dut/m5_waddr
+add wave -noupdate /top_tb/soc/dut/m5_wdata
+add wave -noupdate /top_tb/soc/dut/m5_valid
+add wave -noupdate /top_tb/soc/dut/m5_we
+add wave -noupdate /top_tb/soc/dut/ctrl_valid_m3
+add wave -noupdate /top_tb/soc/dut/muxed_we
+add wave -noupdate /top_tb/soc/dut/muxed_rf_waddr
+add wave -noupdate /top_tb/soc/dut/muxed_rf_w_data
+add wave -noupdate -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/clk_i
+add wave -noupdate -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/rsn_i
+add wave -noupdate -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/we_i
+add wave -noupdate -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/raddr_a_i
+add wave -noupdate -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/data_a_o
+add wave -noupdate -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/raddr_b_i
+add wave -noupdate -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/data_b_o
+add wave -noupdate -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/waddr_i
+add wave -noupdate -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/data_w_i
+add wave -noupdate -group {REGISTER FILE} -expand /top_tb/soc/dut/segre_rf/rf_reg
+add wave -noupdate -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/rf_reg_aux
+add wave -noupdate -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/write_enable
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {4330000 ps} 0}
+WaveRestoreCursors {{Cursor 1} {950000 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 191
 configure wave -valuecolwidth 163
@@ -680,4 +769,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {4409598 ps} {5673180 ps}
+WaveRestoreZoom {0 ps} {3434231 ps}

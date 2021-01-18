@@ -119,10 +119,12 @@ logic id_use_bypass_b_wb;
 logic finish_test_d_1;
 logic finish_test_d_2;
 logic finish_test_d_3;
+logic finish_test_d_4;
 
 logic finish_test_q_1;
 logic finish_test_q_2;
 logic finish_test_q_3;
+logic finish_test_q_4;
 
 logic or_block_if;
 logic or_block_id;
@@ -369,8 +371,25 @@ always_ff @(posedge clk_i) begin
     end
 end
 
-assign finish_test_o = finish_test_q_3;
+always_comb begin
+    if (!rsn_i) begin
+        finish_test_d_4 = 0;
+    end
+    else begin
+        finish_test_d_4 = finish_test_q_3;
+    end
+end
 
+always_ff @(posedge clk_i) begin
+    if (!rsn_i) begin
+        finish_test_q_4 <= 0;
+    end
+    else begin
+        finish_test_q_4 <= finish_test_d_4;
+    end
+end
+
+assign finish_test_o = finish_test_q_4;
 // Arbiter part
 
 /*

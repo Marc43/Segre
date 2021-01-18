@@ -613,7 +613,7 @@ logic [REG_SIZE-1:0] muxed_rf_waddr;
 logic [WORD_SIZE-1:0] muxed_rf_w_data;
 
 always_comb begin
-    if (m5_valid && valid_wb_q) begin
+    if (m5_valid) begin
         muxed_we = m5_we;
         muxed_rf_waddr = m5_waddr;
         muxed_rf_w_data = m5_wdata;
