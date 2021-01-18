@@ -18,10 +18,32 @@ module M_ext_pipeline (
     input logic [REG_SIZE-1:0] rf_waddr_i,
 
     /*
+     * M1
+     */
+
+    output logic valid_m1_o,
+    output logic [REG_SIZE-1:0] dst_reg_identifier_m1_o,
+
+    /*
+     * M2
+     */
+
+    output logic valid_m2_o,
+    output logic [REG_SIZE-1:0] dst_reg_identifier_m2_o,
+
+    /*
      * Outputs from stage M3 (to detect structural hazards)
      */
 
     output logic valid_m3_o,
+    output logic [REG_SIZE-1:0] dst_reg_identifier_m3_o,
+
+    /*
+     * M4
+     */
+
+    output logic valid_m4_o,
+    output logic [REG_SIZE-1:0] dst_reg_identifier_m4_o,
 
     /*
      * Outputs from stage M5
@@ -33,6 +55,7 @@ module M_ext_pipeline (
     output logic rf_we_o
 
     // TODO Add DIV/0 exceptions, and... exceptions at all
+
 );
 
 /*
@@ -83,6 +106,9 @@ always_ff @(posedge clk_i) begin
     end
 end
 
+assign valid_m1_o = m1_valid_q;
+assign dst_reg_identifier_m1_o = m1_rf_waddr_q;
+
 /*
  * M2 Stage
  */
@@ -130,6 +156,9 @@ always_ff @(posedge clk_i) begin
         m2_we_q <= m2_we_d;
     end
 end
+
+assign valid_m2_o = m2_valid_q;
+assign dst_reg_identifier_m2_o = m2_rf_waddr_q;
 
 /*
  * M3 Stage
@@ -180,6 +209,7 @@ always_ff @(posedge clk_i) begin
 end
 
 assign valid_m3_o = m3_valid_q;
+assign dst_reg_identifier_m3_o = m3_rf_waddr_q;
 
 /*
  * M4 Stage
@@ -228,6 +258,9 @@ always_ff @(posedge clk_i) begin
         m4_we_q <= m4_we_d;
     end
 end
+
+assign valid_m4_o = m4_valid_q;
+assign dst_reg_identifier_m4_o = m4_rf_waddr_q;
 
 /*
  * M5 Stage

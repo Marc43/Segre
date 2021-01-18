@@ -150,6 +150,23 @@ logic [REG_SIZE-1:0] m1_rf_waddr;
 logic [WORD_SIZE-1:0] m1_rf_src_a;
 logic [WORD_SIZE-1:0] m1_rf_src_b;
 
+// M1
+logic ctrl_valid_m1;
+logic [REG_SIZE-1:0] m1_waddr;
+
+// M2
+logic ctrl_valid_m2;
+logic [REG_SIZE-1:0] m2_waddr;
+
+// M3
+logic ctrl_valid_m3;
+logic [REG_SIZE-1:0] m3_waddr;
+
+// M4
+logic ctrl_valid_m4;
+logic [REG_SIZE-1:0] m4_waddr;
+
+// M5
 // End of pipeline (EOP)
 logic [REG_SIZE-1:0] m5_waddr;
 logic [WORD_SIZE-1:0] m5_wdata;
@@ -250,7 +267,32 @@ segre_controller controller (
 
     // Outputs
     .block_wb_o (ctrl_block_wb),
-    .inject_nops_wb_o (ctrl_inject_nops_wb)
+    .inject_nops_wb_o (ctrl_inject_nops_wb),
+
+    ////////////////////
+
+    // M ext
+
+    // M1
+    .valid_m1_i (ctrl_valid_m1),
+    .dst_reg_identifier_m1_i (m1_waddr),
+
+    // M2
+    .valid_m2_i (ctrl_valid_m2),
+    .dst_reg_identifier_m2_i (m2_waddr),
+
+    // M3
+    .valid_m3_i (ctrl_valid_m3),
+    .dst_reg_identifier_m3_i (m3_waddr),
+
+    // M4
+    .valid_m4_i (ctrl_valid_m4),
+    .dst_reg_identifier_m4_i (m4_waddr),
+
+    // M5
+
+    .valid_m5_i (m5_valid),
+    .dst_reg_identifier_m5_i (m5_waddr)
 );
 
 //assign addr_o          = (fsm_state == MEM_STATE) ? mem_addr       : if_addr;
@@ -590,7 +632,6 @@ M_ext_pipeline M_ext (
     .rsn_i (rsn_i),
 
     .valid_m1_i (valid_m1),
-
     .opcode_i (m1_opcode),
 
     .rf_we_i (m1_rf_we),
@@ -599,7 +640,27 @@ M_ext_pipeline M_ext (
     .src_a_i (m1_rf_src_a),
     .src_b_i (m1_rf_src_b),
 
+    // M1
+
+    .valid_m1_o (ctrl_valid_m1),
+    .dst_reg_identifier_m1_o (m1_waddr),
+
+    // M2
+
+    .valid_m2_o (ctrl_valid_m2),
+    .dst_reg_identifier_m2_o (m2_waddr),
+
+    // M3
+
     .valid_m3_o (ctrl_valid_m3),
+    .dst_reg_identifier_m3_o (m3_waddr),
+
+    // M4
+
+    .valid_m4_o (ctrl_valid_m4),
+    .dst_reg_identifier_m4_o (m4_waddr),
+
+    // M5
 
     .rf_waddr_o (m5_waddr),
     .rf_wdata_o (m5_wdata),
@@ -630,7 +691,7 @@ segre_register_file segre_rf (
     .clk_i       (clk_i),
     .rsn_i       (rsn_i),
 
-    .we_i        (muxed_we),
+    .we_i        (muxed_we && (m5_valid || valid_wb_q)),
     .raddr_a_i   (rf_raddr_a),
     .data_a_o    (rf_data_a),
     .raddr_b_i   (rf_raddr_b),
