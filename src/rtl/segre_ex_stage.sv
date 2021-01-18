@@ -9,7 +9,6 @@ module segre_ex_stage (
 
     input logic finish_test_i,
 
-
     // Bypasses
     input bypass_ex_sel_e mux_sel_load_i,
     input bypass_ex_sel_e mux_sel_a_i,
@@ -17,6 +16,7 @@ module segre_ex_stage (
 
     input logic [WORD_SIZE-1:0] op_res_stage_mem_i,
     input logic [WORD_SIZE-1:0] op_res_stage_wb_i,
+    input logic [WORD_SIZE-1:0] op_res_stage_m5_i,
 
     // ID EX interface
     // ALU
@@ -303,6 +303,9 @@ always_comb begin : SRC_A_BYPASS
             WB_BYPASS: begin
                 muxed_src_a = op_res_stage_wb_i;
             end
+            MUL_M5_BYPASS: begin
+                muxed_src_a = op_res_stage_m5_i;
+            end
             default: begin
                 muxed_src_a = alu_src_a_q;
             end
@@ -324,6 +327,9 @@ always_comb begin : SRC_B_BYPASS
             end
             WB_BYPASS: begin
                 muxed_src_b = op_res_stage_wb_i;
+            end
+            MUL_M5_BYPASS: begin
+                muxed_src_b = op_res_stage_m5_i;
             end
             default: begin
                 muxed_src_b = alu_src_b_q;
@@ -347,6 +353,9 @@ always_comb begin : BR_SRC_A_BYPASS
             WB_BYPASS: begin
                 muxed_br_src_a = op_res_stage_wb_i;
             end
+            MUL_M5_BYPASS: begin
+                muxed_br_src_a = op_res_stage_m5_i;
+            end
             default: begin
                 muxed_br_src_a = br_src_a_q;
             end
@@ -368,6 +377,9 @@ always_comb begin : BR_SRC_B_BYPASS
             end
             WB_BYPASS: begin
                 muxed_br_src_b = op_res_stage_wb_i;
+            end
+            MUL_M5_BYPASS: begin
+                muxed_br_src_b = op_res_stage_m5_i;
             end
             default: begin
                 muxed_br_src_b = br_src_b_q;

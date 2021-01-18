@@ -96,8 +96,29 @@ module segre_controller (
     input logic data_produced_wb_i,
 
     output logic block_wb_o,
-    output logic inject_nops_wb_o
+    output logic inject_nops_wb_o,
 
+    // M_ext_pipeline
+
+    // M1
+    input logic valid_m1_i,
+    input logic [REG_SIZE-1:0] dst_reg_identifier_m1_i,
+
+    // M2
+    input logic valid_m2_i,
+    input logic [REG_SIZE-1:0] dst_reg_identifier_m2_i,
+
+    // M3
+    input logic valid_m3_i,
+    input logic [REG_SIZE-1:0] dst_reg_identifier_m3_i,
+
+    // M4
+    input logic valid_m4_i,
+    input logic [REG_SIZE-1:0] dst_reg_identifier_m4_i,
+
+    // M5
+    input logic valid_m5_i,
+    input logic [REG_SIZE-1:0] dst_reg_identifier_m5_i
 
 );
 
@@ -116,10 +137,12 @@ logic id_use_bypass_b_wb;
 logic finish_test_d_1;
 logic finish_test_d_2;
 logic finish_test_d_3;
+logic finish_test_d_4;
 
 logic finish_test_q_1;
 logic finish_test_q_2;
 logic finish_test_q_3;
+logic finish_test_q_4;
 
 logic or_block_if;
 logic or_block_id;
@@ -190,26 +213,79 @@ logic inject_nops_ex;
 logic depEX_src_a;
 logic depMEM_src_a;
 logic depWB_src_a;
+logic depM1_src_a;
+logic depM2_src_a;
+logic depM3_src_a;
+logic depM4_src_a;
+logic depM5_src_a;
 
 logic depEX_src_b;
 logic depMEM_src_b;
 logic depWB_src_b;
+logic depM1_src_b;
+logic depM2_src_b;
+logic depM3_src_b;
+logic depM4_src_b;
+logic depM5_src_b;
 
 logic depEX;
 logic depMEM;
 logic depWB;
 
-assign depEX_src_a = ((src_a_identifier_id_i == dst_reg_identifier_ex_i) && rd_src_a_id_i) && we_ex_i && valid_ex_i;
-assign depMEM_src_a = ((src_a_identifier_id_i == dst_reg_identifier_mem_i) && rd_src_a_id_i) && we_mem_i && valid_mem_i;
-assign depWB_src_a = ((src_a_identifier_id_i == dst_reg_identifier_wb_i) && rd_src_a_id_i) && we_wb_i && valid_wb_i;
+logic dstzero_ex;
+logic dstzero_mem;
+logic dstzero_wb;
+logic dstzero_m1;
+logic dstzero_m2;
+logic dstzero_m3;
+logic dstzero_m4;
+logic dstzero_m5;
 
-assign depEX_src_b = ((src_b_identifier_id_i == dst_reg_identifier_ex_i) && rd_src_b_id_i) && we_ex_i && valid_ex_i;
-assign depMEM_src_b = ((src_b_identifier_id_i == dst_reg_identifier_mem_i) && rd_src_b_id_i) && we_mem_i && valid_mem_i;
-assign depWB_src_b = ((src_b_identifier_id_i == dst_reg_identifier_wb_i) && rd_src_b_id_i) && we_wb_i && valid_wb_i;
+assign dstzero_ex = dst_reg_identifier_ex_i != 0;
+assign dstzero_mem = dst_reg_identifier_mem_i != 0;
+assign dstzero_wb = dst_reg_identifier_wb_i != 0;
 
-assign depEX = (depEX_src_a && !id_use_bypass_a_ex) || (depEX_src_b && !id_use_bypass_b_ex);
-assign depMEM = (depMEM_src_a && !id_use_bypass_a_mem) || (depMEM_src_b && !id_use_bypass_b_mem);
-assign depWB = (depWB_src_a && !id_use_bypass_a_wb) || (depWB_src_b && !id_use_bypass_b_wb);
+assign dstzero_m1 = dst_reg_identifier_m1_i != 0;
+assign dstzero_m2 = dst_reg_identifier_m2_i != 0;
+assign dstzero_m3 = dst_reg_identifier_m3_i != 0;
+assign dstzero_m4 = dst_reg_identifier_m4_i != 0;
+assign dstzero_m5 = dst_reg_identifier_m5_i != 0;
+
+assign depEX_src_a  = dstzero_ex && ((src_a_identifier_id_i == dst_reg_identifier_ex_i) && rd_src_a_id_i) && we_ex_i && valid_ex_i;
+assign depMEM_src_a = dstzero_mem && ((src_a_identifier_id_i == dst_reg_identifier_mem_i) && rd_src_a_id_i) && we_mem_i && valid_mem_i;
+assign depWB_src_a  = dstzero_wb && ((src_a_identifier_id_i == dst_reg_identifier_wb_i) && rd_src_a_id_i) && we_wb_i && valid_wb_i;
+
+assign depEX_src_b = dstzero_ex && ((src_b_identifier_id_i == dst_reg_identifier_ex_i) && rd_src_b_id_i) && we_ex_i && valid_ex_i;
+assign depMEM_src_b = dstzero_mem && ((src_b_identifier_id_i == dst_reg_identifier_mem_i) && rd_src_b_id_i) && we_mem_i && valid_mem_i;
+assign depWB_src_b = dstzero_wb && ((src_b_identifier_id_i == dst_reg_identifier_wb_i) && rd_src_b_id_i) && we_wb_i && valid_wb_i;
+
+assign depEX = ((depEX_src_a && !id_use_bypass_a_ex) || (depEX_src_b && !id_use_bypass_b_ex));
+assign depMEM = ((depMEM_src_a && !id_use_bypass_a_mem) || (depMEM_src_b && !id_use_bypass_b_mem));
+assign depWB = ((depWB_src_a && !id_use_bypass_a_wb) || (depWB_src_b && !id_use_bypass_b_wb));
+
+assign depM1_src_a = dstzero_m1 && (src_a_identifier_id_i == dst_reg_identifier_m1_i) && valid_m1_i;
+assign depM2_src_a = dstzero_m2 && (src_a_identifier_id_i == dst_reg_identifier_m2_i) && valid_m2_i;
+assign depM3_src_a = dstzero_m3 && (src_a_identifier_id_i == dst_reg_identifier_m3_i) && valid_m3_i;
+assign depM4_src_a = dstzero_m4 && (src_a_identifier_id_i == dst_reg_identifier_m4_i) && valid_m4_i;
+assign depM5_src_a = dstzero_m5 && (src_a_identifier_id_i == dst_reg_identifier_m5_i) && valid_m5_i;
+
+assign depM1_src_b = dstzero_m1 && (src_b_identifier_id_i == dst_reg_identifier_m1_i) && valid_m1_i;
+assign depM2_src_b = dstzero_m2 && (src_b_identifier_id_i == dst_reg_identifier_m2_i) && valid_m2_i;
+assign depM3_src_b = dstzero_m3 && (src_b_identifier_id_i == dst_reg_identifier_m3_i) && valid_m3_i;
+assign depM4_src_b = dstzero_m4 && (src_b_identifier_id_i == dst_reg_identifier_m4_i) && valid_m4_i;
+assign depM5_src_b = dstzero_m5 && (src_b_identifier_id_i == dst_reg_identifier_m5_i) && valid_m5_i;
+
+logic depM1;
+logic depM2;
+logic depM3;
+logic depM4;
+logic depM5;
+
+assign depM1 = depM1_src_a || depM1_src_b;
+assign depM2 = depM2_src_a || depM2_src_b;
+assign depM3 = depM3_src_a || depM3_src_b;
+assign depM4 = depM4_src_a || depM4_src_b;
+assign depM5 = depM5_src_a || depM5_src_b;
 
 always_comb begin : data_dependences_detection_or_tkbr
     if (!rsn_i) begin
@@ -226,6 +302,15 @@ always_comb begin : data_dependences_detection_or_tkbr
             // results in discarding instructions, that's
             // exactly what we need.
             block_id = 0;
+            inject_nops_ex = 1;
+        end
+        else if (valid_m3_i && valid_id_i) begin // Could check also if it's going to write, but it's the only possible possibility right now
+            block_id = 1;
+            inject_nops_ex = 1;
+        end
+        //else if (depM1 || depM2 || depM3 || depM4 || depM5) begin
+        else if (depM1 || depM2 || depM3 || depM4) begin
+            block_id = 1;
             inject_nops_ex = 1;
         end
         else begin
@@ -362,8 +447,25 @@ always_ff @(posedge clk_i) begin
     end
 end
 
-assign finish_test_o = finish_test_q_3;
+always_comb begin
+    if (!rsn_i) begin
+        finish_test_d_4 = 0;
+    end
+    else begin
+        finish_test_d_4 = finish_test_q_3;
+    end
+end
 
+always_ff @(posedge clk_i) begin
+    if (!rsn_i) begin
+        finish_test_q_4 <= 0;
+    end
+    else begin
+        finish_test_q_4 <= finish_test_d_4;
+    end
+end
+
+assign finish_test_o = finish_test_q_4;
 // Arbiter part
 
 /*
@@ -460,7 +562,21 @@ bypass_controller bypass (
     .depWB_src_b_i (depWB_src_b),
 
     .use_bypass_a_wb_o (id_use_bypass_a_wb),
-    .use_bypass_b_wb_o (id_use_bypass_b_wb)
+    .use_bypass_b_wb_o (id_use_bypass_b_wb),
+
+    // M4 stage
+
+    .valid_m4_i (valid_m4_i),
+
+    .depM4_src_a_i (depM4_src_a),
+    .depM4_src_b_i (depM4_src_b),
+
+    // M5 stage
+
+    .valid_m5_i (valid_m5_i),
+
+    .depM5_src_a_i (depM5_src_a),
+    .depM5_src_b_i (depM5_src_b)
 
 );
 

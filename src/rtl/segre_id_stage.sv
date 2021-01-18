@@ -9,6 +9,7 @@ module segre_id_stage (
     input logic [WORD_SIZE-1:0] ex_rd_data_i,
     input logic [WORD_SIZE-1:0] mem_rd_data_i,
     input logic [WORD_SIZE-1:0] wb_rd_data_i,
+    input logic [WORD_SIZE-1:0] m5_rd_data_i,
 
     // Bypass sel
     input bypass_id_sel_e mux_sel_a_id_i,
@@ -30,15 +31,18 @@ module segre_id_stage (
     output alu_opcode_e alu_opcode_o,
     output logic [WORD_SIZE-1:0] alu_src_a_o,
     output logic [WORD_SIZE-1:0] alu_src_b_o,
+
     // Register file
     output logic rf_we_o,
     output logic [REG_SIZE-1:0] rf_waddr_o,
+
     // Memop
     output memop_data_type_e memop_type_o,
     output logic memop_sign_ext_o,
     output logic memop_rd_o,
     output logic memop_wr_o,
     output logic [WORD_SIZE-1:0] memop_rf_data_o,
+
     // Branch | Jump
     output logic [WORD_SIZE-1:0] br_src_a_o,
     output logic [WORD_SIZE-1:0] br_src_b_o,
@@ -70,8 +74,20 @@ module segre_id_stage (
     // To detect the end of the test
 
     output logic [WORD_SIZE-1:0] instr_id_o,
-    output logic finish_test_o
+    output logic finish_test_o,
+
+    // To pipeline M ext
+
+    output logic valid_m1_o,
+    output m_ext_opcode_e m1_opcode_o,
+    output logic m1_rf_we_o,
+    output [REG_SIZE-1:0] m1_rf_waddr_o,
+    output [WORD_SIZE-1:0] m1_rf_src_a_o,
+    output [WORD_SIZE-1:0] m1_rf_src_b_o
+
 );
+
+m_ext_opcode_e m1_opcode;
 
 logic prod_data_stage_ex;
 logic prod_data_stage_mem;
@@ -168,6 +184,8 @@ always_ff @(posedge clk_i) begin : decoupling_register_F_ID_2
     end
 end
 
+logic is_M_ext_instr;
+
 segre_decode decode (
     // Clock and Reset
     .clk_i            (clk_i),
@@ -208,7 +226,11 @@ segre_decode decode (
 
     // When they produce the data
     .prod_data_stage_ex_o (prod_data_stage_ex),
-    .prod_data_stage_mem_o (prod_data_stage_mem)
+    .prod_data_stage_mem_o (prod_data_stage_mem),
+
+    // Whether it is for M ext pipeline
+    .is_M_ext_instr_o (is_M_ext_instr),
+    .m1_opcode_o (m1_opcode)
 );
 
 // For the moment imm_a will always be 0
@@ -262,8 +284,8 @@ end
 
 assign alu_src_a_o = alu_src_a;
 assign alu_src_b_o = alu_src_b;
-assign rf_we_o = rf_we;
-assign rf_waddr_o = rf_waddr;
+assign rf_we_o     = !is_M_ext_instr ? rf_we : 0;
+assign rf_waddr_o  = rf_waddr;
 assign memop_sign_ext_o = memop_sign_ext;
 assign memop_type_o = memop_type;
 assign memop_rd_o = memop_rd;
@@ -272,7 +294,7 @@ assign br_src_a_o = br_src_a;
 assign br_src_b_o = br_src_b;
 assign alu_opcode_o = alu_opcode;
 assign memop_rf_data_o = muxed_src_b;
-assign is_jaljalr_o = (alu_opcode == ALU_JAL) || (alu_opcode == ALU_JALR);
+assign is_jaljalr_o = !is_M_ext_instr ? ((alu_opcode == ALU_JAL) || (alu_opcode == ALU_JALR)) : 0;
 
 // Not in the flip-flop because this comes from the register file.
 assign rf_raddr_a_o = rf_raddr_a;
@@ -282,14 +304,21 @@ assign src_a_identifier_o = rf_raddr_a;
 assign src_b_identifier_o = rf_raddr_b;
 
 assign pc_o = pc_q;
-assign valid_id_o = valid_id_q;
+assign valid_id_o = !is_M_ext_instr ? valid_id_q : 0;
 
 assign instr_id_o = instr_q;
 
 assign finish_test_o = (instr_q == 32'hfff01073) && valid_id_q;
 
-assign prod_data_stage_ex_o = prod_data_stage_ex_q;
-assign prod_data_stage_mem_o = prod_data_stage_mem_q;
+assign prod_data_stage_ex_o = !is_M_ext_instr ? prod_data_stage_ex_q : 0;
+assign prod_data_stage_mem_o = !is_M_ext_instr ? prod_data_stage_mem_q : 0;
+
+assign valid_m1_o = is_M_ext_instr;
+assign m1_rf_we_o = is_M_ext_instr;
+assign m1_opcode_o = m1_opcode;
+assign m1_rf_waddr_o = rf_waddr;
+assign m1_rf_src_a_o = alu_src_a;
+assign m1_rf_src_b_o = alu_src_b;
 
 // Bypass data
 
@@ -307,6 +336,9 @@ always_comb begin : BYPASS_SRC_A
         WRITEBACK_BYPASS: begin
             muxed_src_a = wb_rd_data_i;
         end
+        M5_BYPASS: begin
+            muxed_src_a = m5_rd_data_i;
+        end
     endcase
 end
 
@@ -323,6 +355,9 @@ always_comb begin : BYPASS_SRC_B
         end
         WRITEBACK_BYPASS: begin
             muxed_src_b = wb_rd_data_i;
+        end
+        M5_BYPASS: begin
+            muxed_src_b = m5_rd_data_i;
         end
     endcase
 end
