@@ -18,6 +18,7 @@ module segre_if_stage (
     // To/From controller signals
     input logic block_if_i, // Block this stage (flip-flops)
     input logic blocked_1cycle_ago_i,
+    input logic blocked_id_i,
     input logic inject_nops_i, // Inject NOPs to the following stages
     output logic valid_if_o, // Indicate the next stage if it's processing valid data
     output logic instruction_hit_o,
@@ -111,30 +112,6 @@ instruction_cache
     .store_buffer_draining_o(store_buffer_draining)
 
 );
-
-// TODO Rediscover this when we put tkbr
-//always_comb begin
-//    if (!rsn_i) begin
-//        nxt_pc = 0;
-//    end
-//    //else if (!instruction_hit_o && fsm_state_i == IF_STATE) begin
-//    else if (!instruction_hit_o) begin
-//        nxt_pc = nxt_pc;
-//    end
-//    //else if (instruction_hit_o && fsm_state_i == IF_STATE) begin
-//    else if (instruction_hit_o) begin
-//        nxt_pc = nxt_pc + 4;
-//    end
-//    else begin
-//        //if (tkbr_i && fsm_state_i == WB_STATE) begin
-//        if (tkbr_i) begin
-//            nxt_pc = new_pc_i;
-//        end
-//        else begin
-//            nxt_pc = nxt_pc;
-//        end
-//    end
-//end
 
 assign mem_rd_o = rd && !is_hit && rsn_i;
 assign instr_o = instr_to_feed_decode;

@@ -80,10 +80,10 @@ string test_name;
 
 `define wr_word_mem(mem, word, addr) \
     `uvm_info("memory", $sformatf("Writting at %0h the data %0h", addr, word), UVM_LOW); \
-    mem[addr] = word >> 24; \
-    mem[addr+1] = word >> 16; \
-    mem[addr+2] = word >> 8; \
-    mem[addr+3] = word; \
+    mem[addr] = word; \
+    mem[addr+1] = word >> 8; \
+    mem[addr+2] = word >> 16; \
+    mem[addr+3] = word >> 24; \
 
 initial begin
     int addr = 0;
@@ -140,7 +140,7 @@ initial begin
     `wr_word_mem(mem, 32'h5a5a5a5a, addr+72)
     `wr_word_mem(mem, 32'h5a5a5a5a, addr+76)
     for (int i = addr+80; i < NUM_WORDS; i = i + 4) begin
-        `wr_word_mem(mem, 32'h00000000, i)
+        `wr_word_mem(mem, 32'h00000001, i)
     end
 end
 

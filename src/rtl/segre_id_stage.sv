@@ -139,30 +139,22 @@ always_comb begin : decoupling_register_F_ID_1
         instr_d = NOP_INSTR;
         pc_d    = 32'hfffffffc;
         valid_id_d = 0;
-        prod_data_stage_ex_d = 0;
-        prod_data_stage_mem_d = 0;
     end
     else begin
         if (inject_nops_i) begin
             instr_d = NOP_INSTR;
             pc_d    = pc_i;
             valid_id_d = 0;
-            prod_data_stage_ex_d = 0;
-            prod_data_stage_mem_d = 0;
         end
         else if (block_id_i) begin
             instr_d = instr_q;
             pc_d = pc_q;
             valid_id_d = valid_id_q;
-            prod_data_stage_ex_d = prod_data_stage_ex_q;
-            prod_data_stage_mem_d = prod_data_stage_mem_q;
         end
         else begin
             instr_d = instr_i;
             pc_d = pc_i;
             valid_id_d = valid_if_i;
-            prod_data_stage_ex_d = prod_data_stage_ex;
-            prod_data_stage_mem_d = prod_data_stage_mem;
         end
     end
 end
@@ -172,15 +164,11 @@ always_ff @(posedge clk_i) begin : decoupling_register_F_ID_2
         instr_q <= NOP_INSTR;
         pc_q    <= 32'hfffffffc;
         valid_id_q <= 0;
-        prod_data_stage_ex_q <= 0;
-        prod_data_stage_mem_q <= 0;
     end
     else begin
         instr_q <= instr_d;
         pc_q <= pc_d;
         valid_id_q <= valid_id_d;
-        prod_data_stage_ex_q <= prod_data_stage_ex_d;
-        prod_data_stage_mem_q <= prod_data_stage_mem_d;
     end
 end
 
@@ -310,8 +298,8 @@ assign instr_id_o = instr_q;
 
 assign finish_test_o = (instr_q == 32'hfff01073) && valid_id_q;
 
-assign prod_data_stage_ex_o = !is_M_ext_instr ? prod_data_stage_ex_q : 0;
-assign prod_data_stage_mem_o = !is_M_ext_instr ? prod_data_stage_mem_q : 0;
+assign prod_data_stage_ex_o = !is_M_ext_instr ? prod_data_stage_ex : 0;
+assign prod_data_stage_mem_o = !is_M_ext_instr ? prod_data_stage_mem : 0;
 
 assign valid_m1_o = is_M_ext_instr;
 assign m1_rf_we_o = is_M_ext_instr;
