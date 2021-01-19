@@ -17,6 +17,7 @@ module segre_core (
 
 //IF STAGE
 logic [WORD_SIZE-1:0] if_addr;
+logic [WORD_SIZE-1:0] if_virt_addr;
 logic if_mem_rd;
 logic instruction_hit_if;
 logic valid_if;
@@ -290,7 +291,8 @@ segre_if_stage if_stage (
     // Memory
     .cache_instr_line_i (mem_rd_data_i),
     .mem_ready_i (mem_ready_to_if_stage),
-    .pc_o        (if_addr),
+    .pc_virt_o        (if_virt_addr),
+    .pc_phys_o        (if_addr),
     .mem_rd_o    (if_mem_rd),
 
     // IF ID interface
@@ -328,7 +330,7 @@ segre_id_stage id_stage (
 
     // IF ID interface
     .instr_i          (if_instr),
-    .pc_i             (if_addr),
+    .pc_i             (if_virt_addr),
     .valid_if_i       (valid_if),
 
     // Register file read operands
