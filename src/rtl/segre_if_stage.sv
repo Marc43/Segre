@@ -5,6 +5,9 @@ module segre_if_stage (
     input  logic clk_i,
     input  logic rsn_i,
 
+    input logic blocked_id_1cycle_ago_i,
+    input logic block_id_i,
+
     // Memory
     input  logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] cache_instr_line_i,
     input  logic mem_ready_i,
@@ -82,7 +85,25 @@ assign valid_if_o = (block_if_i || !rsn_i) ? 1'b0 : 1'b1;
 
 logic [ADDR_SIZE-1:0] pc_cache;
 
-assign pc_cache = tkbr_i ? new_pc_i : (blocked_1cycle_ago_i ? pc_i : pc_i + 4);
+always_comb begin
+    if (!rsn_i) begin
+        pc_cache = 0;
+    end
+    else begin
+        if (tkbr_i) begin
+            pc_cache = new_pc_i;
+        end
+        else if (blocked_id_1cycle_ago_i || block_id_i) begin
+            pc_cache = pc_i + 4;
+        end
+        else if (blocked_1cycle_ago_i) begin
+            pc_cache = pc_i;
+        end
+        else begin
+            pc_cache = pc_i + 4;
+        end
+    end
+end
 
 segre_cache
 #(

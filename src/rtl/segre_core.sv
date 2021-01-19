@@ -15,6 +15,8 @@ module segre_core (
     output memop_data_type_e mem_data_type_o
 );
 
+logic ctrl_blocked_id;
+
 //IF STAGE
 logic [WORD_SIZE-1:0] if_addr;
 logic if_mem_rd;
@@ -341,6 +343,9 @@ segre_if_stage if_stage (
     .clk_i (clk_i),
     .rsn_i (rsn_i),
 
+    .blocked_id_1cycle_ago_i (ctrl_blocked_id),
+    .block_id_i (ctrl_block_id),
+
     // ID-IF
     .pc_i (id_pc),
 
@@ -422,6 +427,8 @@ segre_id_stage id_stage (
 
     .rd_raddr_a_o (rd_raddr_a_id),
     .rd_raddr_b_o (rd_raddr_b_id),
+
+    .blocked_1cycle_ago_o (ctrl_blocked_id),
 
     .block_id_i (ctrl_block_id),
     .inject_nops_i (ctrl_inject_nops_id),

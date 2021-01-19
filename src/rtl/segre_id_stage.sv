@@ -57,6 +57,7 @@ module segre_id_stage (
     input logic block_id_i, // Block this stage (flip-flops)
     input logic inject_nops_i, // Inject NOPs to the following stages
     output logic valid_id_o, // Indicate the next stage if it's processing valid data
+    output logic blocked_1cycle_ago_o,
 
     // Signals needed to detect hazards
 
@@ -123,11 +124,14 @@ logic [WORD_SIZE-1:0] instr_d;
 logic [ADDR_SIZE-1:0] pc_d;
 logic prod_data_stage_ex_d;
 logic prod_data_stage_mem_d;
+logic blocked_1cycle_ago_d;
+
 
 logic [WORD_SIZE-1:0] instr_q;
 logic [ADDR_SIZE-1:0] pc_q;
 logic prod_data_stage_ex_q;
 logic prod_data_stage_mem_q;
+logic blocked_1cycle_ago_q;
 
 // TODO FINISH CONNECTING PROD_DATA SIGNALS TO REGISTERS AND SO
 
@@ -139,6 +143,7 @@ always_comb begin : decoupling_register_F_ID_1
         instr_d = NOP_INSTR;
         pc_d    = 32'hfffffffc;
         valid_id_d = 0;
+        blocked_1cycle_ago_d = 0;
     end
     else begin
         if (inject_nops_i) begin
@@ -156,6 +161,8 @@ always_comb begin : decoupling_register_F_ID_1
             pc_d = pc_i;
             valid_id_d = valid_if_i;
         end
+
+        blocked_1cycle_ago_d = block_id_i;
     end
 end
 
@@ -169,8 +176,11 @@ always_ff @(posedge clk_i) begin : decoupling_register_F_ID_2
         instr_q <= instr_d;
         pc_q <= pc_d;
         valid_id_q <= valid_id_d;
+        blocked_1cycle_ago_q <= blocked_1cycle_ago_d;
     end
 end
+
+assign blocked_1cycle_ago_o = blocked_1cycle_ago_q;
 
 logic is_M_ext_instr;
 
