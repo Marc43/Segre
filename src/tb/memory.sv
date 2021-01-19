@@ -86,7 +86,7 @@ string test_name;
     mem[addr+3] = word; \
 
 initial begin
-    int addr = 0;
+    int addr = TEXT_REGION;
     static string line, hex_file_name;
 
     // Read the hex file path and open the file in read mode
@@ -139,9 +139,11 @@ initial begin
     `wr_word_mem(mem, 32'h5a5a5a5a, addr+68)
     `wr_word_mem(mem, 32'h5a5a5a5a, addr+72)
     `wr_word_mem(mem, 32'h5a5a5a5a, addr+76)
+    /*
     for (int i = addr+80; i < NUM_WORDS; i = i + 4) begin
         `wr_word_mem(mem, 32'h00000000, i)
     end
+    */
 end
 
 
