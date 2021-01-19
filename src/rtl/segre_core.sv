@@ -515,6 +515,8 @@ segre_mem_stage mem_stage (
     .sb_draining_o (mem_sb_draining)
 );
 
+// MEM -> WB decoupling logic
+// Combinational input of the decoupling register
 always_comb begin : decoupling_register_MEM_WB_1
     if (!rsn_i) begin
         wb_rf_we_d = 0;
@@ -546,6 +548,7 @@ always_comb begin : decoupling_register_MEM_WB_1
     end
 end
 
+// Output of the decoupling register
 always_ff @(posedge clk_i) begin : decoupling_register_MEM_WB_2
     if (!rsn_i) begin
         wb_rf_we_q <= 0;
@@ -562,6 +565,7 @@ always_ff @(posedge clk_i) begin : decoupling_register_MEM_WB_2
     end
 end
 
+// REGISTER FILES
 segre_register_file segre_rf (
     // Clock and Reset
     .clk_i       (clk_i),
@@ -574,6 +578,33 @@ segre_register_file segre_rf (
     .data_b_o    (rf_data_b),
     .waddr_i     (wb_rf_waddr_q),
     .data_w_i    (wb_res_q)
+);
+
+//TODO: fix connections as soon as mem stage is adapted
+segre_csr_register_file csr_regfile (
+
+    //Standard signals
+    .clk_i(clk_i),
+    .rsn_i(rsn_i),
+
+    //Write enables
+    .we_i(we_tb),
+    .exc_we_i(exc_we_tb),
+
+    //Register identifiers
+    .r_id_i(r_id_tb),
+    .w_id_i(w_id_tb),
+    
+    //Data input for regular writes
+    .w_data_i(w_data_tb),
+
+    //Data input ports for exceptions
+    .w_data_mstatus_i(/*TODO*/),
+    .w_data_mtvec_i(w_data_mtvec_tb),
+    .w_data_mepc_i(w_data_mepc_tb), 
+    .w_data_mcause_i(w_data_mcause_tb),
+
+    .data_o(data_o_tb)
 );
 
 endmodule : segre_core
