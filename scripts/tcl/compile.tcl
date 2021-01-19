@@ -25,8 +25,9 @@ vlog -sv -work $work_dir $rtl_dir/cache_modules/segre_cache_data.sv
 vlog -sv -work $work_dir $rtl_dir/cache_modules/segre_cache_tags.sv
 vlog -sv -work $work_dir $rtl_dir/cache_modules/segre_cache.sv
 
-# Compile TLB and fail miserably
+# Compile TLBs and fail miserably
 vlog -sv -work $work_dir $rtl_dir/segre_dtlb.sv
+vlog -sv -work $work_dir $rtl_dir/segre_itlb.sv
 #Compile CSR reg file
 vlog -sv -work $work_dir $rtl_dir/segre_csr_register_file.sv
 
