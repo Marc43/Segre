@@ -385,32 +385,37 @@ add wave -noupdate -group Controller /top_tb/soc/dut/controller/rcvd_mem_req
 add wave -noupdate -group Controller /top_tb/soc/dut/controller/sel_mem_req
 TreeUpdate [SetDefaultTree]
 quietly WaveActivateNextPane
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/clk_i
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/rsn_i
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/cache_instr_line_i
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/mem_ready_i
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/tkbr_i
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/new_pc_i
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/block_if_i
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/blocked_1cycle_ago_i
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/inject_nops_i
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/valid_if_o
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/instruction_hit_o
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/mem_rd_o
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/instr_o
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/pc_o
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/pc_i
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/data_type
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/rd
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/wr
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/is_alu
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/data
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/store_buffer_draining
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/is_hit
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/writeback
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/to_mem_cache_line
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/instr_to_feed_decode
-add wave -noupdate -group IF /top_tb/soc/dut/if_stage/pc
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/clk_i
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/rsn_i
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/cache_instr_line_i
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/mem_ready_i
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/new_pc_i
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/inject_nops_i
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/instruction_hit_o
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/mem_rd_o
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/pc_i
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/data_type
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/rd
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/wr
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/is_alu
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/data
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/store_buffer_draining
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/is_hit
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/writeback
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/to_mem_cache_line
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/pc
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/instr_to_feed_decode
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/tkbr_i
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/pc_o
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/instr_o
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/valid_if_o
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/block_if_i
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/blocked_1cycle_ago_i
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/block_id_i
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/blocked_id_1cycle_ago_i
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/mem_addr_o
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/tkbr_latch
+add wave -noupdate -expand -group IF /top_tb/soc/dut/if_stage/pc_cache
 TreeUpdate [SetDefaultTree]
 quietly WaveActivateNextPane
 add wave -noupdate -expand -group ID /top_tb/soc/dut/id_stage/clk_i
@@ -775,21 +780,21 @@ add wave -noupdate /top_tb/soc/dut/ctrl_valid_m3
 add wave -noupdate /top_tb/soc/dut/muxed_we
 add wave -noupdate /top_tb/soc/dut/muxed_rf_waddr
 add wave -noupdate /top_tb/soc/dut/muxed_rf_w_data
-add wave -noupdate -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/clk_i
-add wave -noupdate -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/rsn_i
-add wave -noupdate -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/we_i
-add wave -noupdate -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/raddr_a_i
-add wave -noupdate -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/data_a_o
-add wave -noupdate -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/raddr_b_i
-add wave -noupdate -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/data_b_o
-add wave -noupdate -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/waddr_i
-add wave -noupdate -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/data_w_i
-add wave -noupdate -group {REGISTER FILE} -expand /top_tb/soc/dut/segre_rf/rf_reg
-add wave -noupdate -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/rf_reg_aux
-add wave -noupdate -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/write_enable
+add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/clk_i
+add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/rsn_i
+add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/we_i
+add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/raddr_a_i
+add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/data_a_o
+add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/raddr_b_i
+add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/data_b_o
+add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/waddr_i
+add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/data_w_i
+add wave -noupdate -expand -group {REGISTER FILE} -expand /top_tb/soc/dut/segre_rf/rf_reg
+add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/rf_reg_aux
+add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/write_enable
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {1189750 ps} 0} {{Cursor 2} {330000 ps} 0}
-quietly wave cursor active 1
+WaveRestoreCursors {{Cursor 1} {40089214 ps} 0} {{Cursor 2} {2550000 ps} 0}
+quietly wave cursor active 2
 configure wave -namecolwidth 191
 configure wave -valuecolwidth 163
 configure wave -justifyvalue left
@@ -804,4 +809,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {0 ps} {3434231 ps}
+WaveRestoreZoom {1978740 ps} {3695856 ps}

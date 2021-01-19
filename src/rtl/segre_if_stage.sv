@@ -21,7 +21,6 @@ module segre_if_stage (
     // To/From controller signals
     input logic block_if_i, // Block this stage (flip-flops)
     input logic blocked_1cycle_ago_i,
-    input logic blocked_id_i,
     input logic inject_nops_i, // Inject NOPs to the following stages
     output logic valid_if_o, // Indicate the next stage if it's processing valid data
     output logic instruction_hit_o,
@@ -58,20 +57,36 @@ assign is_alu = 0;
 assign data = 0;
 assign instruction_hit_o = is_hit;
 
-logic [ADDR_SIZE-1:0] pc;
+logic tkbr_latch;
 
-// This was creating a loop
-//assign pc = !rsn_i ? 0 : (is_hit ? pc_i + 4 : pc_i);
+always @(posedge clk_i) begin
+    if (!rsn_i) begin
+        tkbr_latch = 0;
+    end
+    else begin
+        if (tkbr_i) begin
+            tkbr_latch <= tkbr_i;
+        end
+        else if (!block_if_i || !blocked_1cycle_ago_i) begin
+            tkbr_latch <= 0;
+        end
+    end
+end
+
+logic [ADDR_SIZE-1:0] pc;
 
 always_comb begin : pc_mux
     if (!rsn_i) begin
-        pc = 0;
+        pc = 32'h0;
     end
     else begin
         if (tkbr_i) begin
             pc = new_pc_i;
         end
-        else if (block_if_i) begin
+        else if (block_if_i) begin // || blocked_1cycle_ago_i) begin
+            pc = pc_i;
+        end
+        else if (tkbr_latch) begin
             pc = pc_i;
         end
         else begin
@@ -93,12 +108,13 @@ always_comb begin
         if (tkbr_i) begin
             pc_cache = new_pc_i;
         end
-        else if (blocked_id_1cycle_ago_i || block_id_i) begin
-            pc_cache = pc_i + 4;
-        end
-        else if (blocked_1cycle_ago_i) begin
+        else if (tkbr_latch && blocked_1cycle_ago_i) begin
             pc_cache = pc_i;
         end
+        // lmao poner recuerdo salto
+//        else if (blocked_1cycle_ago_i) begin
+//            pc_cache = pc_i;
+//        end
         else begin
             pc_cache = pc_i + 4;
         end
@@ -136,7 +152,7 @@ instruction_cache
 
 assign mem_rd_o = rd && !is_hit && rsn_i;
 assign instr_o = instr_to_feed_decode;
-assign pc_o = pc_cache;
+assign pc_o = pc;
 assign mem_addr_o = pc_cache;
 
 endmodule : segre_if_stage
