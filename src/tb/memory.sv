@@ -25,10 +25,10 @@ module memory (
     output logic [CACHE_LINE_SIZE_BYTES-1:0][7:0] cache_line_o
 );
 
-parameter NUM_WORDS = 1024 * 64; // 64Kb
-parameter TEXT_REGION = 0;
+parameter NUM_WORDS = 1024 * 2048; // 2MB
+parameter TEXT_REGION = 32'h8000; // First translated address
 //parameter DATA_REGION = 1024*32;
-parameter DATA_REGION = 32'hA000;
+parameter DATA_REGION = 32'h18000; // 
 
 // Duration of requests in cycles
 parameter REQUEST_DURATION = 9;
