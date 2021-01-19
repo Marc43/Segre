@@ -11,6 +11,8 @@ module bypass_controller (
     input logic rd_src_a_id_i,
     input logic rd_src_b_id_i,
 
+    input logic is_store_id_i,
+
     output bypass_id_sel_e mux_sel_a_id_o, // 2 bits to select RF, Execute, Memory, Writeback data
     output bypass_id_sel_e mux_sel_b_id_o,
 
@@ -226,13 +228,13 @@ always_comb begin : SRC_ALU_MUX_EX
         end
 
         // Select for source operand B
-        if (valid_ex_i && depEX_src_b_i && !use_bypass_b_ex) begin
+        if (!is_store_id_i && valid_ex_i && depEX_src_b_i && !use_bypass_b_ex) begin
             mux_sel_b_ex = MEM_BYPASS;
         end
-        else if (valid_mem_i && depMEM_src_b_i && !use_bypass_b_mem && !use_bypass_b_ex) begin
+        else if (!is_store_id_i && valid_mem_i && depMEM_src_b_i && !use_bypass_b_mem && !use_bypass_b_ex) begin
             mux_sel_b_ex = WB_BYPASS;
         end
-        else if (valid_m4_i && depM4_src_a_i && !use_bypass_b_ex && !use_bypass_b_mem) begin
+        else if (!is_store_id_i && valid_m4_i && depM4_src_b_i && !use_bypass_b_ex && !use_bypass_b_mem) begin
             mux_sel_b_ex = MUL_M5_BYPASS;
         end
         else begin

@@ -1,4 +1,3 @@
-
 int __attribute__((naked)) main(void) {
 
     int sum = 0;
@@ -9,5 +8,4 @@ int __attribute__((naked)) main(void) {
     }
 
     __asm__("csrw 0xfff, x0 \n");
-    return sum;
 }

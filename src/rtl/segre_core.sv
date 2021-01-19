@@ -16,6 +16,7 @@ module segre_core (
 );
 
 logic ctrl_blocked_id;
+logic ctrl_is_store;
 
 //IF STAGE
 logic [WORD_SIZE-1:0] if_addr;
@@ -204,6 +205,7 @@ segre_controller controller (
     .src_a_identifier_id_i (src_a_identifier_id),
     .src_b_identifier_id_i (src_b_identifier_id),
     .decode_instr_i (instr_id),
+    .is_store_id_i (ctrl_is_store),
 
     .rd_src_a_id_i (rd_raddr_a_id),
     .rd_src_b_id_i (rd_raddr_b_id),
@@ -421,6 +423,8 @@ segre_id_stage id_stage (
     .br_src_b_o        (id_br_src_b),
 
     .is_jaljalr_o (id_is_jaljalr),
+
+    .is_store_o (ctrl_is_store),
 
     .src_a_identifier_o (src_a_identifier_id),
     .src_b_identifier_o (src_b_identifier_id),

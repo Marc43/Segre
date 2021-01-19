@@ -49,6 +49,8 @@ module segre_id_stage (
 
     output logic [ADDR_SIZE-1:0] pc_o,
 
+    output logic is_store_o,
+
     // pc + 4
     output logic is_jaljalr_o,
 
@@ -359,5 +361,7 @@ always_comb begin : BYPASS_SRC_B
         end
     endcase
 end
+
+assign is_store_o = memop_wr;
 
 endmodule : segre_id_stage

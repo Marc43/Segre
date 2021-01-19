@@ -32,6 +32,8 @@ module segre_controller (
     input logic rd_src_a_id_i,
     input logic rd_src_b_id_i,
 
+    input logic is_store_id_i,
+
     input logic [WORD_SIZE-1:0] decode_instr_i,
 
     output logic block_id_o,
@@ -519,6 +521,8 @@ bypass_controller bypass (
 
     .rd_src_a_id_i (rd_src_a_id_i),
     .rd_src_b_id_i (rd_src_b_id_i),
+
+    .is_store_id_i (is_store_id_i),
 
     .mux_sel_a_id_o (mul_sel_a_id_o),
     .mux_sel_b_id_o (mul_sel_b_id_o),
