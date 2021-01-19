@@ -66,7 +66,14 @@ module segre_mem_stage (
     output logic dc_rd_o,
     output logic dc_wr_o,
 
-    output logic sb_draining_o
+    output logic sb_draining_o,
+
+    // TLB excpetion outputs
+    // TODO go over it so you don't miss anything
+    output logic tlb_miss_o,
+    output logic [WORD_SIZE-1:0] w_data_mtvec_o,     // @ of routine to manage the event
+    output logic [WORD_SIZE-1:0] w_data_mepc_o,      // @ of return when finishing the event
+    output logic [WORD_SIZE-1:0] w_data_mcause_o     // ID cause of the event
 
 );
 
@@ -214,6 +221,10 @@ logic [WORD_SIZE-1:0] writeback_addr;
 logic rd;
 logic wr;
 
+//TLB intermediate signals
+logic tlb_miss;
+logic [PHYSICAL_ADDR_SIZE - 1:0] paddr;
+
 assign dc_rd_o = memop_rd_q;
 assign dc_wr_o = memop_wr_q || writeback;
 
@@ -241,6 +252,25 @@ assign aux_memop = memop_type_q;
 //    end
 //end
 
+//Submodule instances
+//TLB
+segre_dtlb dtlb(
+    //Control
+    .clk_i (clk_i),
+    .rsn_i (rsn_i),
+
+    //Inputs
+    .vaddr_i (aux_addr),
+    .ppage_i (not_used),
+    .write_enable_i (not_used),
+
+    //Outputs
+    .tlb_miss_o (tlb_miss),
+    .paddr_o (paddr)
+);
+
+//CACHE
+//TODO: INTEGRATE TLB ADDRESSES WHEN THIS IS DONE
 segre_cache
 #(
     .ICACHE_DCACHE(DCACHE)
@@ -257,8 +287,8 @@ data_cache
 
     .rcvd_mem_request_i (mem_ready_i),
     .data_type_i (aux_memop),
-    .addr_i (aux_addr), // Address is calculated in the previous stage (ALU)
-    .data_i (aux_data), // Data to store comes from the register file
+    .addr_i (aux_addr), // Address is calculated in the previous stage (ALU) -> TO BE CHANGED WITH TLB OUTPUT
+    .data_i (aux_data), // Data to store comes from the register file -> TO BE CHANGED WITH TLB OUTPUT
     .from_mem_cache_line_i (cache_line_i),
 
     .is_hit_o (is_hit),
