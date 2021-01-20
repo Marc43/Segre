@@ -17,6 +17,7 @@ module segre_core (
 
 logic ctrl_blocked_id;
 logic ctrl_is_store;
+logic ctrl_inject_nops_m1;
 
 //IF STAGE
 logic [WORD_SIZE-1:0] if_addr;
@@ -210,6 +211,8 @@ segre_controller controller (
     .rd_src_a_id_i (rd_raddr_a_id),
     .rd_src_b_id_i (rd_raddr_b_id),
 
+    .valid_m1_in_id_i (valid_m1),
+
     // Outuputs
     .block_id_o (ctrl_block_id),
     .inject_nops_id_o (ctrl_inject_nops_id),
@@ -280,6 +283,8 @@ segre_controller controller (
     // M1
     .valid_m1_i (ctrl_valid_m1),
     .dst_reg_identifier_m1_i (m1_waddr),
+
+    .inject_nops_m1_o (ctrl_inject_nops_m1),
 
     // M2
     .valid_m2_i (ctrl_valid_m2),
@@ -658,6 +663,8 @@ M_ext_pipeline M_ext (
 
     .valid_m1_o (ctrl_valid_m1),
     .dst_reg_identifier_m1_o (m1_waddr),
+
+    .inject_nops_m1_i (ctrl_inject_nops_m1),
 
     // M2
 

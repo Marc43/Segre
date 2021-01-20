@@ -304,7 +304,7 @@ assign src_a_identifier_o = rf_raddr_a;
 assign src_b_identifier_o = rf_raddr_b;
 
 assign pc_o = pc_q;
-assign valid_id_o = !is_M_ext_instr ? valid_id_q : 0;
+assign valid_id_o = valid_id_q;
 
 assign instr_id_o = instr_q;
 

@@ -145,20 +145,20 @@ add wave -noupdate -group {Data Cache} /top_tb/soc/dut/mem_stage/data_cache/addr
 add wave -noupdate -group {Data Cache} /top_tb/soc/dut/mem_stage/data_cache/data_type_sb_o
 add wave -noupdate -group {Data Cache} /top_tb/soc/dut/mem_stage/data_cache/sb_muxes_select
 add wave -noupdate -group {Data Cache} /top_tb/soc/dut/mem_stage/data_cache/is_alu
-add wave -noupdate -group {Data Cache} -group Data /top_tb/soc/dut/mem_stage/data_cache/data/clk_i
-add wave -noupdate -group {Data Cache} -group Data /top_tb/soc/dut/mem_stage/data_cache/data/rsn_i
-add wave -noupdate -group {Data Cache} -group Data /top_tb/soc/dut/mem_stage/data_cache/data/wr_into_word_i
-add wave -noupdate -group {Data Cache} -group Data /top_tb/soc/dut/mem_stage/data_cache/data/data_type_i
-add wave -noupdate -group {Data Cache} -group Data /top_tb/soc/dut/mem_stage/data_cache/data/wr_line_i
-add wave -noupdate -group {Data Cache} -group Data /top_tb/soc/dut/mem_stage/data_cache/data/addr_i
-add wave -noupdate -group {Data Cache} -group Data /top_tb/soc/dut/mem_stage/data_cache/data/data_i
-add wave -noupdate -group {Data Cache} -group Data /top_tb/soc/dut/mem_stage/data_cache/data/from_mem_cache_line_i
-add wave -noupdate -group {Data Cache} -group Data /top_tb/soc/dut/mem_stage/data_cache/data/to_mem_cache_line_o
-add wave -noupdate -group {Data Cache} -group Data /top_tb/soc/dut/mem_stage/data_cache/data/data_o
-add wave -noupdate -group {Data Cache} -group Data /top_tb/soc/dut/mem_stage/data_cache/data/addr_tag
-add wave -noupdate -group {Data Cache} -group Data /top_tb/soc/dut/mem_stage/data_cache/data/addr_index
-add wave -noupdate -group {Data Cache} -group Data /top_tb/soc/dut/mem_stage/data_cache/data/addr_byte
-add wave -noupdate -group {Data Cache} -group Data /top_tb/soc/dut/mem_stage/data_cache/data/cache_data
+add wave -noupdate -group {Data Cache} -expand -group Data /top_tb/soc/dut/mem_stage/data_cache/data/clk_i
+add wave -noupdate -group {Data Cache} -expand -group Data /top_tb/soc/dut/mem_stage/data_cache/data/rsn_i
+add wave -noupdate -group {Data Cache} -expand -group Data /top_tb/soc/dut/mem_stage/data_cache/data/wr_into_word_i
+add wave -noupdate -group {Data Cache} -expand -group Data /top_tb/soc/dut/mem_stage/data_cache/data/data_type_i
+add wave -noupdate -group {Data Cache} -expand -group Data /top_tb/soc/dut/mem_stage/data_cache/data/wr_line_i
+add wave -noupdate -group {Data Cache} -expand -group Data /top_tb/soc/dut/mem_stage/data_cache/data/addr_i
+add wave -noupdate -group {Data Cache} -expand -group Data /top_tb/soc/dut/mem_stage/data_cache/data/data_i
+add wave -noupdate -group {Data Cache} -expand -group Data /top_tb/soc/dut/mem_stage/data_cache/data/from_mem_cache_line_i
+add wave -noupdate -group {Data Cache} -expand -group Data /top_tb/soc/dut/mem_stage/data_cache/data/to_mem_cache_line_o
+add wave -noupdate -group {Data Cache} -expand -group Data /top_tb/soc/dut/mem_stage/data_cache/data/data_o
+add wave -noupdate -group {Data Cache} -expand -group Data /top_tb/soc/dut/mem_stage/data_cache/data/addr_tag
+add wave -noupdate -group {Data Cache} -expand -group Data /top_tb/soc/dut/mem_stage/data_cache/data/addr_index
+add wave -noupdate -group {Data Cache} -expand -group Data /top_tb/soc/dut/mem_stage/data_cache/data/addr_byte
+add wave -noupdate -group {Data Cache} -expand -group Data -expand /top_tb/soc/dut/mem_stage/data_cache/data/cache_data
 add wave -noupdate -group {Data Cache} -group Tags /top_tb/soc/dut/mem_stage/data_cache/tags/clk_i
 add wave -noupdate -group {Data Cache} -group Tags /top_tb/soc/dut/mem_stage/data_cache/tags/rsn_i
 add wave -noupdate -group {Data Cache} -group Tags /top_tb/soc/dut/mem_stage/data_cache/tags/addr_i
@@ -274,7 +274,9 @@ add wave -noupdate -group Controller /top_tb/soc/dut/controller/src_a_identifier
 add wave -noupdate -group Controller /top_tb/soc/dut/controller/src_b_identifier_id_i
 add wave -noupdate -group Controller /top_tb/soc/dut/controller/rd_src_a_id_i
 add wave -noupdate -group Controller /top_tb/soc/dut/controller/rd_src_b_id_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/is_store_id_i
 add wave -noupdate -group Controller /top_tb/soc/dut/controller/decode_instr_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/valid_m1_in_id_i
 add wave -noupdate -group Controller /top_tb/soc/dut/controller/block_id_o
 add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_id_o
 add wave -noupdate -group Controller /top_tb/soc/dut/controller/mul_sel_a_id_o
@@ -311,6 +313,7 @@ add wave -noupdate -group Controller /top_tb/soc/dut/controller/block_wb_o
 add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_wb_o
 add wave -noupdate -group Controller /top_tb/soc/dut/controller/valid_m1_i
 add wave -noupdate -group Controller /top_tb/soc/dut/controller/dst_reg_identifier_m1_i
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_m1_o
 add wave -noupdate -group Controller /top_tb/soc/dut/controller/valid_m2_i
 add wave -noupdate -group Controller /top_tb/soc/dut/controller/dst_reg_identifier_m2_i
 add wave -noupdate -group Controller /top_tb/soc/dut/controller/valid_m3_i
@@ -377,6 +380,7 @@ add wave -noupdate -group Controller /top_tb/soc/dut/controller/depM2
 add wave -noupdate -group Controller /top_tb/soc/dut/controller/depM3
 add wave -noupdate -group Controller /top_tb/soc/dut/controller/depM4
 add wave -noupdate -group Controller /top_tb/soc/dut/controller/depM5
+add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_m1
 add wave -noupdate -group Controller /top_tb/soc/dut/controller/block_mem
 add wave -noupdate -group Controller /top_tb/soc/dut/controller/inject_nops_wb
 add wave -noupdate -group Controller /top_tb/soc/dut/controller/blocked1cycleago_mem_d
@@ -793,8 +797,8 @@ add wave -noupdate -expand -group {REGISTER FILE} -expand /top_tb/soc/dut/segre_
 add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/rf_reg_aux
 add wave -noupdate -expand -group {REGISTER FILE} /top_tb/soc/dut/segre_rf/write_enable
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {40089214 ps} 0} {{Cursor 2} {2550000 ps} 0}
-quietly wave cursor active 2
+WaveRestoreCursors {{Cursor 1} {1094619843 ps} 0} {{Cursor 2} {2550000 ps} 0}
+quietly wave cursor active 1
 configure wave -namecolwidth 191
 configure wave -valuecolwidth 163
 configure wave -justifyvalue left
@@ -809,4 +813,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {1978740 ps} {3695856 ps}
+WaveRestoreZoom {1094397460 ps} {1096114576 ps}

@@ -36,6 +36,8 @@ module segre_controller (
 
     input logic [WORD_SIZE-1:0] decode_instr_i,
 
+    input logic valid_m1_in_id_i,
+
     output logic block_id_o,
     output logic inject_nops_id_o,
 
@@ -105,6 +107,8 @@ module segre_controller (
     // M1
     input logic valid_m1_i,
     input logic [REG_SIZE-1:0] dst_reg_identifier_m1_i,
+
+    output logic inject_nops_m1_o,
 
     // M2
     input logic valid_m2_i,
@@ -289,6 +293,10 @@ assign depM3 = depM3_src_a || depM3_src_b;
 assign depM4 = depM4_src_a || depM4_src_b;
 assign depM5 = depM5_src_a || depM5_src_b;
 
+logic inject_nops_m1;
+
+assign inject_nops_m1 = block_id; // Really nasty
+
 always_comb begin : data_dependences_detection_or_tkbr
     if (!rsn_i) begin
         block_id = 0;
@@ -304,6 +312,10 @@ always_comb begin : data_dependences_detection_or_tkbr
             // results in discarding instructions, that's
             // exactly what we need.
             block_id = 0;
+            inject_nops_ex = 1;
+        end
+        else if (valid_m1_in_id_i && valid_id_i && valid_ex_i && is_load_ex_i && (depEX_src_a || depEX_src_b)) begin
+            block_id = 1;
             inject_nops_ex = 1;
         end
         else if (valid_m3_i && valid_id_i) begin // Could check also if it's going to write, but it's the only possible possibility right now
@@ -322,6 +334,8 @@ always_comb begin : data_dependences_detection_or_tkbr
 
     end
 end
+
+assign inject_nops_m1_o = inject_nops_m1;
 
 //////////////////////////////
 // MEM CONTROL

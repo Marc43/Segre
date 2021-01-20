@@ -24,6 +24,8 @@ module M_ext_pipeline (
     output logic valid_m1_o,
     output logic [REG_SIZE-1:0] dst_reg_identifier_m1_o,
 
+    input logic inject_nops_m1_i,
+
     /*
      * M2
      */
@@ -82,12 +84,18 @@ always_comb begin
         m1_we_d = 0;
     end
     else begin
-        m1_valid_d = valid_m1_i;
-        m1_src_a_d = src_a_i;
-        m1_src_b_d = src_b_i;
-        m1_rf_waddr_d = rf_waddr_i;
-        m1_opcode_d = opcode_i;
-        m1_we_d = rf_we_i;
+        if (inject_nops_m1_i) begin
+            m1_valid_d = 0;
+            m1_we_d = 0;
+        end
+        else begin
+            m1_valid_d = valid_m1_i;
+            m1_src_a_d = src_a_i;
+            m1_src_b_d = src_b_i;
+            m1_rf_waddr_d = rf_waddr_i;
+            m1_opcode_d = opcode_i;
+            m1_we_d = rf_we_i;
+        end
     end
 end
 

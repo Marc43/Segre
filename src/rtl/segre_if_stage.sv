@@ -86,7 +86,7 @@ always_comb begin : pc_mux
         else if (block_if_i) begin // || blocked_1cycle_ago_i) begin
             pc = pc_i;
         end
-        else if (tkbr_latch) begin
+        else if (tkbr_latch && blocked_1cycle_ago_i) begin
             pc = pc_i;
         end
         else begin
