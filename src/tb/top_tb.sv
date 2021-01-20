@@ -24,6 +24,8 @@ module top_tb;
     timeunit 1ns;
     timeprecision 1ps;
 
+    longint cycles = 0;
+
     logic clk;
     logic rsn;
 
@@ -73,12 +75,17 @@ module top_tb;
     end
 
     task run_tb();
-        while(keep_running_tb()) @(posedge clk);
+        while(keep_running_tb()) begin
+            @(posedge clk);
+            cycles++;
+        end
     endtask
 
     function bit keep_running_tb();
         //if (soc.dut.id_instr == 32'hfff01073 && soc.dut.fsm_state == ID_STATE) begin
         if (soc.dut.controller.finish_test_o) begin
+
+            $display($sformatf("Finished test, took %d cycles;", cycles));
             return 0;
         end
 
