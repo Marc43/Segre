@@ -10,9 +10,6 @@ int __attribute__((naked)) main(void) {
     for (int i = 0; i < 128; i++) {
         b[i] = a[i];
     }
-    for (int i = 0; i < 128; i++) {
-        sum += b[i];
-    }
 
     __asm__("csrw 0xfff, x0 \n");
 
